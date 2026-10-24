@@ -1,4 +1,4 @@
-import { Article, MAIN_ARTICLES, BREAKING_NEWS } from '@/data/newsData';
+import { Article } from '@/data/newsData';
 
 function getApiBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
@@ -51,27 +51,6 @@ export interface ArticleQueryParams {
   limit?: number;
 }
 
-function filterFallbackArticles(params?: ArticleQueryParams): Article[] {
-  let list = [...MAIN_ARTICLES];
-  if (params?.category && params.category !== 'all' && params.category !== 'എല്ലാം') {
-    list = list.filter(a => a.category.includes(params.category!));
-  }
-  if (params?.search) {
-    const q = params.search.toLowerCase();
-    list = list.filter(a => a.title.toLowerCase().includes(q) || a.lead.toLowerCase().includes(q));
-  }
-  if (params?.trending) {
-    list = list.filter(a => a.trending);
-  }
-  if (params?.district && params.district !== 'all' && params.district !== 'എല്ലാം') {
-    list = list.filter(a => a.district === params.district);
-  }
-  if (params?.limit) {
-    list = list.slice(0, params.limit);
-  }
-  return list;
-}
-
 export async function getArticles(params?: ArticleQueryParams): Promise<Article[]> {
   try {
     const baseUrl = getApiBaseUrl();
@@ -96,10 +75,10 @@ export async function getArticles(params?: ArticleQueryParams): Promise<Article[
     const res = await fetch(url.toString(), { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    const articles = Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
-    return articles.length > 0 ? articles : filterFallbackArticles(params);
+    return Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
   } catch (error) {
-    return filterFallbackArticles(params);
+    console.error('Failed to fetch articles from database API:', error);
+    return [];
   }
 }
 
@@ -111,11 +90,10 @@ export async function getArticleById(id: string): Promise<Article | null> {
       const data = await res.json();
       if (data.article) return normalizeArticle(data.article);
     }
-    const found = MAIN_ARTICLES.find(a => a.customId === id || a.id === id);
-    return found || null;
+    return null;
   } catch (error) {
-    const found = MAIN_ARTICLES.find(a => a.customId === id || a.id === id);
-    return found || null;
+    console.error(`Failed to fetch article ${id} from database API:`, error);
+    return null;
   }
 }
 
@@ -126,11 +104,12 @@ export async function getBreakingNews(): Promise<string[]> {
     if (res.ok) {
       const data = await res.json();
       const headlines = Array.isArray(data.headlines) ? data.headlines.map((h: any) => h.headline) : [];
-      if (headlines.length > 0) return headlines;
+      return headlines;
     }
-    return BREAKING_NEWS;
+    return [];
   } catch (error) {
-    return BREAKING_NEWS;
+    console.error('Failed to fetch breaking news from database API:', error);
+    return [];
   }
 }
 
