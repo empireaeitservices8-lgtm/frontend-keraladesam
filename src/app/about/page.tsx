@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Globe2,
   Building,
@@ -64,15 +65,14 @@ export default function AboutPage() {
           </div>
 
           <div className="bg-surface-pure/10 p-6 rounded-lg border border-surface-pure/20 text-center shrink-0 w-full md:w-80 shadow-xl">
-            <div className="w-16 h-16 rounded-full bg-editorial-crimson flex items-center justify-center text-white font-headline text-3xl font-bold mx-auto mb-3 shadow-md">
-              കേ
+            <div className="relative h-16 w-full mx-auto mb-3 bg-white/10 rounded-lg p-2">
+              <Image
+                src="/logo.png"
+                alt="കേരളദേശം"
+                fill
+                className="object-contain"
+              />
             </div>
-            <h3 className="font-headline text-xl font-bold text-surface-pure">
-              കേരളദേശം
-            </h3>
-            <p className="text-xs text-secondary-fixed-dim uppercase tracking-wider mt-0.5 mb-3">
-              KERALA DESAM
-            </p>
             <div className="pt-3 border-t border-surface-pure/20 text-xs text-secondary-fixed-dim space-y-1">
               <p>സത്യം • ജനപക്ഷം • നിഷ്പക്ഷം</p>
               <p className="text-[11px] text-tertiary-fixed">24x7 ആഗോള മലയാളം ന്യൂസ്റൂം</p>

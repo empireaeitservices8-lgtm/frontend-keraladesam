@@ -33,30 +33,9 @@
 }
 
 /* Custom responsive newspaper styling rules */
-.newspaper-lead::first-letter {
-  font-family: var(--font-newsreader);
-  font-weight: 700;
-  color: #9e001f;
-}
-
-@media (max-width: 640px) {
-  .newspaper-lead::first-letter {
-    float: none;
-    display: inline;
-    font-size: 1.4rem;
-    padding-right: 0.1rem;
-    line-height: normal;
-  }
-}
-
-@media (min-width: 641px) {
-  .newspaper-lead::first-letter {
-    float: left;
-    font-size: 3.2rem;
-    line-height: 0.85;
-    padding-right: 0.5rem;
-    padding-top: 0.2rem;
-  }
+.newspaper-lead {
+  font-feature-settings: 'kern' 1;
+  text-rendering: optimizeLegibility;
 }
 
 /* Smooth horizontal scrollbar hiding */

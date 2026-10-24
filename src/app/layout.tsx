@@ -3,6 +3,7 @@ import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { FontProvider } from '@/components/FontContext';
+import { AdminAuthProvider } from '@/context/AdminAuthContext';
 
 export const metadata: Metadata = {
   title: "കേരളദേശം - Kerala Desam | Kerala's Voice",
@@ -36,13 +37,15 @@ export default function RootLayout({
   return (
     <html lang="ml">
       <body className="bg-parchment-base font-body-md text-on-surface antialiased min-h-screen flex flex-col">
-        <FontProvider>
-          <Header />
-          <div className="flex-1 w-full">
-            {children}
-          </div>
-          <Footer />
-        </FontProvider>
+        <AdminAuthProvider>
+          <FontProvider>
+            <Header />
+            <div className="flex-1 w-full">
+              {children}
+            </div>
+            <Footer />
+          </FontProvider>
+        </AdminAuthProvider>
       </body>
     </html>
   );

@@ -13,9 +13,11 @@ import {
   GraduationCap,
   Sparkles,
   Share2,
-  Bookmark
+  Bookmark,
+  Loader2
 } from 'lucide-react';
-import { MAIN_ARTICLES, KERALA_DISTRICTS } from '@/data/newsData';
+import { Article, KERALA_DISTRICTS } from '@/data/newsData';
+import { getRealArticles } from '@/lib/api';
 import { useFont } from '@/components/FontContext';
 
 export default function KeralaPage() {
@@ -23,6 +25,8 @@ export default function KeralaPage() {
 
   const [selectedDistrict, setSelectedDistrict] = useState('എല്ലാം');
   const [selectedCategory, setSelectedCategory] = useState('സമഗ്രം');
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const categories = [
     'സമഗ്രം',
@@ -33,15 +37,31 @@ export default function KeralaPage() {
     'വികസനം & അടിസ്ഥാനസൗകര്യം',
   ];
 
-  // Filter articles by district and category
-  const filteredArticles = MAIN_ARTICLES.filter((article) => {
-    const matchesDistrict =
-      selectedDistrict === 'എല്ലാം' || article.district === selectedDistrict;
-    const matchesCategory =
-      selectedCategory === 'സമഗ്രം' || article.category.includes(selectedCategory);
-    return matchesDistrict && (selectedCategory === 'സമഗ്രം' || matchesCategory);
-  });
+  React.useEffect(() => {
+    let isMounted = true;
+    async function loadArticles() {
+      try {
+        setLoading(true);
+        const params: any = {};
+        if (selectedDistrict !== 'എല്ലാം') params.district = selectedDistrict;
+        if (selectedCategory !== 'സമഗ്രം') params.category = selectedCategory;
+        const data = await getRealArticles(params);
+        if (isMounted) {
+          setArticles(data);
+        }
+      } catch (e) {
+        console.error('Error fetching kerala articles:', e);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    loadArticles();
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedDistrict, selectedCategory]);
 
+  const filteredArticles = articles;
   const spotlightDistrict = selectedDistrict === 'എല്ലാം' ? 'വയനാട്' : selectedDistrict;
 
   return (

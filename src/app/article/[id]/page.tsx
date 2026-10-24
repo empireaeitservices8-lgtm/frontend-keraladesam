@@ -19,18 +19,48 @@ import {
   ArrowLeft,
   ArrowRight,
   Eye,
-  Check
+  Check,
+  Loader2
 } from 'lucide-react';
-import { MAIN_ARTICLES, Article } from '@/data/newsData';
+import { Article } from '@/data/newsData';
+import { getRealArticleById, getRealArticles } from '@/lib/api';
 import { useFont } from '@/components/FontContext';
 
 export default function ArticleDetailPage() {
   const params = useParams();
-  const articleId = (params?.id as string) || 'wayanad-tunnel';
+  const articleId = (params?.id as string) || '';
   const { toggleBookmark, isBookmarked } = useFont();
 
-  const article: Article =
-    MAIN_ARTICLES.find((a) => a.id === articleId) || MAIN_ARTICLES[0];
+  const [article, setArticle] = useState<Article | null>(null);
+  const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      if (!articleId) return;
+      try {
+        setLoading(true);
+        const data = await getRealArticleById(articleId);
+        if (isMounted && data) {
+          setArticle(data);
+          // Load related
+          const rel = await getRealArticles({ limit: 4 });
+          if (isMounted) {
+            setRelatedArticles(rel.filter((r) => r.id !== data.id).slice(0, 3));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching article from backend database:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [articleId]);
 
   // Audio TTS player simulation state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -75,6 +105,7 @@ export default function ArticleDetailPage() {
   }, [isPlaying]);
 
   const toggleAudio = () => {
+    if (!article) return;
     // If Web Speech API is available, speak out the lead paragraph in Malayalam
     if (!isPlaying) {
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -103,6 +134,7 @@ export default function ArticleDetailPage() {
   };
 
   const handleShareWhatsApp = () => {
+    if (!article) return;
     const text = encodeURIComponent(`${article.title}\n${window.location.href}`);
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
@@ -125,7 +157,26 @@ export default function ArticleDetailPage() {
     }
   };
 
-  const relatedArticles = MAIN_ARTICLES.filter((a) => a.id !== article.id).slice(0, 3);
+  if (loading) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <p className="text-sm font-semibold text-slate-700">വാർത്ത ഡാറ്റാബേസിൽ നിന്ന് ലഭ്യമാക്കുന്നു...</p>
+      </div>
+    );
+  }
+
+  if (!article) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-4 text-center px-4">
+        <h2 className="text-xl font-bold text-ink-midnight font-headline">വാർത്ത കണ്ടെത്താനായില്ല</h2>
+        <p className="text-xs text-secondary max-w-md">ഈ വാർത്ത ഡാറ്റാബേസിൽ ലഭ്യമല്ല അല്ലെങ്കിൽ നീക്കം ചെയ്യപ്പെട്ടിരിക്കാം.</p>
+        <Link href="/" className="px-4 py-2 bg-primary text-white rounded text-xs font-bold hover:bg-editorial-crimson">
+          പ്രധാന പേജിലേക്ക് മടങ്ങുക
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full pb-16">

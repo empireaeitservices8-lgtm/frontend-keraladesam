@@ -2,12 +2,20 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { Mail, Check, ArrowUp, Send, Phone, MapPin, Globe } from 'lucide-react';
 import { KERALA_DISTRICTS } from '@/data/newsData';
 
 export default function Footer() {
+  const pathname = usePathname();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+
+  // Do not render newspaper footer on dedicated admin editorial routes
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,26 +36,23 @@ export default function Footer() {
         {/* Top Grid: Brand & Newsletter */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10 border-b border-surface-pure/10">
           <div className="lg:col-span-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded bg-editorial-crimson flex items-center justify-center text-white font-headline text-2xl font-bold">
-                കേ
+            <Link href="/" className="inline-block mb-3 bg-white/5 p-2 rounded-lg border border-white/10" aria-label="കേരളദേശം">
+              <div className="relative h-12 w-64">
+                <Image
+                  src="/logo.png"
+                  alt="കേരളദേശം"
+                  fill
+                  className="object-contain object-left"
+                />
               </div>
-              <div className="flex flex-col">
-                <span className="font-headline text-3xl font-bold text-surface-pure tracking-tight">
-                  കേരളദേശം
-                </span>
-                <span className="text-[11px] text-secondary-fixed-dim uppercase tracking-wider font-bold">
-                  KERALA DESAM • GLOBAL MALAYALAM NEWS NETWORK
-                </span>
-              </div>
-            </div>
+            </Link>
             <p className="text-secondary-fixed-dim text-xs leading-relaxed max-w-md">
               കേരളദേശം (Kerala Desam) മലയാളം: ലോകമെമ്പാടും നടക്കുന്ന പ്രധാന വാർത്തകളും, ഭാരതത്തിലെ സമകാലിക വിഷയങ്ങളും, പ്രത്യേകിച്ച് കേരളത്തിന്റെ ഓരോ രാഷ്ട്രീയ, സാമൂഹിക, സാംസ്കാരിക, വികസന സ്പന്ദനങ്ങളും തത്സമയം വിരൽത്തുമ്പിലെത്തിക്കുന്ന ആധുനിക മലയാള വാർത്താ വെബ് പോർട്ടലും ഡിജിറ്റൽ ചാനലും.
             </p>
 
             <div className="mt-4 flex items-center gap-4 text-xs text-secondary-fixed-dim">
               <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-opinion-ochre" /> തിരുവനന്തപുരം, കൊച്ചി, കോഴിക്കോട്, ദുബായ്
+                <MapPin className="w-3.5 h-3.5 text-opinion-ochre" />  കൊച്ചി
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
@@ -200,7 +205,7 @@ export default function Footer() {
               </li>
               <li>
                 <span className="hover:text-surface-pure cursor-pointer transition-colors">
-                  ലൈവ് ടിവി സ്ട്രീമിംഗ്
+                  വാർത്താ ഫോട്ടോകൾ
                 </span>
               </li>
               <li>

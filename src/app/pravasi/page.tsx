@@ -15,16 +15,40 @@ import {
   Bell
 } from 'lucide-react';
 import {
-  MAIN_ARTICLES,
+  Article,
   CURRENCY_RATES,
   PRAVASI_COUNTRIES
 } from '@/data/newsData';
+import { getRealArticles } from '@/lib/api';
 import CurrencyConverter from '@/components/CurrencyConverter';
 
 export default function PravasiPage() {
   const [selectedCountry, setSelectedCountry] = useState('all');
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const pravasiArticles = MAIN_ARTICLES.filter((art) => {
+  React.useEffect(() => {
+    let isMounted = true;
+    async function loadPravasi() {
+      try {
+        setLoading(true);
+        const data = await getRealArticles();
+        if (isMounted) {
+          setArticles(data);
+        }
+      } catch (e) {
+        console.error('Error fetching pravasi articles:', e);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    loadPravasi();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const pravasiArticles = articles.filter((art) => {
     if (selectedCountry === 'all') {
       return (
         art.country !== undefined ||
