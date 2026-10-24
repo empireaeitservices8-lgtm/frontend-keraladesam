@@ -1,6 +1,14 @@
-import { Article } from '@/data/newsData';
+import { Article, MAIN_ARTICLES, BREAKING_NEWS } from '@/data/newsData';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+function getApiBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    return 'http://localhost:5000/api';
+  }
+  return 'https://kerala-dhesam-admin.vercel.app/api';
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export function normalizeArticle(raw: any): Article {
   return {
@@ -43,9 +51,31 @@ export interface ArticleQueryParams {
   limit?: number;
 }
 
+function filterFallbackArticles(params?: ArticleQueryParams): Article[] {
+  let list = [...MAIN_ARTICLES];
+  if (params?.category && params.category !== 'all' && params.category !== 'എല്ലാം') {
+    list = list.filter(a => a.category.includes(params.category!));
+  }
+  if (params?.search) {
+    const q = params.search.toLowerCase();
+    list = list.filter(a => a.title.toLowerCase().includes(q) || a.lead.toLowerCase().includes(q));
+  }
+  if (params?.trending) {
+    list = list.filter(a => a.trending);
+  }
+  if (params?.district && params.district !== 'all' && params.district !== 'എല്ലാം') {
+    list = list.filter(a => a.district === params.district);
+  }
+  if (params?.limit) {
+    list = list.slice(0, params.limit);
+  }
+  return list;
+}
+
 export async function getArticles(params?: ArticleQueryParams): Promise<Article[]> {
   try {
-    const url = new URL(`${API_BASE_URL}/articles`);
+    const baseUrl = getApiBaseUrl();
+    const url = new URL(`${baseUrl}/articles`);
     if (params?.category && params.category !== 'all' && params.category !== 'എല്ലാം') {
       url.searchParams.set('category', params.category);
     }
@@ -66,34 +96,41 @@ export async function getArticles(params?: ArticleQueryParams): Promise<Article[
     const res = await fetch(url.toString(), { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    return Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
+    const articles = Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
+    return articles.length > 0 ? articles : filterFallbackArticles(params);
   } catch (error) {
-    console.error('Failed to fetch articles:', error);
-    return [];
+    return filterFallbackArticles(params);
   }
 }
 
 export async function getArticleById(id: string): Promise<Article | null> {
   try {
-    const res = await fetch(`${API_BASE_URL}/articles/${id}?_t=${Date.now()}`, { cache: 'no-store' });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.article ? normalizeArticle(data.article) : null;
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/articles/${id}?_t=${Date.now()}`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.article) return normalizeArticle(data.article);
+    }
+    const found = MAIN_ARTICLES.find(a => a.customId === id || a.id === id);
+    return found || null;
   } catch (error) {
-    console.error(`Failed to fetch article ${id}:`, error);
-    return null;
+    const found = MAIN_ARTICLES.find(a => a.customId === id || a.id === id);
+    return found || null;
   }
 }
 
 export async function getBreakingNews(): Promise<string[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/breaking?_t=${Date.now()}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return Array.isArray(data.headlines) ? data.headlines.map((h: any) => h.headline) : [];
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/breaking?_t=${Date.now()}`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      const headlines = Array.isArray(data.headlines) ? data.headlines.map((h: any) => h.headline) : [];
+      if (headlines.length > 0) return headlines;
+    }
+    return BREAKING_NEWS;
   } catch (error) {
-    console.error('Failed to fetch breaking news:', error);
-    return [];
+    return BREAKING_NEWS;
   }
 }
 

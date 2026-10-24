@@ -236,9 +236,9 @@ export default function Header() {
           {/* Logo & Subtitle */}
           <div className="flex items-center gap-2 md:gap-space-md">
             <Link href="/" className="flex items-center group py-0.5" aria-label="കേരളദേശം">
-              <div className="relative h-12 md:h-16 w-60 sm:w-72 md:w-84 transition-transform duration-300 group-hover:scale-[1.02]">
+              <div className="relative h-12 md:h-16 w-56 sm:w-68 md:w-76 transition-transform duration-300 group-hover:scale-[1.02]">
                 <Image
-                  src="/kerala_desam_malayalam_masthead.png"
+                  src="/logo.png"
                   alt="കേരളദേശം"
                   fill
                   className="object-contain object-left"
