@@ -386,39 +386,32 @@ export default function Header() {
         </div>
 
         {/* Main Masthead Banner (Desktop >= md) */}
-        <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-center w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 min-h-[130px] lg:min-h-[160px] gap-2 sm:gap-4 lg:gap-6">
+        <div className="hidden md:flex items-center justify-center relative w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-3 lg:py-4 min-h-[120px] md:min-h-[145px] lg:min-h-[175px]">
 
-          {/* Left Column: Empty invisible balancer so Logo stays in the EXACT dead-center */}
-          <div className="hidden md:block pointer-events-none" aria-hidden="true" />
+          {/* Centered Grand Big & Wide Logo - 100% Dead Center */}
+          <Link
+            href="/"
+            className="flex items-center justify-center group py-1"
+            aria-label="കേരളദേശം"
+          >
+            <Image
+              src="/logo.png"
+              alt="കേരളദേശം"
+              width={2172}
+              height={724}
+              priority
+              className="w-[380px] sm:w-[400px] md:w-[430px] lg:w-[490px] xl:w-[620px] 2xl:w-[720px] h-auto object-contain transition-transform duration-200 group-hover:scale-[1.01]"
+            />
+          </Link>
 
-          {/* Center Column: Grand Big & Wide Centered Logo (Dead Center) */}
-          <div className="flex items-center justify-center min-w-0">
-            <Link
-              href="/"
-              className="flex items-center justify-center group py-2"
-              aria-label="കേരളദേശം"
-            >
-              <div className="relative w-[340px] md:w-[420px] lg:w-[560px] xl:w-[680px] 2xl:w-[780px] max-w-[55vw] h-[95px] md:h-[115px] lg:h-[135px] xl:h-[150px]">
-                <Image
-                  src="/logo.png"
-                  alt="കേരളദേശം"
-                  fill
-                  sizes="(max-width: 1024px) 440px, (max-width: 1280px) 620px, 780px"
-                  priority
-                  className="object-contain object-center transition-transform duration-200 group-hover:scale-[1.01]"
-                />
-              </div>
-            </Link>
-          </div>
-
-          {/* Right-side Search and Actions */}
-          <div className="flex items-center justify-end gap-2 lg:gap-3 shrink-0 z-20">
+          {/* Right-side Search and Actions - Positioned absolutely to guarantee exact dead-centering of the logo */}
+          <div className="absolute right-2 sm:right-3 md:right-3 lg:right-6 xl:right-8 top-1/2 -translate-y-1/2 flex items-center gap-1.5 md:gap-1.5 lg:gap-2.5 z-20">
 
             {/* Search Input Box */}
             <form
               ref={searchContainerRef as any}
               onSubmit={handleSearchSubmit}
-              className="relative hidden md:block w-36 sm:w-44 md:w-48 lg:w-60 xl:w-72 shrink-0 transition-all focus-within:w-52 lg:focus-within:w-64 xl:focus-within:w-72"
+              className="relative hidden md:block w-24 sm:w-28 md:w-28 lg:w-32 xl:w-44 2xl:w-52 shrink-0 transition-all focus-within:w-44 lg:focus-within:w-56 xl:focus-within:w-72"
             >
               <input
                 type="search"
@@ -428,17 +421,17 @@ export default function Header() {
                   setShowSearchDropdown(true);
                 }}
                 onFocus={() => setShowSearchDropdown(true)}
-                placeholder="വാർത്തകൾ തിരയുക... (Enter)"
-                className="w-full bg-parchment-base rounded-full py-2 pl-9 pr-8 text-xs font-medium text-on-surface border border-slate-border focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-xs [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
+                placeholder="വാർത്തകൾ തിരയുക..."
+                className="w-full bg-parchment-base rounded-full py-1.5 pl-8 pr-7 text-[11px] lg:text-xs font-medium text-on-surface border border-slate-border focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all shadow-xs [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
               />
 
-              <Search className="w-4 h-4 absolute left-3 top-2.5 text-secondary pointer-events-none" />
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-secondary pointer-events-none" />
 
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-2.5 text-secondary hover:text-on-surface"
+                  className="absolute right-2 top-2 text-secondary hover:text-on-surface"
                   title="Clear"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -506,10 +499,10 @@ export default function Header() {
             <div ref={alertsContainerRef} className="relative shrink-0">
               <button
                 onClick={() => setShowAlertsDropdown(!showAlertsDropdown)}
-                className="p-2 text-secondary hover:text-primary transition-colors relative rounded-full hover:bg-surface-container"
+                className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors relative rounded-full hover:bg-surface-container"
                 title="Notifications"
               >
-                <Bell className="w-5 h-5" />
+                <Bell className="w-4 h-4 lg:w-5 lg:h-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-live-alert" />
               </button>
 
@@ -555,10 +548,10 @@ export default function Header() {
             {/* Saved Bookmarks */}
             <button
               onClick={() => setBookmarksOpen(true)}
-              className="p-2 text-secondary hover:text-primary transition-colors relative rounded-full hover:bg-surface-container shrink-0"
+              className="p-1.5 lg:p-2 text-secondary hover:text-primary transition-colors relative rounded-full hover:bg-surface-container shrink-0"
               title="Saved Stories"
             >
-              <Bookmark className="w-5 h-5" />
+              <Bookmark className="w-4 h-4 lg:w-5 lg:h-5" />
               {savedArticles.length > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 bg-primary text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                   {savedArticles.length}
