@@ -47,10 +47,8 @@ export default function VideoPlayerModal({ video, isOpen, onClose }: VideoPlayer
         {/* Top bar */}
         <div className="flex items-center justify-between px-4 sm:px-5 py-3 bg-neutral-900 border-b border-neutral-800">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-editorial-crimson text-white">
-              {video.category}
-            </span>
-            <span className="text-xs text-neutral-400 font-medium hidden sm:inline">
+            <span className="flex items-center gap-1.5 text-xs text-white font-bold tracking-wide">
+              <PlayCircle className="w-4 h-4 text-editorial-crimson" />
               കേരളദേശം വീഡിയോ ഷോർട്ട്സ്
             </span>
           </div>

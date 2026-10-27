@@ -1,5 +1,6 @@
 export interface Article {
   id: string;
+  _id?: string;
   customId?: string;
   title: string;
   lead: string;

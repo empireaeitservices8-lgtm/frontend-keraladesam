@@ -182,7 +182,7 @@ export default function AdminPortalPage() {
 
   // Open Modal for Editing an Existing Article
   const handleOpenEdit = (art: Article) => {
-    setEditingArticleId(art.id);
+    setEditingArticleId(art._id || art.id);
     setFormTitle(art.title);
     setFormCategory(art.category);
     const matchedCat = CATEGORY_OPTIONS.find((c) => c.name === art.category);
@@ -324,6 +324,14 @@ export default function AdminPortalPage() {
           }
         }
 
+        if (editingArticleId) {
+          setArticles((prev) =>
+            prev.map((a) => (a.id === editingArticleId || a._id === editingArticleId ? result.article! : a))
+          );
+        } else {
+          setArticles((prev) => [result.article!, ...prev]);
+        }
+
         setLastPublished(result.article);
         setIsModalOpen(false);
         handleResetForm();
@@ -349,12 +357,12 @@ export default function AdminPortalPage() {
       const res = await adminDeleteArticle(id, token);
       if (res.success) {
         showToast('വാർത്ത ഡാറ്റാബേസിൽ നിന്ന് നീക്കം ചെയ്തു.');
-        setArticles((prev) => prev.filter((a) => a.id !== id));
+        setArticles((prev) => prev.filter((a) => a.id !== id && a._id !== id));
       } else {
-        alert(res.error || 'Failed to delete article');
+        showToast(res.error || 'വാർത്ത നീക്കം ചെയ്യാൻ കഴിഞ്ഞില്ല.', 'error');
       }
-    } catch (err) {
-      console.error('Delete error:', err);
+    } catch (err: any) {
+      showToast(err.message || 'Delete error', 'error');
     }
   };
 
@@ -369,9 +377,15 @@ export default function AdminPortalPage() {
           ? 'പ്രധാന വാർത്തയായി (Main Headline) പിൻ ചെയ്തു!'
           : 'പ്രധാന വാർത്താ പദവിയിൽ നിന്ന് മാറ്റി.'
       );
+      setArticles((prev) =>
+        prev.map((a) => ({
+          ...a,
+          isHeadline: a.id === art.id ? targetStatus : false,
+        }))
+      );
       await loadPortalData();
     } else {
-      alert(res.error || 'Failed to update headline');
+      showToast(res.error || 'പ്രധാന വാർത്ത മാറ്റാൻ കഴിഞ്ഞില്ല.', 'error');
     }
   };
 
@@ -1336,7 +1350,7 @@ export default function AdminPortalPage() {
                 {/* Title */}
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1">
-                    വീഡിയോ തലക്കെട്ട് (Title) *
+                    വീഡിയോ തലക്കെട്ട് (Video Title) *
                   </label>
                   <input
                     type="text"
@@ -1344,66 +1358,14 @@ export default function AdminPortalPage() {
                     value={formVideoTitle}
                     onChange={(e) => setFormVideoTitle(e.target.value)}
                     placeholder="ഉദാ: വയനാട് തുരങ്കപാത: റൂട്ട് മാപ്പും 3D ദൃശ്യങ്ങളും..."
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
                   />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Category */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
-                      വിഭാഗം (Category) *
-                    </label>
-                    <select
-                      value={formVideoCategory}
-                      onChange={(e) => setFormVideoCategory(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    >
-                      <option value="DEVELOPMENT">DEVELOPMENT (വികസനം)</option>
-                      <option value="METRO">METRO (മെട്രോ)</option>
-                      <option value="PRAVASI">PRAVASI (പ്രവാസി)</option>
-                      <option value="WEATHER">WEATHER (കാലാവസ്ഥ)</option>
-                      <option value="KERALA">KERALA (കേരളം)</option>
-                      <option value="POLITICS">POLITICS (രാഷ്ട്രീയം)</option>
-                      <option value="CINEMA">CINEMA (സിനിമ)</option>
-                      <option value="SPORTS">SPORTS (കായികം)</option>
-                      <option value="SPECIAL">SPECIAL (പ്രത്യേകം)</option>
-                    </select>
-                  </div>
-
-                  {/* Duration */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
-                      ദൈർഘ്യം (Duration)
-                    </label>
-                    <input
-                      type="text"
-                      value={formVideoDuration}
-                      onChange={(e) => setFormVideoDuration(e.target.value)}
-                      placeholder="01:30"
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                  </div>
-
-                  {/* Initial Views */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
-                      കാഴ്‌ചക്കാർ (Views Count)
-                    </label>
-                    <input
-                      type="text"
-                      value={formVideoViews}
-                      onChange={(e) => setFormVideoViews(e.target.value)}
-                      placeholder="120K"
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                    />
-                  </div>
                 </div>
 
                 {/* Video URL */}
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1">
-                    വീഡിയോ ലിങ്ക് (YouTube Shorts / Video URL / MP4 URL) *
+                    വീഡിയോ ലിങ്ക് (YouTube Shorts / Video URL / MP4) *
                   </label>
                   <input
                     type="url"
@@ -1414,41 +1376,30 @@ export default function AdminPortalPage() {
                     className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
                   />
                   <p className="text-[11px] text-slate-500 mt-1">
-                    💡 YouTube ലിങ്ക് നൽകുമ്പോൾ ലഘുചിത്രം (thumbnail) ഓട്ടോമാറ്റിക്കായി ലഭ്യമാക്കും.
+                    💡 YouTube ലിങ്ക് നൽകുമ്പോൾ കവർ ചിത്രം (thumbnail) സ്വയമേവ ലഭ്യമാക്കും.
                   </p>
                 </div>
 
-                {/* Custom Thumbnail Options */}
+                {/* Optional Custom Thumbnail */}
                 <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-                  <span className="block text-xs font-bold text-slate-800 mb-2">
+                  <span className="block text-xs font-bold text-slate-800 mb-1.5">
                     പ്രത്യേക ലഘുചിത്രം (Custom Thumbnail - ഓപ്ഷണൽ)
                   </span>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[11px] text-slate-600 mb-1 font-medium">
-                        ഇമേജ് URL നൽകുക
-                      </label>
-                      <input
-                        type="url"
-                        value={formVideoThumbnail}
-                        onChange={(e) => setFormVideoThumbnail(e.target.value)}
-                        placeholder="https://example.com/thumbnail.jpg"
-                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] text-slate-600 mb-1 font-medium">
-                        ഫോട്ടോ അപ്‌ലോഡ് ചെയ്യുക (File Upload)
-                      </label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleVideoThumbnailChange}
-                        className="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200 cursor-pointer"
-                      />
-                    </div>
+                  <div className="flex flex-col sm:flex-row gap-2.5 items-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleVideoThumbnailChange}
+                      className="w-full sm:w-auto text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200 cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-400 hidden sm:inline">അല്ലെങ്കിൽ</span>
+                    <input
+                      type="url"
+                      value={formVideoThumbnail}
+                      onChange={(e) => setFormVideoThumbnail(e.target.value)}
+                      placeholder="ചിത്രത്തിന്റെ വെബ് ലിങ്ക് (Image URL)"
+                      className="w-full sm:flex-1 bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
                   </div>
 
                   {formVideoThumbnailPreview && (
@@ -1470,20 +1421,6 @@ export default function AdminPortalPage() {
                       </button>
                     </div>
                   )}
-                </div>
-
-                {/* Description */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    വിവരണം (Description - ഓപ്ഷണൽ)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={formVideoDescription}
-                    onChange={(e) => setFormVideoDescription(e.target.value)}
-                    placeholder="വീഡിയോയെക്കുറിച്ചുള്ള ലഘുവിവരണം..."
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
                 </div>
 
                 {/* Submit button */}
@@ -1547,11 +1484,6 @@ export default function AdminPortalPage() {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
-
-                        {/* Category badge */}
-                        <span className="absolute top-2 left-2 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-editorial-crimson text-white shadow-xs">
-                          {vid.category}
-                        </span>
 
                         {/* Duration badge */}
                         <span className="absolute top-2 right-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/60 text-white backdrop-blur">

@@ -2,7 +2,12 @@ import { Article, VideoItem } from '@/data/newsData';
 
 export function getApiBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+  if (
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.'))
+  ) {
     return 'http://localhost:5000/api';
   }
   return 'https://kerala-dhesam-admin.vercel.app/api';
@@ -12,8 +17,6 @@ export function getMalayalamAudioUrl(text: string): string {
   const baseUrl = getApiBaseUrl();
   return `${baseUrl}/tts?text=${encodeURIComponent(text)}`;
 }
-
-const API_BASE_URL = getApiBaseUrl();
 
 export function formatUploadDateTime(rawDate?: string | Date): string {
   if (!rawDate) return 'തത്സമയം';
@@ -36,9 +39,11 @@ export function formatUploadDateTime(rawDate?: string | Date): string {
 
 export function normalizeArticle(raw: any): Article {
   const uploadFormatted = formatUploadDateTime(raw.createdAt || raw.publishedAt);
+  const realId = raw._id ? String(raw._id) : (raw.customId || 'article');
   return {
-    id: raw.customId || raw._id || 'article',
-    customId: raw.customId || raw._id,
+    id: realId,
+    _id: raw._id ? String(raw._id) : undefined,
+    customId: raw.customId || realId,
     title: raw.title || '',
     lead: raw.lead || '',
     category: raw.category || 'പ്രധാനം',
@@ -156,7 +161,8 @@ export async function adminLogin(
   password: string
 ): Promise<{ success: boolean; token?: string; user?: AdminUser; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -178,7 +184,8 @@ export async function adminRegister(
   role: 'admin' | 'editor' = 'editor'
 ): Promise<{ success: boolean; token?: string; user?: AdminUser; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/register`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password, role }),
@@ -195,7 +202,8 @@ export async function adminRegister(
 
 export async function adminGetMe(token: string): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
@@ -213,6 +221,7 @@ export async function adminCreateArticle(
   imageFile?: File
 ): Promise<{ success: boolean; article?: Article; error?: string }> {
   try {
+    const baseUrl = getApiBaseUrl();
     let res: Response;
 
     if (imageFile) {
@@ -227,7 +236,7 @@ export async function adminCreateArticle(
       });
       formData.append('image', imageFile);
 
-      res = await fetch(`${API_BASE_URL}/articles`, {
+      res = await fetch(`${baseUrl}/articles`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -235,7 +244,7 @@ export async function adminCreateArticle(
         body: formData,
       });
     } else {
-      res = await fetch(`${API_BASE_URL}/articles`, {
+      res = await fetch(`${baseUrl}/articles`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -273,6 +282,7 @@ export async function adminUpdateArticle(
   imageFile?: File
 ): Promise<{ success: boolean; article?: Article; error?: string }> {
   try {
+    const baseUrl = getApiBaseUrl();
     let res: Response;
 
     if (imageFile) {
@@ -287,7 +297,7 @@ export async function adminUpdateArticle(
       });
       formData.append('image', imageFile);
 
-      res = await fetch(`${API_BASE_URL}/articles/${id}`, {
+      res = await fetch(`${baseUrl}/articles/${id}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -295,7 +305,7 @@ export async function adminUpdateArticle(
         body: formData,
       });
     } else {
-      res = await fetch(`${API_BASE_URL}/articles/${id}`, {
+      res = await fetch(`${baseUrl}/articles/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -318,7 +328,8 @@ export async function adminDeleteArticle(
   token: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/articles/${id}`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/articles/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -332,7 +343,8 @@ export async function adminDeleteArticle(
 
 export async function adminGetRawBreaking(): Promise<Array<{ _id: string; headline: string; active: boolean; createdAt: string }>> {
   try {
-    const res = await fetch(`${API_BASE_URL}/breaking?_t=${Date.now()}`, { cache: 'no-store' });
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/breaking?_t=${Date.now()}`, { cache: 'no-store' });
     const data = await res.json();
     return Array.isArray(data.headlines) ? data.headlines : [];
   } catch {
@@ -345,7 +357,8 @@ export async function adminCreateBreaking(
   token: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/breaking`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/breaking`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -366,7 +379,8 @@ export async function adminDeleteBreaking(
   token: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/breaking/${id}`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/breaking/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -384,7 +398,8 @@ export async function adminUpdateBreaking(
   token: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/breaking/${id}`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/breaking/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
