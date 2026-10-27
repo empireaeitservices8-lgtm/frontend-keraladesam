@@ -22,10 +22,20 @@ export const metadata: Metadata = {
   openGraph: {
     title: "കേരളദേശം - Kerala Desam | Kerala's Voice",
     description: 'കേരളത്തിലെയും പ്രവാസലോകത്തെയും സമഗ്ര വാർത്താ പോർട്ടൽ',
-    url: 'https://keraladesam.in',
+    url: 'https://keraladesyam.in',
     siteName: 'കേരളദേശം (Kerala Desam)',
     locale: 'ml_IN',
     type: 'website',
+  },
+  icons: {
+    icon: [
+      { url: '/favicon.png?v=3', type: 'image/png' },
+      { url: '/favicon.ico?v=3' },
+    ],
+    apple: [
+      { url: '/favicon.png?v=3', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: ['/favicon.ico?v=3'],
   },
 };
 

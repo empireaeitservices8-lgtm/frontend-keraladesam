@@ -47,7 +47,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-secondary-fixed-dim text-xs leading-relaxed max-w-md">
-              കേരളദേശം (Kerala Desam) മലയാളം: ലോകമെമ്പാടും നടക്കുന്ന പ്രധാന വാർത്തകളും, ഭാരതത്തിലെ സമകാലിക വിഷയങ്ങളും, പ്രത്യേകിച്ച് കേരളത്തിന്റെ ഓരോ രാഷ്ട്രീയ, സാമൂഹിക, സാംസ്കാരിക, വികസന സ്പന്ദനങ്ങളും തത്സമയം വിരൽത്തുമ്പിലെത്തിക്കുന്ന ആധുനിക മലയാള വാർത്താ വെബ് പോർട്ടലും ഡിജിറ്റൽ ചാനലും.
+              കേരളദേശം (Kerala Desam) മലയാളം: ലോകമെമ്പാടും നടക്കുന്ന പ്രധാന വാർത്തകളും, ഭാരതത്തിലെ സമകാലിക വിഷയങ്ങളും, പ്രത്യേകിച്ച് കേരളത്തിന്റെ ഓരോ രാഷ്ട്രീയ, സാമൂഹിക, സാംസ്കാരിക, വികസന സ്പന്ദനങ്ങളും വിരൽത്തുമ്പിലെത്തിക്കുന്ന ആധുനിക മലയാള വാർത്താ വെബ് പോർട്ടലും,ഡിജിറ്റൽ ചാനലും.
             </p>
 
             <div className="mt-4 flex items-center gap-4 text-xs text-secondary-fixed-dim">
@@ -56,7 +56,8 @@ export default function Footer() {
               </span>
               <span>•</span>
               <span className="flex items-center gap-1">
-                <Phone className="w-3.5 h-3.5 text-opinion-ochre" /> +91 484 2900000
+                <Phone className="w-3.5 h-3.5 text-opinion-ochre" /> +91 9387478887
+                <Phone className="w-3.5 h-3.5 text-opinion-ochre" /> +91 9847053700
               </span>
             </div>
           </div>
@@ -64,12 +65,8 @@ export default function Footer() {
           {/* Newsletter Box */}
           <div className="lg:col-span-7 flex flex-col justify-center bg-surface-pure/5 p-6 rounded-lg border border-surface-pure/10">
             <h3 className="font-headline text-lg font-bold text-surface-pure mb-1">
-              പ്രഭാത വാർത്താ സംഗ്രഹം നിങ്ങളുടെ ഇൻബോക്സിൽ
+              വാർത്തകൾ ലഭിക്കുന്നതിനായി കേരളദേശം ഔദ്യോഗിക വെബ്‌സൈറ്റിൽ ബന്ധപ്പെടുക
             </h3>
-            <p className="text-secondary-fixed-dim text-xs mb-3">
-              ഓരോ ദിവസത്തെയും ഏറ്റവും പ്രധാനപ്പെട്ട വാർത്തകൾ, വിശകലനങ്ങൾ, മാർക്കറ്റ് റിപ്പോർട്ടുകൾ എന്നിവ രാവിലെ 7 മണിക്ക് മുൻപായി ലഭ്യമാക്കാൻ ഇമെയിൽ നൽകുക.
-            </p>
-
             {subscribed ? (
               <div className="flex items-center gap-2 p-2.5 rounded bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-medium">
                 <Check className="w-4 h-4 text-emerald-400" />
@@ -100,163 +97,58 @@ export default function Footer() {
         </div>
 
         {/* Links Navigation Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 py-8 border-b border-surface-pure/10 text-xs">
-          {/* Col 1 */}
-          <div>
-            <h4 className="font-bold text-opinion-ochre uppercase tracking-wider text-[11px] mb-3">
-              പ്രധാന വിഭാഗങ്ങൾ
-            </h4>
-            <ul className="space-y-2 text-secondary-fixed-dim">
-              <li>
-                <Link href="/" className="hover:text-surface-pure transition-colors">
-                  പ്രധാന വാർത്തകൾ
-                </Link>
-              </li>
-              <li>
-                <Link href="/kerala" className="hover:text-surface-pure transition-colors">
-                  കേരളം സമഗ്രം
-                </Link>
-              </li>
-              <li>
-                <Link href="/pravasi" className="hover:text-surface-pure transition-colors">
-                  പ്രവാസി & ഗൾഫ് വാർത്തകൾ
-                </Link>
-              </li>
-              <li>
-                <Link href="/article/wayanad-tunnel" className="hover:text-surface-pure transition-colors">
-                  വയനാട് തുരങ്കപാത റിപ്പോർട്ട്
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="hover:text-surface-pure transition-colors font-semibold text-tertiary-fixed">
-                  ഞങ്ങളെക്കുറിച്ച് (About Us)
-                </Link>
-              </li>
-              <li>
-                <Link href="/#politics" className="hover:text-surface-pure transition-colors">
-                  രാഷ്ട്രീയ വിശകലനം
-                </Link>
-              </li>
-            </ul>
-          </div>
+        <div className="flex flex-wrap justify-center items-start gap-12 md:gap-20 py-8 border-b border-surface-pure/10 text-xs">
 
-          {/* Col 2 */}
-          <div>
+          {/* Media & Services */}
+          <div className="flex flex-col items-center text-center">
             <h4 className="font-bold text-opinion-ochre uppercase tracking-wider text-[11px] mb-3">
-              ജില്ലാ ഡെസ്ക് (14 ജില്ലകൾ)
+              MEDIA & SERVICES
             </h4>
-            <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 text-secondary-fixed-dim text-[11px]">
-              {KERALA_DISTRICTS.slice(1, 11).map((dist) => (
-                <Link
-                  key={dist}
-                  href={`/kerala?district=${encodeURIComponent(dist)}`}
-                  className="hover:text-surface-pure transition-colors"
-                >
-                  {dist}
-                </Link>
-              ))}
-            </div>
-          </div>
 
-          {/* Col 3 */}
-          <div>
-            <h4 className="font-bold text-opinion-ochre uppercase tracking-wider text-[11px] mb-3">
-              പ്രവാസ ലോകം
-            </h4>
-            <ul className="space-y-2 text-secondary-fixed-dim">
-              <li>
-                <Link href="/pravasi" className="hover:text-surface-pure transition-colors">
-                  യു.എ.ഇ (ദുബായ് / അബുദാബി)
-                </Link>
-              </li>
-              <li>
-                <Link href="/pravasi" className="hover:text-surface-pure transition-colors">
-                  സൗദി അറേബ്യ (വിഷൻ 2030)
-                </Link>
-              </li>
-              <li>
-                <Link href="/pravasi" className="hover:text-surface-pure transition-colors">
-                  ഖത്തർ & കുവൈത്ത്
-                </Link>
-              </li>
-              <li>
-                <Link href="/pravasi" className="hover:text-surface-pure transition-colors">
-                  കറൻസി നിരക്കുകൾ & സ്വർണ്ണവില
-                </Link>
-              </li>
-              <li>
-                <Link href="/pravasi" className="hover:text-surface-pure transition-colors">
-                  നോർക്ക & പ്രവാസി ക്ഷേമനിധി
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Col 4 */}
-          <div>
-            <h4 className="font-bold text-opinion-ochre uppercase tracking-wider text-[11px] mb-3">
-              മീഡിയ & സർവീസുകൾ
-            </h4>
             <ul className="space-y-2 text-secondary-fixed-dim">
               <li>
                 <span className="hover:text-surface-pure cursor-pointer transition-colors">
-                  ഇ-പേപ്പർ പതിപ്പ്
+                  ഇ-പേപ്പർ പതിപ്പ് (E-Paper)
                 </span>
               </li>
               <li>
                 <span className="hover:text-surface-pure cursor-pointer transition-colors">
-                  വാർത്താ ഫോട്ടോകൾ
-                </span>
-              </li>
-              <li>
-                <span className="hover:text-surface-pure cursor-pointer transition-colors">
-                  ഡാം ജലനിരപ്പ് റഡാർ
-                </span>
-              </li>
-              <li>
-                <span className="hover:text-surface-pure cursor-pointer transition-colors">
-                  കാലാവസ്ഥാ മുന്നറിയിപ്പ്
-                </span>
-              </li>
-              <li>
-                <span className="hover:text-surface-pure cursor-pointer transition-colors">
-                  വാർത്താ ആർക്കൈവ്സ്
+                  പരസ്യ നിരക്കുകൾ (Ad Rates)
                 </span>
               </li>
             </ul>
           </div>
 
-          {/* Col 5 */}
-          <div className="col-span-2 md:col-span-4 lg:col-span-1">
+          {/* Institution Details */}
+          <div className="flex flex-col items-center text-center">
             <h4 className="font-bold text-opinion-ochre uppercase tracking-wider text-[11px] mb-3">
-              സ്ഥാപന വിവരം
+              COMPANY & EDITORIAL
             </h4>
+
             <p className="text-secondary-fixed-dim text-[11px] leading-relaxed mb-3">
-              കേരളദേശം പബ്ലിക്കേഷൻസ് ലിമിറ്റഡ്. ചീഫ് എഡിറ്റർ: കെ. ആർ. നാരായണൻ.
+              Kerala Desam Publications Ltd.
+              <br />
+              Editor & Publisher:
+              <br />
+              <span className="text-surface-pure font-bold">K.O. Johnny (കെ.ഒ. ജോണി)</span>
             </p>
+
             <button
               onClick={scrollToTop}
-              className="w-full flex items-center justify-center gap-1.5 py-2 rounded bg-surface-pure/10 hover:bg-surface-pure/20 text-surface-pure text-xs font-semibold transition-colors"
+              className="w-[220px] max-w-full flex items-center justify-center gap-1.5 py-2 rounded bg-surface-pure/10 hover:bg-surface-pure/20 text-surface-pure text-xs font-semibold transition-colors uppercase tracking-wider"
             >
-              <ArrowUp className="w-3.5 h-3.5" /> മുകളിലേക്ക്
+              <ArrowUp className="w-3.5 h-3.5" />
+              BACK TO TOP
             </button>
           </div>
+
         </div>
 
         {/* Bottom Legal bar */}
-        <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-secondary-fixed-dim">
+        <div className="pt-6 flex flex-col items-center justify-center gap-4 text-xs text-secondary-fixed-dim text-center">
           <p>
-            © 2025 കേരളദേശം (Kerala Desam). All rights reserved. | രജി. നമ്പർ: KL-ED-2025-09
+            © 2026 കേരളദേശം (Kerala Desam). All rights reserved. | രജി. നമ്പർ: KL-ED-2025-09
           </p>
-          <div className="flex items-center gap-4">
-            <span className="hover:underline cursor-pointer">സ്വകാര്യതാ നയം</span>
-            <span>•</span>
-            <span className="hover:underline cursor-pointer">ഉപയോഗ നിബന്ധനകൾ</span>
-            <span>•</span>
-            <span className="hover:underline cursor-pointer">പരസ്യ നിരക്കുകൾ</span>
-            <span>•</span>
-            <span className="hover:underline cursor-pointer">പരാതി പരിഹാര സെൽ</span>
-          </div>
         </div>
       </div>
     </footer>

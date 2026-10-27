@@ -9,10 +9,6 @@ import {
   CheckCircle2,
   Share2,
   Bookmark,
-  Volume2,
-  VolumeX,
-  Play,
-  Pause,
   MessageSquare,
   ThumbsUp,
   Send,
@@ -62,9 +58,6 @@ export default function ArticleDetailPage() {
     };
   }, [articleId]);
 
-  // Audio TTS player simulation state
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [audioProgress, setAudioProgress] = useState(0);
   const [copiedLink, setCopiedLink] = useState(false);
 
   // Comments state
@@ -86,44 +79,6 @@ export default function ArticleDetailPage() {
   ]);
   const [newComment, setNewComment] = useState('');
   const [commentAuthor, setCommentAuthor] = useState('');
-
-  // Audio timer simulation
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setAudioProgress((prev) => {
-          if (prev >= 100) {
-            setIsPlaying(false);
-            return 0;
-          }
-          return prev + 1;
-        });
-      }, 350);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying]);
-
-  const toggleAudio = () => {
-    if (!article) return;
-    // If Web Speech API is available, speak out the lead paragraph in Malayalam
-    if (!isPlaying) {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(
-          `${article.title}. ${article.lead}`
-        );
-        utterance.lang = 'ml-IN';
-        utterance.rate = 0.95;
-        window.speechSynthesis.speak(utterance);
-      }
-    } else {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    }
-    setIsPlaying(!isPlaying);
-  };
 
   const handleCopyLink = () => {
     if (typeof window !== 'undefined') {
@@ -183,27 +138,36 @@ export default function ArticleDetailPage() {
       <div className="max-w-[1360px] mx-auto px-4 md:px-margin-desktop w-full">
         {/* Editorial Breadcrumb & Category Bar */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-4 pb-2 border-b border-slate-border text-xs text-secondary">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 uppercase tracking-wider font-medium">
             <Link href="/" className="hover:text-primary transition-colors flex items-center gap-1">
-              <ArrowLeft className="w-3 h-3" /> ഹോം
+              <ArrowLeft className="w-3 h-3" /> HOME
             </Link>
             <span className="text-slate-border">/</span>
             <Link href="/kerala" className="text-editorial-crimson font-bold hover:underline">
-              {article.district || 'കേരളം'}
+              {article.district || 'KERALA'}
             </Link>
             <span className="text-slate-border">/</span>
-            <span className="text-on-surface font-medium">{article.category}</span>
+            <span className="text-on-surface font-semibold">{article.category}</span>
           </div>
 
           <div className="flex items-center gap-3 text-xs">
             <span className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-secondary" />
-              പ്രസിദ്ധീകരിച്ചത്: {article.publishedAt}
+              Published: {article.publishedAt}
             </span>
             <span className="hidden md:inline text-slate-border">|</span>
-            <span className="hidden md:flex items-center gap-1 text-editorial-crimson font-medium">
-              അവസാനം പുതുക്കിയത്: {article.updatedAt}
+            <span className="flex items-center gap-1 text-slate-600">
+              <Eye className="w-3.5 h-3.5 text-secondary" />
+              {article.views || '1'} Reads
             </span>
+            {article.updatedAt && (
+              <>
+                <span className="hidden md:inline text-slate-border">|</span>
+                <span className="hidden md:flex items-center gap-1 text-editorial-crimson font-medium">
+                  Updated: {article.updatedAt}
+                </span>
+              </>
+            )}
           </div>
         </div>
 
@@ -213,23 +177,40 @@ export default function ArticleDetailPage() {
             {article.title}
           </h1>
 
-          <p className="text-sm sm:text-base md:text-xl text-on-surface-variant leading-relaxed max-w-4xl mb-4 sm:mb-6 font-normal">
-            {article.lead}
-          </p>
+          {/* Render lead only if distinct from paragraph 0, avoiding redundant repetition */}
+          {article.lead &&
+            (!article.paragraphs?.[0] ||
+              (article.lead.trim() !== article.paragraphs[0].trim() &&
+                !article.paragraphs[0].trim().startsWith(article.lead.trim().slice(0, 50)) &&
+                !article.lead.trim().startsWith(article.paragraphs[0].trim().slice(0, 50)))) && (
+              <p className="text-sm sm:text-base md:text-xl text-on-surface-variant leading-relaxed max-w-4xl mb-4 sm:mb-6 font-normal">
+                {article.lead}
+              </p>
+            )}
 
           {/* Byline & Interactive Audio Toolbar Strip */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 py-3 border-y border-slate-border bg-surface-pure/80 px-4 rounded-sm">
             {/* Author Byline */}
             <div className="flex items-center gap-3">
               <img
-                src={article.author.avatar}
+                src={
+                  article.author.avatar && !article.author.avatar.includes('534528741775')
+                    ? article.author.avatar
+                    : 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=400&q=80'
+                }
                 alt={article.author.name}
+                onError={(e) => {
+                  e.currentTarget.src =
+                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23C8102E' rx='50'/%3E%3Ctext x='50' y='58' font-size='34' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3EKD%3C/text%3E%3C/svg%3E";
+                }}
                 className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-border shadow-xs"
               />
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
                   <span className="font-headline text-base font-bold text-ink-midnight leading-none">
-                    {article.author.name}
+                    {article.author.name === 'Chief Editor'
+                      ? 'ചീഫ് എഡിറ്റർ'
+                      : article.author.name || 'കേരളദേശം ന്യൂസ് ഡെസ്ക്'}
                   </span>
                   {article.author.verified && (
                     <span title="വെരിഫൈഡ് ലേഖകൻ">
@@ -240,49 +221,17 @@ export default function ArticleDetailPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 text-xs text-secondary mt-1">
-                  <span>{article.author.designation}</span>
+                  <span>{article.author.designation || 'ഡെസ്ക് റിപ്പോർട്ടർ'}</span>
                   <span>•</span>
                   <span className="flex items-center gap-0.5">
-                    <MapPin className="w-3 h-3" /> {article.author.location}
+                    <MapPin className="w-3 h-3" /> {article.author.location || 'കേരളം'}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Audio Text-To-Speech Player & Actions */}
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Audio Player Widget */}
-              <div className="flex items-center gap-2.5 bg-secondary-container/40 text-on-secondary-container px-3 py-1.5 rounded-full border border-secondary-fixed">
-                <button
-                  onClick={toggleAudio}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-primary text-white hover:bg-editorial-crimson transition-transform active:scale-95 shadow-xs"
-                  title={isPlaying ? 'പോസ് ചെയ്യുക' : 'ശബ്ദരൂപം പ്ലേ ചെയ്യുക'}
-                >
-                  {isPlaying ? (
-                    <Pause className="w-4 h-4" />
-                  ) : (
-                    <Play className="w-4 h-4 fill-current translate-x-0.5" />
-                  )}
-                </button>
-                <div className="flex flex-col pr-1">
-                  <span className="text-[11px] font-bold text-ink-midnight flex items-center gap-1">
-                    <Volume2 className="w-3 h-3 text-primary" />
-                    വാർത്ത കേൾക്കാം
-                  </span>
-                  <div className="w-24 bg-surface-pure rounded-full h-1.5 mt-0.5 overflow-hidden">
-                    <div
-                      className="bg-primary h-1.5 rounded-full transition-all duration-300"
-                      style={{ width: `${audioProgress}%` }}
-                    />
-                  </div>
-                </div>
-                <span className="text-[10px] text-secondary font-mono">
-                  {article.audioDuration || '03:45'}
-                </span>
-              </div>
-
-              {/* Share & Bookmark buttons */}
-              <div className="flex items-center gap-2">
+            {/* Article Action Buttons */}
+            <div className="flex items-center gap-2">
                 <button
                   onClick={handleShareWhatsApp}
                   className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors"
@@ -320,29 +269,30 @@ export default function ArticleDetailPage() {
                 </button>
               </div>
             </div>
-          </div>
         </header>
 
         {/* 2-Column Article Reader Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-6">
           {/* Main Article Body (8 cols) */}
           <main className="lg:col-span-8 space-y-6">
-            {/* Featured Image */}
-            <figure className="overflow-hidden rounded-md border border-slate-border">
-              <img
-                src={article.imageUrl}
-                alt={article.title}
-                className="w-full h-80 md:h-[460px] object-cover"
-              />
-              {article.imageCaption && (
-                <figcaption className="p-2.5 bg-surface-pure text-xs text-secondary border-t border-slate-border">
-                  {article.imageCaption}
-                </figcaption>
-              )}
-            </figure>
+            {/* Featured Image - renders only when image exists */}
+            {article.imageUrl ? (
+              <figure className="overflow-hidden rounded-md border border-slate-border">
+                <img
+                  src={article.imageUrl}
+                  alt={article.title}
+                  className="w-full h-80 md:h-[460px] object-cover"
+                />
+                {article.imageCaption && (
+                  <figcaption className="p-2.5 bg-surface-pure text-xs text-secondary border-t border-slate-border">
+                    {article.imageCaption}
+                  </figcaption>
+                )}
+              </figure>
+            ) : null}
 
             {/* Highlights Box */}
-            {article.highlights && (
+            {Array.isArray(article.highlights) && article.highlights.length > 0 && (
               <div className="bg-surface-container-low p-5 rounded-md border-l-4 border-l-primary border border-slate-border">
                 <h3 className="font-headline text-base font-bold text-ink-midnight mb-3">
                   പ്രധാന വശങ്ങൾ:
@@ -388,9 +338,9 @@ export default function ArticleDetailPage() {
             {/* Comments & Reader Discussion Box */}
             <section className="bg-surface-pure rounded p-6 shadow-sm border border-slate-border mt-8">
               <div className="flex items-center justify-between pb-3 border-b border-slate-border mb-4">
-                <h3 className="font-headline text-xl font-bold text-ink-midnight flex items-center gap-2">
+                <h3 className="font-headline text-lg sm:text-xl font-bold text-ink-midnight flex items-center gap-2 uppercase tracking-wide">
                   <MessageSquare className="w-5 h-5 text-editorial-crimson" />
-                  വായനക്കാരുടെ പ്രതികരണങ്ങൾ ({comments.length})
+                  READER COMMENTS & REACTIONS ({comments.length})
                 </h3>
                 <span className="text-xs text-secondary">സൗജന്യമായി അഭിപ്രായം രേഖപ്പെടുത്താം</span>
               </div>
@@ -455,8 +405,8 @@ export default function ArticleDetailPage() {
           <aside className="lg:col-span-4 space-y-6">
             {/* Related Stories */}
             <div className="bg-surface-pure rounded p-4 shadow-sm border border-slate-border">
-              <h3 className="font-headline text-base font-bold text-ink-midnight pb-2 border-b border-slate-border mb-3">
-                ബന്ധപ്പെട്ട വാർത്തകൾ
+              <h3 className="font-headline text-base font-bold text-ink-midnight pb-2 border-b border-slate-border mb-3 uppercase tracking-wide">
+                RELATED STORIES
               </h3>
               <div className="space-y-4">
                 {relatedArticles.map((rel) => (
@@ -465,11 +415,23 @@ export default function ArticleDetailPage() {
                     href={`/article/${rel.id}`}
                     className="flex gap-3 group"
                   >
-                    <img
-                      src={rel.imageUrl}
-                      alt={rel.title}
-                      className="w-20 h-16 rounded object-cover shrink-0 group-hover:scale-105 transition-transform"
-                    />
+                    <div className="w-20 h-16 rounded overflow-hidden shrink-0 bg-slate-100 border border-slate-200 relative">
+                      {rel.imageUrl ? (
+                        <img
+                          src={rel.imageUrl}
+                          alt={rel.title}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.parentElement?.querySelector('.fallback-badge') as HTMLElement;
+                            if (fallback) fallback.classList.remove('hidden');
+                          }}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      ) : null}
+                      <div className={`fallback-badge w-full h-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-[10px] ${rel.imageUrl ? 'hidden' : ''}`}>
+                        NEWS
+                      </div>
+                    </div>
                     <div>
                       <h4 className="text-xs font-semibold text-ink-midnight group-hover:text-primary transition-colors line-clamp-2 leading-snug">
                         {rel.title}
@@ -485,25 +447,38 @@ export default function ArticleDetailPage() {
 
             {/* Author Profile Card */}
             <div className="bg-surface-pure rounded p-5 shadow-sm border border-slate-border text-center">
+              <h4 className="text-xs font-bold text-secondary uppercase tracking-widest mb-3 pb-2 border-b border-slate-border">
+                ABOUT THE REPORTER
+              </h4>
               <img
-                src={article.author.avatar}
+                src={
+                  article.author.avatar && !article.author.avatar.includes('534528741775')
+                    ? article.author.avatar
+                    : 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=400&q=80'
+                }
                 alt={article.author.name}
-                className="w-16 h-16 rounded-full object-cover mx-auto ring-2 ring-primary mb-2"
+                onError={(e) => {
+                  e.currentTarget.src =
+                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23C8102E' rx='50'/%3E%3Ctext x='50' y='58' font-size='34' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'%3EKD%3C/text%3E%3C/svg%3E";
+                }}
+                className="w-16 h-16 rounded-full object-cover mx-auto ring-2 ring-primary mb-2 shadow-xs"
               />
               <h4 className="font-headline text-base font-bold text-ink-midnight">
-                {article.author.name}
+                {article.author.name === 'Chief Editor'
+                  ? 'ചീഫ് എഡിറ്റർ'
+                  : article.author.name || 'കേരളദേശം ന്യൂസ് ഡെസ്ക്'}
               </h4>
               <p className="text-xs text-secondary mb-3">
-                {article.author.designation} • {article.author.location}
+                {article.author.designation || 'ഡെസ്ക് റിപ്പോർട്ടർ'} • {article.author.location || 'കേരളം'}
               </p>
               <p className="text-xs text-on-surface-variant leading-relaxed mb-4">
-                കേരളത്തിലെ വികസന പദ്ധതികൾ, ഭരണരംഗം, പരിസ്ഥിതി വിഷയങ്ങൾ എന്നിവയിൽ 20 വർഷത്തിലേറെ പ്രവർത്തന പരിചയമുള്ള മാധ്യമപ്രവർത്തകൻ.
+                കേരളദേശം ഓൺലൈൻ എഡിറ്റോറിയൽ ടീം തയ്യാറാക്കിയ വിശദമായ വാർത്താ റിപ്പോർട്ട്.
               </p>
               <button
                 onClick={() => alert(`${article.author.name} യുടെ ലേഖനങ്ങൾ ഫോളോ ചെയ്തു!`)}
-                className="px-4 py-1.5 rounded-full bg-ink-midnight hover:bg-primary text-white text-xs font-bold transition-colors w-full"
+                className="px-4 py-1.5 rounded-full bg-ink-midnight hover:bg-primary text-white text-xs font-bold transition-colors w-full uppercase tracking-wider"
               >
-                ലേഖകനെ ഫോളോ ചെയ്യുക
+                Follow Reporter
               </button>
             </div>
           </aside>

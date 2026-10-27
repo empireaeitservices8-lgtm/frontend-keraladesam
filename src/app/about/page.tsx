@@ -9,34 +9,36 @@ import {
   MapPin,
   ShieldCheck,
   Radio,
-  Users,
   Target,
-  Sparkles,
   Phone,
   Mail,
-  Award
+  UserCheck
 } from 'lucide-react';
 
 export default function AboutPage() {
   const pillars = [
     {
       icon: <Globe2 className="w-6 h-6 text-editorial-crimson" />,
-      title: 'ആഗോള വാർത്തകൾ (Global News)',
+      title: 'GLOBAL NEWS & DIPLOMACY',
+      malayalamTitle: 'ആഗോള വാർത്തകൾ',
       desc: 'ലോകത്തിന്റെ വിവിധ ഭാഗങ്ങളിൽ സംഭവിക്കുന്ന ചരിത്രപരമായ മുന്നേറ്റങ്ങളും, രാജ്യാന്തര നയതന്ത്രങ്ങളും, പ്രവാസി മലയാളികളുടെ ജീവിത യാഥാർത്ഥ്യങ്ങളും വസ്തുനിഷ്ഠമായി റിപ്പോർട്ട് ചെയ്യുന്നു.',
     },
     {
       icon: <Building className="w-6 h-6 text-tertiary-container" />,
-      title: 'ഭാരതം & സമകാലികം (National Affairs)',
+      title: 'NATIONAL AFFAIRS & INDIA',
+      malayalamTitle: 'ഭാരതം & സമകാലികം',
       desc: 'ഇന്ത്യയിലെ ഭരണഘടനാപരമായ തീരുമാനങ്ങൾ, പാർലമെന്റ് നടപടികൾ, ദേശീയ സാമ്പത്തിക വളർച്ച, ശാസ്ത്ര-സാങ്കേതിക നേട്ടങ്ങൾ എന്നിവയുടെ ആഴത്തിലുള്ള വിശകലനം.',
     },
     {
       icon: <MapPin className="w-6 h-6 text-opinion-ochre" />,
-      title: 'കേരളം സമഗ്രം (Focus on Kerala)',
+      title: 'KERALA IN FOCUS (14 DISTRICTS)',
+      malayalamTitle: 'കേരളം സമഗ്രം',
       desc: 'കാസർഗോഡ് മുതൽ തിരുവനന്തപുരം വരെയുള്ള 14 ജില്ലകളിലെയും തദ്ദേശീയ പ്രശ്നങ്ങൾ, ജനകീയ മുന്നേറ്റങ്ങൾ, കല, സാഹിത്യം, പരിസ്ഥിതി എന്നിവ മുൻഗണനയോടെ ജനങ്ങളിലേക്ക് എത്തിക്കുന്നു.',
     },
     {
       icon: <Radio className="w-6 h-6 text-live-alert" />,
-      title: 'ഡിജിറ്റൽ ചാനൽ & ലൈവ് ടിവി (Digital Channel)',
+      title: 'DIGITAL CHANNEL & LIVE TV',
+      malayalamTitle: 'ഡിജിറ്റൽ ചാനൽ',
       desc: 'നവമാധ്യമങ്ങളുടെ വേഗതയിൽ 24x7 തത്സമയ ഡിജിറ്റൽ സംപ്രേഷണം, പ്രത്യേക ചർച്ചകൾ, പ്രൈം ടൈം വാർത്താ ബുള്ളറ്റിനുകൾ, വീഡിയോ ഡോക്യുമെന്ററികൾ.',
     },
   ];
@@ -50,7 +52,7 @@ export default function AboutPage() {
             <div className="flex items-center gap-2 mb-3">
               <span className="w-3 h-3 rounded-full bg-editorial-crimson" />
               <span className="text-secondary-fixed-dim text-xs font-bold uppercase tracking-widest">
-                ഞങ്ങളെക്കുറിച്ച് • ABOUT US
+                ABOUT US • KERALA DESAM
               </span>
             </div>
             <h1 className="font-headline text-4xl md:text-5xl font-bold tracking-tight mb-2">
@@ -75,7 +77,7 @@ export default function AboutPage() {
             </div>
             <div className="pt-3 border-t border-surface-pure/20 text-xs text-secondary-fixed-dim space-y-1">
               <p>സത്യം • ജനപക്ഷം • നിഷ്പക്ഷം</p>
-              <p className="text-[11px] text-tertiary-fixed">24x7 ആഗോള മലയാളം ന്യൂസ്റൂം</p>
+              <p className="text-[11px] text-tertiary-fixed">24x7 Global Malayalam Newsroom</p>
             </div>
           </div>
         </div>
@@ -87,8 +89,14 @@ export default function AboutPage() {
           {/* Main Editorial Mission (8 cols) */}
           <div className="lg:col-span-8 space-y-8">
             <section className="bg-surface-pure p-8 rounded-lg shadow-sm border border-slate-border">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-2 h-2 rounded-full bg-editorial-crimson" />
+                <span className="text-xs font-bold uppercase tracking-wider text-secondary">
+                  EDITORIAL PHILOSOPHY
+                </span>
+              </div>
               <h2 className="font-headline text-2xl md:text-3xl font-bold text-ink-midnight mb-4">
-                ഞങ്ങളുടെ ദൗത്യം (Our Mission)
+                OUR MISSION (ഞങ്ങളുടെ ദൗത്യം)
               </h2>
               <div className="space-y-4 text-base text-on-surface leading-relaxed font-normal">
                 <p className="newspaper-lead">
@@ -107,7 +115,7 @@ export default function AboutPage() {
             <div>
               <h2 className="font-headline text-2xl font-bold text-ink-midnight mb-6 flex items-center gap-2">
                 <Target className="w-6 h-6 text-editorial-crimson" />
-                വാർത്താ മുൻഗണനകൾ (Coverage Pillars)
+                COVERAGE PILLARS
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {pillars.map((p, idx) => (
@@ -119,13 +127,15 @@ export default function AboutPage() {
                       <div className="p-2 rounded bg-surface-container-low">
                         {p.icon}
                       </div>
-                      <h3 className="font-headline text-base font-bold text-ink-midnight">
-                        {p.desc.includes('ആഗോള') ? 'ആഗോള വാർത്തകൾ' : p.title.split(' (')[0]}
-                      </h3>
+                      <div>
+                        <h3 className="font-headline text-sm font-bold text-ink-midnight uppercase tracking-wide">
+                          {p.title}
+                        </h3>
+                        <span className="text-[11px] text-editorial-crimson font-medium">
+                          {p.malayalamTitle}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-[11px] text-secondary font-semibold uppercase tracking-wider block mb-2">
-                      {p.title}
-                    </span>
                     <p className="text-xs text-on-surface-variant leading-relaxed">
                       {p.desc}
                     </p>
@@ -138,24 +148,24 @@ export default function AboutPage() {
             <section className="bg-[#FDFBF7] p-6 rounded-lg border-l-4 border-l-opinion-ochre border border-slate-border">
               <h3 className="font-headline text-xl font-bold text-ink-midnight mb-3 flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-opinion-ochre" />
-                ധാർമ്മിക മൂല്യങ്ങൾ (Code of Ethics)
+                EDITORIAL CODE OF ETHICS (ധാർമ്മിക മൂല്യങ്ങൾ)
               </h3>
               <ul className="space-y-2 text-xs md:text-sm text-on-surface">
                 <li className="flex items-start gap-2">
                   <span className="text-opinion-ochre font-bold">•</span>
-                  <span><strong>വസ്തുനിഷ്ഠത:</strong> ഊഹാപോഹങ്ങൾക്ക് പകരം തെളിവുകളോടെയുള്ള റിപ്പോർട്ടിംഗ്.</span>
+                  <span><strong>വസ്തുനിഷ്ഠത (Accuracy):</strong> ഊഹാപോഹങ്ങൾക്ക് പകരം തെളിവുകളോടെയുള്ള റിപ്പോർട്ടിംഗ്.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-opinion-ochre font-bold">•</span>
-                  <span><strong>ജനപക്ഷ നിലപാട്:</strong> ദുർബലരുടെയും അടിസ്ഥാന വിഭാഗങ്ങളുടെയും അവകാശ സംരക്ഷണം.</span>
+                  <span><strong>ജനപക്ഷ നിലപാട് (Public Interest):</strong> ദുർബലരുടെയും അടിസ്ഥാന വിഭാഗങ്ങളുടെയും അവകാശ സംരക്ഷണം.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-opinion-ochre font-bold">•</span>
-                  <span><strong>പ്രവാസി സൗഹൃദം:</strong> ലോകമെമ്പാടുമുള്ള പ്രവാസി മലയാളികളുടെ പ്രശ്നങ്ങളിൽ സജീവ ഇടപെടൽ.</span>
+                  <span><strong>പ്രവാസി സൗഹൃദം (Diaspora Support):</strong> ലോകമെമ്പാടുമുള്ള പ്രവാസി മലയാളികളുടെ പ്രശ്നങ്ങളിൽ സജീവ ഇടപെടൽ.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-opinion-ochre font-bold">•</span>
-                  <span><strong>സാങ്കേതിക മികവ്:</strong> വായനക്കാർക്ക് ആധുനിക ഡിജിറ്റൽ യൂസർ ഇന്റർഫേസും വോയ്സ് റീഡറും ഉറപ്പാക്കൽ.</span>
+                  <span><strong>സാങ്കേതിക മികവ് (Innovation):</strong> വായനക്കാർക്ക് ആധുനിക ഡിജിറ്റൽ യൂസർ ഇന്റർഫേസും വോയ്സ് റീഡറും ഉറപ്പാക്കൽ.</span>
                 </li>
               </ul>
             </section>
@@ -166,37 +176,43 @@ export default function AboutPage() {
             {/* Identity Card */}
             <div className="bg-surface-pure rounded p-6 shadow-sm border border-slate-border">
               <h3 className="font-headline text-lg font-bold text-ink-midnight pb-2 border-b border-slate-border mb-3">
-                സ്ഥാപന വിവരങ്ങൾ
+                ORGANIZATION DETAILS
               </h3>
               <div className="space-y-3 text-xs">
                 <div>
-                  <span className="text-secondary block">മാധ്യമ നാമം:</span>
+                  <span className="text-secondary block font-semibold text-[11px] uppercase tracking-wider">Media Outlet:</span>
                   <span className="font-bold text-ink-midnight text-sm">
-                    കേരളദേശം (Kerala Desam)
+                    Kerala Desam (കേരളദേശം)
                   </span>
                 </div>
                 <div>
-                  <span className="text-secondary block">മാധ്യമ സ്വഭാവം:</span>
+                  <span className="text-secondary block font-semibold text-[11px] uppercase tracking-wider">Type:</span>
                   <span className="font-semibold text-ink-midnight">
-                    വെബ് പോർട്ടൽ & ഡിജിറ്റൽ ചാനൽ (Web Portal / Channel)
+                    Web Portal & Digital News Channel
                   </span>
                 </div>
                 <div>
-                  <span className="text-secondary block">പ്രവർത്തന പരിധി:</span>
-                  <span className="font-semibold text-ink-midnight">
-                    ആഗോളതലം, ഭാരതം, കേരളം (Global, India & Kerala)
+                  <span className="text-secondary block font-semibold text-[11px] uppercase tracking-wider">Editor & Publisher:</span>
+                  <span className="font-bold text-editorial-crimson text-sm">
+                    K.O. Johnny (കെ.ഒ. ജോണി)
                   </span>
                 </div>
                 <div>
-                  <span className="text-secondary block">പ്രധാന ഭാഷ:</span>
+                  <span className="text-secondary block font-semibold text-[11px] uppercase tracking-wider">Coverage:</span>
                   <span className="font-semibold text-ink-midnight">
-                    മലയാളം (Malayalam) • English Subtitles
+                    Global, India & Kerala (14 Districts)
                   </span>
                 </div>
                 <div>
-                  <span className="text-secondary block">ആസ്ഥാനം:</span>
+                  <span className="text-secondary block font-semibold text-[11px] uppercase tracking-wider">Primary Language:</span>
                   <span className="font-semibold text-ink-midnight">
-                    കേരളം, ഇന്ത്യ (തിരുവനന്തപുരം & കൊച്ചി)
+                    Malayalam (മലയാളം) • English
+                  </span>
+                </div>
+                <div>
+                  <span className="text-secondary block font-semibold text-[11px] uppercase tracking-wider">Headquarters:</span>
+                  <span className="font-semibold text-ink-midnight">
+                    Kochi & Thiruvananthapuram, Kerala, India
                   </span>
                 </div>
               </div>
@@ -204,9 +220,9 @@ export default function AboutPage() {
               <div className="mt-5 pt-4 border-t border-slate-border">
                 <Link
                   href="/"
-                  className="w-full py-2 rounded bg-primary hover:bg-editorial-crimson text-white text-xs font-bold transition-colors flex items-center justify-center gap-1 shadow-xs"
+                  className="w-full py-2.5 rounded bg-primary hover:bg-editorial-crimson text-white text-xs font-bold transition-colors flex items-center justify-center gap-1 shadow-xs"
                 >
-                  പ്രധാന വാർത്തകളിലേക്ക് മടങ്ങുക
+                  ← BACK TO HOME STORIES
                 </Link>
               </div>
             </div>
@@ -215,22 +231,22 @@ export default function AboutPage() {
             <div className="bg-surface-pure rounded p-6 shadow-sm border border-slate-border">
               <h3 className="font-headline text-lg font-bold text-ink-midnight pb-2 border-b border-slate-border mb-3 flex items-center gap-2">
                 <Mail className="w-4 h-4 text-editorial-crimson" />
-                വാർത്താ ഡെസ്ക് സമ്പർക്കം
+                NEWS DESK CONTACT
               </h3>
               <p className="text-xs text-secondary leading-relaxed mb-4">
                 നിങ്ങളുടെ പ്രദേശത്തെ പ്രധാന വാർത്തകൾ, ചിത്രങ്ങൾ, വീഡിയോകൾ, അഭിപ്രായങ്ങൾ എന്നിവ ഞങ്ങൾക്ക് അയക്കാം:
               </p>
-              <div className="space-y-2.5 text-xs">
-                <div className="flex items-center gap-2 text-ink-midnight font-medium">
-                  <Mail className="w-4 h-4 text-primary" />
+              <div className="space-y-3 text-xs">
+                <div className="flex items-center gap-2.5 text-ink-midnight font-medium">
+                  <Mail className="w-4 h-4 text-primary shrink-0" />
                   <span>news@keraladesam.in</span>
                 </div>
-                <div className="flex items-center gap-2 text-ink-midnight font-medium">
-                  <Phone className="w-4 h-4 text-primary" />
-                  <span>+91 484 2900000 (News Desk)</span>
+                <div className="flex items-center gap-2.5 text-ink-midnight font-medium">
+                  <Phone className="w-4 h-4 text-primary shrink-0" />
+                  <span>+91 9387478887 / +91 9847053700</span>
                 </div>
-                <div className="flex items-center gap-2 text-ink-midnight font-medium">
-                  <Globe2 className="w-4 h-4 text-primary" />
+                <div className="flex items-center gap-2.5 text-ink-midnight font-medium">
+                  <Globe2 className="w-4 h-4 text-primary shrink-0" />
                   <span>www.keraladesam.in</span>
                 </div>
               </div>
@@ -241,3 +257,4 @@ export default function AboutPage() {
     </div>
   );
 }
+

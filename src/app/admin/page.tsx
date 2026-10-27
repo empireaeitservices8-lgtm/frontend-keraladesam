@@ -4,9 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Plus,
   Search,
-  Filter,
   Edit3,
   Trash2,
   ExternalLink,
@@ -25,92 +23,44 @@ import {
   Sparkles,
   Loader2,
   User,
-  Layers,
-  ChevronDown,
-  RefreshCw,
   Send,
-  MapPin,
   Check,
-  Share2,
-  Bookmark
+  ChevronDown,
+  ChevronUp,
+  PlaySquare,
+  Video,
+  Star,
 } from 'lucide-react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
-import { Article, KERALA_DISTRICTS } from '@/data/newsData';
+import { Article, VideoItem, KERALA_DISTRICTS } from '@/data/newsData';
 import {
   getRealArticles,
   adminCreateArticle,
   adminUpdateArticle,
   adminDeleteArticle,
+  adminToggleHeadline,
   adminGetRawBreaking,
   adminCreateBreaking,
+  adminUpdateBreaking,
   adminDeleteBreaking,
+  getRealVideos,
+  adminCreateVideo,
+  adminDeleteVideo,
 } from '@/lib/api';
 
 const CATEGORY_OPTIONS = [
-  { name: 'രാഷ്ട്രീയം', color: '#C8102E' },
+  { name: 'INTERNATIONAL', color: '#C8102E' },
+  { name: 'KERALA', color: '#C8102E' },
+  { name: 'POLITICS', color: '#006b9a' },
+  { name: 'SPECIAL REPORTS', color: '#991b1b' },
+  { name: 'BUSSINESS', color: '#005277' },
+  { name: 'CINEMA', color: '#B45309' },
   { name: 'വികസനം & അടിസ്ഥാനസൗകര്യം', color: '#006b9a' },
   { name: 'ഭരണം & നിയമസഭ', color: '#C8102E' },
-  { name: 'നഗരവികസനം & പരിസ്ഥിതി', color: '#005277' },
-  { name: 'ബിസിനസ് & സമ്പദ്‌വ്യവസ്ഥ', color: '#005277' },
-  { name: 'സിനിമ & കലാരംഗം', color: '#B45309' },
-  { name: 'സ്പോർട്സ് & ഗെയിംസ്', color: '#15803d' },
-  { name: 'പ്രവാസം & ഗൾഫ്', color: '#006b9a' },
   { name: 'കാലാവസ്ഥ & പ്രകൃതി', color: '#006b9a' },
-  { name: 'അഭിപ്രായം & എഡിറ്റോറിയൽ', color: '#854d0e' },
 ];
 
-const PHOTO_PRESETS = [
-  {
-    name: 'സെക്രട്ടേറിയറ്റ് / ഭരണം',
-    category: 'ഭരണം & നിയമസഭ',
-    url: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1200&q=80',
-    caption: 'തിരുവനന്തപുരം ഗവൺമെന്റ് സെക്രട്ടേറിയറ്റ് മന്ദിരം',
-  },
-  {
-    name: 'കൊച്ചി മെട്രോ',
-    category: 'വികസനം & അടിസ്ഥാനസൗകര്യം',
-    url: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80',
-    caption: 'കൊച്ചി മെട്രോ രണ്ടാം ഘട്ട കാക്കനാട് പാത നിർമാണം',
-  },
-  {
-    name: 'വയനാട് തുരങ്കപാത',
-    category: 'വികസനം & അടിസ്ഥാനസൗകര്യം',
-    url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
-    caption: 'വയനാട് - കോഴിക്കോട് ആനക്കാംപൊയിൽ-കള്ളാടി-മേപ്പാടി തുരങ്കപാത റൂട്ട്',
-  },
-  {
-    name: 'നിയമസഭ / രാഷ്ട്രീയം',
-    category: 'രാഷ്ട്രീയം',
-    url: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1200&q=80',
-    caption: 'കേരള നിയമസഭാ സമ്മേളനം',
-  },
-  {
-    name: 'ഗൾഫ് പ്രവാസം / ദുബായ്',
-    category: 'പ്രവാസം & ഗൾഫ്',
-    url: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=80',
-    caption: 'യുഎഇ ദുബായ് നഗരദൃശ്യം',
-  },
-  {
-    name: 'സ്റ്റാർട്ടപ്പ് / ഐടി',
-    category: 'ബിസിനസ് & സമ്പദ്‌വ്യവസ്ഥ',
-    url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1200&q=80',
-    caption: 'കേരളത്തിലെ സ്റ്റാർട്ടപ്പ് മിഷൻ സംരംഭകർ',
-  },
-  {
-    name: 'കായികം / ഫുട്ബോൾ',
-    category: 'സ്പോർട്സ് & ഗെയിംസ്',
-    url: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1200&q=80',
-    caption: 'സന്തോഷ് ട്രോഫി ഫുട്ബോൾ മത്സരം',
-  },
-  {
-    name: 'സിനിമ & സംസ്കാരം',
-    category: 'സിനിമ & കലാരംഗം',
-    url: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80',
-    caption: 'മലയാള ചലച്ചിത്ര രംഗത്തെ പുതിയ റിലീസുകൾ',
-  },
-];
-
-type TabType = 'articles' | 'upload' | 'breaking';
+type TabType = 'upload' | 'articles' | 'breaking' | 'videos';
 
 export default function AdminPortalPage() {
   const router = useRouter();
@@ -118,10 +68,11 @@ export default function AdminPortalPage() {
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [breakingList, setBreakingList] = useState<Array<{ _id: string; headline: string; active: boolean }>>([]);
+  const [videosList, setVideosList] = useState<VideoItem[]>([]);
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabType>('upload');
 
-  // Search & Filter
+  // Search & Filter in Manage tab
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
 
@@ -134,35 +85,46 @@ export default function AdminPortalPage() {
   // Success Feedback Card for newly published article
   const [lastPublished, setLastPublished] = useState<Article | null>(null);
 
-  // Article Form State
+  // Clean Article Form State - Zero Predefined Clutter
   const [formTitle, setFormTitle] = useState('');
-  const [formLead, setFormLead] = useState('');
   const [formCategory, setFormCategory] = useState(CATEGORY_OPTIONS[0].name);
   const [formCategoryColor, setFormCategoryColor] = useState(CATEGORY_OPTIONS[0].color);
-  const [formDistrict, setFormDistrict] = useState('എറണാകുളം');
-  const [formCountry, setFormCountry] = useState('');
-  const [formImageUrl, setFormImageUrl] = useState(PHOTO_PRESETS[0].url);
-  const [formImageCaption, setFormImageCaption] = useState(PHOTO_PRESETS[0].caption);
-  const [formReadTime, setFormReadTime] = useState('3 മിനിറ്റ് വായന');
-  const [formHighlights, setFormHighlights] = useState<string[]>(['']);
-  const [formParagraphs, setFormParagraphs] = useState<string[]>([
-    'സംസ്ഥാനത്ത് സുപ്രധാന വികസന പദ്ധതികൾക്ക് വേഗമേറ്റാൻ മന്ത്രിസഭാ യോഗം തീരുമാനിച്ചു.',
-    'വിവിധ മേഖലകളിലെ വിദഗ്ധരുടെ നിർദേശങ്ങൾ പരിഗണിച്ചാണ് പദ്ധതി രൂപരേഖ തയ്യാറാക്കിയിട്ടുള്ളത്.',
-  ]);
-  const [formTags, setFormTags] = useState('Kerala, News, Latest');
-  const [formTrending, setFormTrending] = useState(true);
+  const [formDistrict, setFormDistrict] = useState('');
+  const [formContent, setFormContent] = useState('');
+  const [formCustomLead, setFormCustomLead] = useState('');
+  const [showLeadAccordion, setShowLeadAccordion] = useState(false);
+
+  // Image Upload or URL State
+  const [formImageUrl, setFormImageUrl] = useState('');
+  const [formImageFile, setFormImageFile] = useState<File | null>(null);
+  const [formImagePreview, setFormImagePreview] = useState('');
+  const [formImageCaption, setFormImageCaption] = useState('');
+
+  // Frontpage & Ribbon Options
+  const [formHeadline, setFormHeadline] = useState(false);
+  const [formTrending, setFormTrending] = useState(false);
   const [formBreaking, setFormBreaking] = useState(false);
+
+  // Clean Video Form State - Essential inputs only
+  const [formVideoTitle, setFormVideoTitle] = useState('');
+  const [formVideoUrl, setFormVideoUrl] = useState('');
+  const [formVideoThumbnail, setFormVideoThumbnail] = useState('');
+  const [formVideoThumbnailFile, setFormVideoThumbnailFile] = useState<File | null>(null);
+  const [formVideoThumbnailPreview, setFormVideoThumbnailPreview] = useState('');
+  const [submittingVideo, setSubmittingVideo] = useState(false);
 
   // Breaking news quick input
   const [newBreakingText, setNewBreakingText] = useState('');
   const [submittingBreaking, setSubmittingBreaking] = useState(false);
+  const [editingBreakingId, setEditingBreakingId] = useState<string | null>(null);
+  const [editingBreakingText, setEditingBreakingText] = useState('');
 
   // Global Toast
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type?: 'success' | 'warning' | 'error' } | null>(null);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
+  const showToast = (text: string, type: 'success' | 'warning' | 'error' = 'success') => {
+    setToastMessage({ text, type });
+    setTimeout(() => setToastMessage(null), 4000);
   };
 
   // Auth Redirect guard
@@ -172,16 +134,18 @@ export default function AdminPortalPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // Load articles and breaking news
+  // Load articles, breaking news, and videos
   const loadPortalData = async () => {
     try {
       setLoadingData(true);
-      const [artList, brkList] = await Promise.all([
+      const [artList, brkList, vidList] = await Promise.all([
         getRealArticles({ limit: 100 }),
         adminGetRawBreaking(),
+        getRealVideos({ limit: 100 }),
       ]);
       setArticles(artList);
       setBreakingList(brkList);
+      setVideosList(vidList);
     } catch (err) {
       console.error('Failed to load portal data:', err);
     } finally {
@@ -195,53 +159,91 @@ export default function AdminPortalPage() {
     }
   }, [isAuthenticated]);
 
-  // Reset Form for Creating New Article
+  // Reset Form for Creating New Article - completely clean
   const handleResetForm = () => {
     setEditingArticleId(null);
     setFormTitle('');
-    setFormLead('');
     setFormCategory(CATEGORY_OPTIONS[0].name);
     setFormCategoryColor(CATEGORY_OPTIONS[0].color);
-    setFormDistrict('എറണാകുളം');
-    setFormCountry('');
-    setFormImageUrl(PHOTO_PRESETS[0].url);
-    setFormImageCaption(PHOTO_PRESETS[0].caption);
-    setFormReadTime('3 മിനിറ്റ് വായന');
-    setFormHighlights(['']);
-    setFormParagraphs(['', '']);
-    setFormTags('Kerala, News, Latest');
+    setFormDistrict('');
+    setFormContent('');
+    setFormCustomLead('');
+    setShowLeadAccordion(false);
+    setFormImageUrl('');
+    setFormImageFile(null);
+    setFormImagePreview('');
+    setFormImageCaption('');
+    setFormHeadline(false);
     setFormTrending(false);
     setFormBreaking(false);
     setModalFeedback(null);
     setLastPublished(null);
   };
 
-  // Switch to Upload Tab
-  const handleOpenUploadTab = () => {
-    handleResetForm();
-    setActiveTab('upload');
-    window.scrollTo({ top: 300, behavior: 'smooth' });
-  };
-
   // Open Modal for Editing an Existing Article
   const handleOpenEdit = (art: Article) => {
     setEditingArticleId(art.id);
     setFormTitle(art.title);
-    setFormLead(art.lead);
     setFormCategory(art.category);
-    setFormCategoryColor(art.categoryColor || '#C8102E');
+    const matchedCat = CATEGORY_OPTIONS.find((c) => c.name === art.category);
+    setFormCategoryColor(art.categoryColor || matchedCat?.color || '#C8102E');
     setFormDistrict(art.district || '');
-    setFormCountry(art.country || '');
-    setFormImageUrl(art.imageUrl);
+    setFormContent(art.paragraphs?.join('\n\n') || art.lead || '');
+    setFormCustomLead(art.lead || '');
+    setShowLeadAccordion(Boolean(art.lead));
+    setFormImageUrl(art.imageUrl || '');
+    setFormImageFile(null);
+    setFormImagePreview(art.imageUrl || '');
     setFormImageCaption(art.imageCaption || '');
-    setFormReadTime(art.readTime || '3 മിനിറ്റ് വായന');
-    setFormHighlights(art.highlights && art.highlights.length > 0 ? art.highlights : ['']);
-    setFormParagraphs(art.paragraphs && art.paragraphs.length > 0 ? art.paragraphs : [art.lead]);
-    setFormTags(art.tags?.join(', ') || '');
+    setFormHeadline(Boolean(art.isHeadline));
     setFormTrending(Boolean(art.trending));
     setFormBreaking(Boolean(art.breaking));
     setModalFeedback(null);
     setIsModalOpen(true);
+  };
+
+  // Handle local image file selection
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFormImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setFormImagePreview(dataUrl);
+      setFormImageUrl(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Remove chosen image
+  const handleRemoveImage = () => {
+    setFormImageFile(null);
+    setFormImagePreview('');
+    setFormImageUrl('');
+    setFormImageCaption('');
+  };
+
+  // Handle smart paste into content textarea (strips website copy-protection watermarks)
+  const handleContentPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pasteData = e.clipboardData.getData('text');
+    if (!pasteData) return;
+
+    // Detect Mathrubhumi / Manorama / News copy-protection watermarks
+    if (/read more at:\s*https?:\/\//i.test(pasteData)) {
+      showToast(
+        'ശ്രദ്ധിക്കുക: ന്യൂസ് വെബ്‌സൈറ്റിലെ കോപ്പി-നിയന്ത്രണം കാരണം ടെക്സ്റ്റ് ഭാഗികമായിട്ടാണ് ലഭിച്ചത്. വാട്ടർമാർക്ക് ഓട്ടോമാറ്റിക്കായി നീക്കം ചെയ്തു.',
+        'warning'
+      );
+      const cleaned = pasteData.replace(/\.\.\.\s*read more at:\s*https?:\/\/\S+/i, '').trim();
+      e.preventDefault();
+      const target = e.currentTarget;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      const val = target.value;
+      const newVal = val.substring(0, start) + cleaned + val.substring(end);
+      setFormContent(newVal);
+    }
   };
 
   // Submit Article (Create or Update)
@@ -252,30 +254,44 @@ export default function AdminPortalPage() {
       return;
     }
 
-    if (!formTitle.trim() || !formLead.trim() || !formCategory.trim()) {
-      setModalFeedback({ type: 'error', text: 'ദയവായി വാർത്താ തലക്കെട്ടും ആമുഖവും വിഭാഗവും നൽകുക.' });
+    if (!formTitle.trim()) {
+      setModalFeedback({ type: 'error', text: 'വാർത്താ തലക്കെട്ട് നൽകുക.' });
+      return;
+    }
+
+    if (!formContent.trim()) {
+      setModalFeedback({ type: 'error', text: 'വാർത്തയുടെ ഉള്ളടക്കം (News Content) നൽകുക.' });
       return;
     }
 
     setSubmittingArticle(true);
     setModalFeedback(null);
 
+    // Parse paragraphs cleanly from content
+    const paragraphs = formContent
+      .split(/\r?\n\s*\r?\n|\n/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+
+    // Auto-generate card summary lead from first paragraph if not custom
+    const lead = formCustomLead.trim() || (paragraphs[0] ? paragraphs[0].slice(0, 250) : formTitle.trim());
+
+    // Approximate read time based on word count
+    const totalWords = formContent.trim().split(/\s+/).length;
+    const readTimeMinutes = Math.max(1, Math.ceil(totalWords / 90));
+    const readTime = `${readTimeMinutes} മിനിറ്റ് വായന`;
+
     const payload: Partial<Article> = {
       title: formTitle.trim(),
-      lead: formLead.trim(),
+      lead,
       category: formCategory,
       categoryColor: formCategoryColor,
       district: formDistrict.trim() || undefined,
-      country: formCountry.trim() || undefined,
-      imageUrl: formImageUrl.trim() || PHOTO_PRESETS[0].url,
+      imageUrl: formImageUrl.trim() || '',
       imageCaption: formImageCaption.trim(),
-      readTime: formReadTime.trim() || '3 മിനിറ്റ് വായന',
-      highlights: formHighlights.map((h) => h.trim()).filter(Boolean),
-      paragraphs: formParagraphs.map((p) => p.trim()).filter(Boolean),
-      tags: formTags
-        .split(',')
-        .map((t) => t.trim().replace(/^#/, ''))
-        .filter(Boolean),
+      readTime,
+      paragraphs: paragraphs.length > 0 ? paragraphs : [lead],
+      isHeadline: formHeadline,
       trending: formTrending,
       breaking: formBreaking,
     };
@@ -283,22 +299,26 @@ export default function AdminPortalPage() {
     try {
       let result;
       if (editingArticleId) {
-        result = await adminUpdateArticle(editingArticleId, payload, token);
+        result = await adminUpdateArticle(editingArticleId, payload, token, formImageFile || undefined);
       } else {
-        result = await adminCreateArticle(payload, token);
+        result = await adminCreateArticle(payload, token, formImageFile || undefined);
       }
 
       if (result.success && result.article) {
         showToast(
           editingArticleId
             ? 'വാർത്ത വിജയകരമായി അപ്‌ഡേറ്റ് ചെയ്തു!'
-            : 'വാർത്ത വിജയകരമായി മുൻപേജിൽ പ്രസിദ്ധീകരിച്ചു!'
+            : 'വാർത്ത വിജയകരമായി തത്സമയം പ്രസിദ്ധീകരിച്ചു!'
         );
 
-        // Also if breaking was checked, inject into breaking news ticker
-        if (formBreaking && !editingArticleId) {
+        // Auto-add to breaking ribbon if checked
+        if (formBreaking) {
           try {
             await adminCreateBreaking(formTitle.trim(), token);
+            window.dispatchEvent(new CustomEvent('keraladesyam_breaking_updated'));
+            try {
+              localStorage.setItem('keraladesyam_breaking_last_updated', Date.now().toString());
+            } catch {}
           } catch (e) {
             console.error('Breaking ticker auto-add error:', e);
           }
@@ -306,8 +326,9 @@ export default function AdminPortalPage() {
 
         setLastPublished(result.article);
         setIsModalOpen(false);
+        handleResetForm();
         await loadPortalData();
-        window.scrollTo({ top: 350, behavior: 'smooth' });
+        window.scrollTo({ top: 100, behavior: 'smooth' });
       } else {
         setModalFeedback({ type: 'error', text: result?.error || 'വാർത്ത സേവ് ചെയ്യാൻ കഴിഞ്ഞില്ല.' });
       }
@@ -337,6 +358,23 @@ export default function AdminPortalPage() {
     }
   };
 
+  // Toggle Main Headline
+  const handleToggleHeadline = async (art: Article) => {
+    if (!token) return;
+    const targetStatus = !art.isHeadline;
+    const res = await adminToggleHeadline(art.id, token);
+    if (res.success) {
+      showToast(
+        targetStatus
+          ? 'പ്രധാന വാർത്തയായി (Main Headline) പിൻ ചെയ്തു!'
+          : 'പ്രധാന വാർത്താ പദവിയിൽ നിന്ന് മാറ്റി.'
+      );
+      await loadPortalData();
+    } else {
+      alert(res.error || 'Failed to update headline');
+    }
+  };
+
   // Add Breaking News
   const handleAddBreaking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -347,10 +385,14 @@ export default function AdminPortalPage() {
     setSubmittingBreaking(false);
 
     if (res.success) {
-      showToast('ബ്രേക്കിംഗ് ന്യൂസ് ടിക്കറിൽ തത്സമയം ചേർത്തു!');
+      showToast('ബ്രേക്കിംഗ് ന്യൂസ് ടിക്കറിൽ ചേർത്തു!');
       setNewBreakingText('');
       const updated = await adminGetRawBreaking();
       setBreakingList(updated);
+      window.dispatchEvent(new CustomEvent('keraladesyam_breaking_updated'));
+      try {
+        localStorage.setItem('keraladesyam_breaking_last_updated', Date.now().toString());
+      } catch {}
     } else {
       alert(res.error || 'Failed to add breaking headline');
     }
@@ -364,9 +406,129 @@ export default function AdminPortalPage() {
       if (res.success) {
         showToast('ബ്രേക്കിംഗ് ന്യൂസ് നീക്കം ചെയ്തു.');
         setBreakingList((prev) => prev.filter((b) => b._id !== id));
+        window.dispatchEvent(new CustomEvent('keraladesyam_breaking_updated'));
+        try {
+          localStorage.setItem('keraladesyam_breaking_last_updated', Date.now().toString());
+        } catch {}
       }
     } catch (err) {
       console.error('Delete breaking error:', err);
+    }
+  };
+
+  // Update Breaking News Headline
+  const handleUpdateBreaking = async (id: string) => {
+    if (!token || !editingBreakingText.trim()) return;
+    try {
+      const res = await adminUpdateBreaking(id, { headline: editingBreakingText.trim() }, token);
+      if (res.success) {
+        showToast('ബ്രേക്കിംഗ് ന്യൂസ് അപ്‌ഡേറ്റ് ചെയ്തു!');
+        setEditingBreakingId(null);
+        setEditingBreakingText('');
+        const updated = await adminGetRawBreaking();
+        setBreakingList(updated);
+        window.dispatchEvent(new CustomEvent('keraladesyam_breaking_updated'));
+        try {
+          localStorage.setItem('keraladesyam_breaking_last_updated', Date.now().toString());
+        } catch {}
+      } else {
+        alert(res.error || 'Failed to update breaking headline');
+      }
+    } catch (err) {
+      console.error('Update breaking error:', err);
+    }
+  };
+
+  // Toggle Breaking News Active Status
+  const handleToggleActiveBreaking = async (id: string, currentActive: boolean) => {
+    if (!token) return;
+    try {
+      const res = await adminUpdateBreaking(id, { active: !currentActive }, token);
+      if (res.success) {
+        showToast(!currentActive ? 'ടിക്കറിൽ സജീവമാക്കി' : 'ടിക്കറിൽ നിന്ന് മാറ്റി');
+        const updated = await adminGetRawBreaking();
+        setBreakingList(updated);
+        window.dispatchEvent(new CustomEvent('keraladesyam_breaking_updated'));
+        try {
+          localStorage.setItem('keraladesyam_breaking_last_updated', Date.now().toString());
+        } catch {}
+      }
+    } catch (err) {
+      console.error('Toggle breaking error:', err);
+    }
+  };
+
+
+  // Handle Video Thumbnail file change
+  const handleVideoThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        showToast('ലഘുചിത്രം 10MB-യിൽ കുറവായിരിക്കണം.', 'warning');
+        return;
+      }
+      setFormVideoThumbnailFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormVideoThumbnailPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle Create Video
+  const handleCreateVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    if (!formVideoTitle.trim() || !formVideoUrl.trim()) {
+      showToast('വീഡിയോ തലക്കെട്ടും ലിങ്കും നിർബന്ധമാണ്.', 'error');
+      return;
+    }
+    try {
+      setSubmittingVideo(true);
+      const res = await adminCreateVideo(
+        {
+          title: formVideoTitle.trim(),
+          category: 'KERALA',
+          videoUrl: formVideoUrl.trim(),
+          thumbnail: formVideoThumbnail.trim(),
+        },
+        token,
+        formVideoThumbnailFile || undefined
+      );
+
+      if (res.success && res.video) {
+        showToast('വീഡിയോ വിജയകരമായി പ്രസിദ്ധീകരിച്ചു!');
+        setVideosList((prev) => [res.video!, ...prev]);
+        setFormVideoTitle('');
+        setFormVideoUrl('');
+        setFormVideoThumbnail('');
+        setFormVideoThumbnailFile(null);
+        setFormVideoThumbnailPreview('');
+      } else {
+        showToast(res.error || 'വീഡിയോ അപ്‌ലോഡ് പരാജയപ്പെട്ടു', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'വീഡിയോ അപ്‌ലോഡ് പരാജയപ്പെട്ടു', 'error');
+    } finally {
+      setSubmittingVideo(false);
+    }
+  };
+
+  // Delete Video
+  const handleDeleteVideo = async (id: string) => {
+    if (!token) return;
+    if (!confirm('ഈ വീഡിയോ നീക്കം ചെയ്യണമെന്ന് ഉറപ്പാണോ?')) return;
+    try {
+      const res = await adminDeleteVideo(id, token);
+      if (res.success) {
+        showToast('വീഡിയോ നീക്കം ചെയ്തു.');
+        setVideosList((prev) => prev.filter((v) => v.id !== id && v._id !== id));
+      } else {
+        showToast(res.error || 'വീഡിയോ നീക്കം ചെയ്യൽ പരാജയപ്പെട്ടു', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Delete video error', 'error');
     }
   };
 
@@ -386,6 +548,17 @@ export default function AdminPortalPage() {
     });
   }, [articles, searchQuery, selectedCategoryFilter]);
 
+  // Derived live statistics from content
+  const contentStats = useMemo(() => {
+    const paras = formContent
+      .split(/\r?\n\s*\r?\n|\n/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    const words = formContent.trim() ? formContent.trim().split(/\s+/).length : 0;
+    const chars = formContent.length;
+    return { parasCount: paras.length, words, chars };
+  }, [formContent]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
@@ -395,64 +568,64 @@ export default function AdminPortalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-900 pb-16">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 pb-20">
       {/* Toast alert */}
       {toastMessage && (
-        <div className="fixed top-5 right-5 z-50 bg-emerald-700 text-white px-4 py-2.5 rounded-xl shadow-xl border border-emerald-500/40 flex items-center gap-2 animate-in slide-in-from-top-3 text-xs font-bold">
-          <CheckCircle2 className="w-4 h-4 text-emerald-300" />
-          <span>{toastMessage}</span>
+        <div
+          className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-bold transition-all ${
+            toastMessage.type === 'error'
+              ? 'bg-red-700 text-white'
+              : toastMessage.type === 'warning'
+              ? 'bg-amber-600 text-white'
+              : 'bg-emerald-700 text-white'
+          }`}
+        >
+          {toastMessage.type === 'error' ? (
+            <AlertCircle className="w-4 h-4 text-red-200" />
+          ) : toastMessage.type === 'warning' ? (
+            <AlertCircle className="w-4 h-4 text-amber-200" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+          )}
+          <span>{toastMessage.text}</span>
         </div>
       )}
 
-      {/* Admin Top Navigation Bar */}
-      <header className="bg-ink-midnight text-white border-b border-white/10 sticky top-0 z-40 shadow-md">
-        <div className="max-w-[1400px] mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          {/* Logo & Portal Badge */}
+      {/* Editorial Header */}
+      <header className="bg-ink-midnight text-white border-b border-white/10 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="font-headline text-lg sm:text-xl font-bold tracking-tight text-white hover:text-red-400 transition-colors">
-                കേരളദേശം
-              </span>
+            <Link href="/" className="font-headline text-lg sm:text-xl font-bold tracking-tight text-white hover:text-red-400 transition-colors">
+              കേരളദേശം
             </Link>
-            <span className="h-4 w-[1px] bg-white/20 hidden sm:block" />
-            <div className="flex items-center gap-1.5 text-xs text-slate-300">
+            <span className="h-4 w-[1px] bg-white/20" />
+            <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-editorial-crimson" />
-              <span className="font-bold text-white hidden sm:inline">എഡിറ്റോറിയൽ കൺസോൾ</span>
-              <span className="text-[10px] bg-editorial-crimson/90 px-2 py-0.5 rounded font-mono uppercase text-white font-bold">
-                {user?.role === 'admin' ? 'CHIEF ADMIN' : 'STAFF EDITOR'}
-              </span>
-            </div>
+              <span>വാർത്താ പാനൽ (CMS)</span>
+            </span>
           </div>
 
-          {/* User profile & Actions */}
           <div className="flex items-center gap-3 text-xs">
-            {/* View Reader Portal */}
             <Link
               href="/"
               target="_blank"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 transition-colors border border-white/10 font-medium"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 transition-colors font-medium"
             >
               <ExternalLink className="w-3.5 h-3.5 text-editorial-crimson" />
-              <span>വാർത്താ പോർട്ടൽ കാണുക</span>
+              <span className="hidden sm:inline">വെബ്‌സൈറ്റ് കാണുക</span>
             </Link>
 
-            {/* User profile pill */}
-            <div className="flex items-center gap-2 pl-2 border-l border-white/10">
-              <img
-                src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
-                alt={user?.name || 'User'}
-                className="w-7 h-7 rounded-full object-cover ring-1 ring-white/30"
-              />
-              <span className="font-medium text-slate-200 hidden sm:inline">
-                {user?.name}
+            <div className="flex items-center gap-2 pl-2 border-l border-white/10 text-slate-300">
+              <span className="font-semibold text-white">{user?.name || 'Chief Editor'}</span>
+              <span className="text-[10px] bg-editorial-crimson/90 px-2 py-0.5 rounded text-white font-mono uppercase">
+                {user?.role === 'admin' ? 'ADMIN' : 'EDITOR'}
               </span>
             </div>
 
-            {/* Logout button */}
             <button
               onClick={logout}
-              title="ലോഗ് ഔട്ട് ചെയ്യുക"
-              className="p-1.5 rounded hover:bg-red-950/60 text-slate-400 hover:text-red-400 transition-colors"
+              title="ലോഗ് ഔട്ട്"
+              className="p-1.5 rounded hover:bg-red-900/40 text-slate-400 hover:text-red-400 transition-colors"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -461,591 +634,407 @@ export default function AdminPortalPage() {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-[1400px] mx-auto w-full px-4 py-6 flex-1 flex flex-col gap-6">
-        {/* KPI Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">പ്രസിദ്ധീകരിച്ച വാർത്തകൾ</p>
-              <h3 className="text-2xl font-black text-ink-midnight mt-1 font-headline">{articles.length}</h3>
-            </div>
-            <div className="p-3 bg-blue-50 text-primary rounded-xl">
-              <FileText className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">സജീവ ബ്രേക്കിംഗ്</p>
-              <h3 className="text-2xl font-black text-editorial-crimson mt-1 font-headline">{breakingList.length}</h3>
-            </div>
-            <div className="p-3 bg-red-50 text-editorial-crimson rounded-xl">
-              <Radio className="w-5 h-5 animate-pulse" />
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">ട്രെൻഡിംഗ് വാർത്തകൾ</p>
-              <h3 className="text-2xl font-black text-amber-600 mt-1 font-headline">
-                {articles.filter((a) => a.trending).length}
-              </h3>
-            </div>
-            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-              <Flame className="w-5 h-5" />
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">നിങ്ങളുടെ പദവി</p>
-              <h3 className="text-sm font-bold text-slate-800 mt-1 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                {user?.role === 'admin' ? 'ചീഫ് അഡ്മിൻ' : 'സ്റ്റാഫ് എഡിറ്റർ'}
-              </h3>
-            </div>
-            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-              <User className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
-
-        {/* Tab & Action Controls */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 pb-3">
-          {/* Tabs */}
-          <div className="flex items-center flex-wrap gap-2">
-            {/* TAB 1: UPLOAD NEWS STUDIO */}
+      <main className="max-w-5xl mx-auto w-full px-4 py-6 flex-1 flex flex-col gap-5">
+        {/* Modern Tabs */}
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab('upload')}
-              className={`px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 ${
                 activeTab === 'upload'
-                  ? 'bg-gradient-to-r from-editorial-crimson to-rose-700 text-white shadow-md shadow-red-500/25 ring-2 ring-red-400/40'
-                  : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+                  ? 'bg-editorial-crimson text-white shadow-sm'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
-              <Sparkles className="w-4 h-4 text-amber-300 animate-spin-slow" />
-              <span>വാർത്ത അപ്‌ലോഡ് ചെയ്യുക (Publish News)</span>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>പുതിയ വാർത്ത ചേർക്കുക (Write News)</span>
             </button>
 
-            {/* TAB 2: ARTICLES LIST */}
             <button
               onClick={() => setActiveTab('articles')}
-              className={`px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 ${
                 activeTab === 'articles'
-                  ? 'bg-ink-midnight text-white shadow-sm'
-                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
-              <FileText className="w-4 h-4" />
-              <span>വാർത്തകൾ മാനേജ് ചെയ്യുക ({articles.length})</span>
+              <FileText className="w-3.5 h-3.5" />
+              <span>വാർത്തകൾ ({articles.length})</span>
             </button>
 
-            {/* TAB 3: BREAKING NEWS */}
             <button
               onClick={() => setActiveTab('breaking')}
-              className={`px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+              className={`px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 ${
                 activeTab === 'breaking'
-                  ? 'bg-editorial-crimson text-white shadow-sm'
-                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                  ? 'bg-red-700 text-white shadow-sm'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
-              <Radio className="w-4 h-4" />
+              <Radio className="w-3.5 h-3.5" />
               <span>ബ്രേക്കിംഗ് ന്യൂസ് ({breakingList.length})</span>
             </button>
-          </div>
 
-          {/* Refresh Action */}
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <button
-              onClick={loadPortalData}
-              title="റീഫ്രഷ്"
-              className="px-3 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              onClick={() => setActiveTab('videos')}
+              className={`px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 ${
+                activeTab === 'videos'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+              }`}
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loadingData ? 'animate-spin' : ''}`} />
-              <span>ഡാറ്റ റീഫ്രഷ്</span>
+              <PlaySquare className="w-3.5 h-3.5" />
+              <span>വീഡിയോകൾ ({videosList.length})</span>
             </button>
           </div>
         </div>
+
+        {/* TAB 1: WRITE & PUBLISH NEWS (Clean, distraction-free CMS) */}
         {activeTab === 'upload' && (
-          <div className="flex flex-col gap-6">
-            {/* Success Celebration Alert if an article was just published */}
+          <div className="space-y-4">
+            {/* Published Success Banner */}
             {lastPublished && (
-              <div className="bg-gradient-to-r from-emerald-900 to-slate-900 text-white rounded-2xl p-6 shadow-xl border border-emerald-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 animate-in fade-in slide-in-from-top-4 duration-300">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-400/40">
-                    <CheckCircle2 className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-mono uppercase tracking-widest text-emerald-400 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
-                      ✓ തത്സമയം വെബ്‌സൈറ്റിൽ പ്രസിദ്ധീകരിച്ചു (LIVE ON FRONTEND)
-                    </span>
-                    <h3 className="font-headline text-lg sm:text-xl font-bold text-white mt-1.5 line-clamp-2">
-                      {lastPublished.title}
-                    </h3>
-                    <p className="text-xs text-slate-300 mt-1">
-                      വിഭാഗം: <span className="font-bold text-white">{lastPublished.category}</span> • {lastPublished.district ? `ജില്ല: ${lastPublished.district} •` : ''} ഇപ്പോൾ തന്നെ വായനക്കാർക്ക് ലഭ്യമാണ്.
-                    </p>
-                  </div>
+              <div className="bg-emerald-900 text-white rounded-xl p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in">
+                <div>
+                  <h4 className="font-bold text-sm text-emerald-200 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+                    വാർത്ത വിജയകരമായി പ്രസിദ്ധീകരിച്ചു!
+                  </h4>
+                  <p className="text-xs text-white/90 line-clamp-1 mt-0.5 font-headline font-semibold">
+                    "{lastPublished.title}"
+                  </p>
                 </div>
-
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto shrink-0 justify-end">
-                  <Link
-                    href="/"
-                    target="_blank"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs shadow-md transition-all hover:scale-105"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span>പ്രധാന പേജിൽ കാണുക (View on Home)</span>
-                  </Link>
-
+                <div className="flex items-center gap-2 shrink-0">
                   <Link
                     href={`/article/${lastPublished.id}`}
                     target="_blank"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/20 transition-colors"
+                    className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition"
                   >
-                    <span>വാർത്താ പേജ് തുറക്കുക</span>
+                    വാർത്ത കാണുക
                   </Link>
-
                   <button
-                    onClick={handleResetForm}
-                    className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white font-semibold text-xs transition-colors"
+                    onClick={() => setLastPublished(null)}
+                    className="p-1.5 text-white/60 hover:text-white"
                   >
-                    + മറ്റൊരു വാർത്ത ചേർക്കുക
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             )}
 
-            {/* The Main 2-Column Upload Studio */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-              {/* Left Column (2 Cols): Rich Form Input */}
-              <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-7 flex flex-col gap-6">
+            {/* Main Article Editor Card */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+              {modalFeedback && (
+                <div
+                  className={`p-3.5 rounded-xl text-xs flex items-center gap-2.5 mb-5 ${
+                    modalFeedback.type === 'error'
+                      ? 'bg-red-50 border border-red-300 text-red-700 font-semibold'
+                      : 'bg-emerald-50 border border-emerald-300 text-emerald-700'
+                  }`}
+                >
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{modalFeedback.text}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmitArticle} className="space-y-6">
+                {/* 1. Headline */}
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="p-1.5 rounded-lg bg-editorial-crimson text-white">
-                      <Sparkles className="w-4 h-4" />
-                    </span>
-                    <h2 className="font-headline text-xl font-bold text-ink-midnight">
-                      പുതിയ വാർത്താ അപ്‌ലോഡർ (Latest News Upload Studio)
-                    </h2>
-                  </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    ഇവിടെ നൽകുന്ന വാർത്തകൾ തത്സമയം കേരളദേശം ഡാറ്റാബേസിലും പ്രധാന പേജിലും (Home) കാറ്റഗറികളിലും പ്രസിദ്ധീകരിക്കപ്പെടും.
-                  </p>
+                  <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                    വാർത്താ തലക്കെട്ട് (News Headline) *
+                  </label>
+                  <textarea
+                    rows={2}
+                    required
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    placeholder="വാർത്താ തലക്കെട്ട് ഇവിടെ ടൈപ്പ് ചെയ്യുക..."
+                    className="w-full bg-slate-50/70 border border-slate-300 rounded-xl p-3.5 text-sm sm:text-base font-headline font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson focus:border-editorial-crimson leading-snug transition-all"
+                  />
                 </div>
 
-                {modalFeedback && (
-                  <div
-                    className={`p-3.5 rounded-xl text-xs flex items-center gap-2.5 ${
-                      modalFeedback.type === 'error'
-                        ? 'bg-red-50 border border-red-300 text-red-700'
-                        : 'bg-emerald-50 border border-emerald-300 text-emerald-700'
-                    }`}
-                  >
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span className="font-medium">{modalFeedback.text}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleSubmitArticle} className="space-y-6 text-xs">
-                  <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="block text-xs font-bold text-slate-800">
-                        വാർത്താ തലക്കെട്ട് (News Headline) *
-                      </label>
-                      <span className="text-[11px] font-mono text-slate-400">
-                        {formTitle.length} അക്ഷരങ്ങൾ
-                      </span>
-                    </div>
-                    <textarea
-                      rows={2}
-                      required
-                      value={formTitle}
-                      onChange={(e) => setFormTitle(e.target.value)}
-                      placeholder="ഉദാ: വയനാട് തുരങ്കപാത നിർമാണത്തിന് കേന്ദ്ര പരിസ്ഥിതി അനുമതി ലഭിച്ചു; ടെൻഡർ നടപടികൾ വേഗത്തിലാക്കാൻ നിർദേശം..."
-                      className="w-full bg-white border border-slate-300 rounded-lg p-3 text-sm sm:text-base font-headline font-bold text-ink-midnight focus:outline-none focus:ring-2 focus:ring-editorial-crimson shadow-xs"
-                    />
-                    <p className="text-[11px] text-slate-500">
-                      വായനക്കാരെ ആകർഷിക്കുന്ന കൃത്യമായ മലയാളം തലക്കെട്ട് നൽകുക.
-                    </p>
-                  </div>
-
+                {/* 2. Category & District in 1 compact row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-2">
-                      വിഭാഗം തിരഞ്ഞെടുക്കുക (Select Category) *
+                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                      വിഭാഗം (Category) *
                     </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      {CATEGORY_OPTIONS.map((cat) => {
-                        const isSelected = formCategory === cat.name;
-                        return (
-                          <button
-                            type="button"
-                            key={cat.name}
-                            onClick={() => {
-                              setFormCategory(cat.name);
-                              setFormCategoryColor(cat.color);
-                            }}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
-                              isSelected
-                                ? 'text-white shadow-xs scale-105'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
-                            }`}
-                            style={{
-                              backgroundColor: isSelected ? cat.color : undefined,
-                            }}
-                          >
-                            {isSelected && <Check className="w-3.5 h-3.5" />}
-                            <span>{cat.name}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-2">
-                      ജില്ല / പ്രദേശം (District or Region)
-                    </label>
-                    <div className="flex flex-wrap gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setFormDistrict('')}
-                        className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                          !formDistrict
-                            ? 'bg-slate-800 text-white font-bold'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        സംസ്ഥാനം മുഴുവൻ
-                      </button>
-                      {KERALA_DISTRICTS.map((dist) => {
-                        const isSelected = formDistrict === dist;
-                        return (
-                          <button
-                            type="button"
-                            key={dist}
-                            onClick={() => setFormDistrict(dist)}
-                            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                              isSelected
-                                ? 'bg-editorial-crimson text-white font-bold shadow-xs'
-                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                            }`}
-                          >
-                            {dist}
-                          </button>
-                        );
-                      })}
-                      <button
-                        type="button"
-                        onClick={() => setFormDistrict('പ്രവാസം / ഗൾഫ്')}
-                        className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                          formDistrict === 'പ്രവാസം / ഗൾഫ്'
-                            ? 'bg-blue-700 text-white font-bold shadow-xs'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        പ്രവാസം / ഗൾഫ്
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1">
-                      വാർത്താ ആമുഖം (Lead Paragraph / Summary) *
-                    </label>
-                    <textarea
-                      rows={2}
-                      required
-                      value={formLead}
-                      onChange={(e) => setFormLead(e.target.value)}
-                      placeholder="വാർത്തയുടെ സംഗ്രഹം 1-2 വാക്യങ്ങളിൽ ഇവിടെ നൽകുക (പ്രധാന പേജിലെ കാർഡുകളിൽ ഇത് തെളിഞ്ഞുനിൽക്കും)..."
-                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-slate-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
-                    />
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-bold text-slate-800">
-                        വിശദമായ വാർത്താ വിവരണം (Full Article Paragraphs)
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setFormParagraphs([...formParagraphs, ''])}
-                        className="text-xs text-editorial-crimson hover:underline font-bold flex items-center gap-1"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>അടുത്ത ഖണ്ഡിക ചേർക്കുക</span>
-                      </button>
-                    </div>
-                    <div className="space-y-3">
-                      {formParagraphs.map((para, idx) => (
-                        <div key={idx} className="relative">
-                          <textarea
-                            rows={3}
-                            value={para}
-                            onChange={(e) => {
-                              const updated = [...formParagraphs];
-                              updated[idx] = e.target.value;
-                              setFormParagraphs(updated);
-                            }}
-                            placeholder={`ഖണ്ഡിക ${idx + 1} വിശദാംശങ്ങൾ...`}
-                            className="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-slate-900 leading-relaxed focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
-                          />
-                          {formParagraphs.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => setFormParagraphs(formParagraphs.filter((_, i) => i !== idx))}
-                              className="absolute top-2.5 right-2.5 p-1 text-slate-400 hover:text-red-600 rounded bg-white/80 shadow-xs"
-                              title="ഈ ഖണ്ഡിക ഒഴിവാക്കുക"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
+                    <select
+                      value={formCategory}
+                      onChange={(e) => {
+                        const sel = CATEGORY_OPTIONS.find((c) => c.name === e.target.value);
+                        setFormCategory(e.target.value);
+                        if (sel) setFormCategoryColor(sel.color);
+                      }}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
+                    >
+                      {CATEGORY_OPTIONS.map((cat) => (
+                        <option key={cat.name} value={cat.name}>
+                          {cat.name}
+                        </option>
                       ))}
-                    </div>
+                    </select>
                   </div>
 
-                  <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200 space-y-3">
-                    <label className="block text-xs font-bold text-slate-800">
-                      പ്രധാന വാർത്താ ചിത്രം (Featured Photo)
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                      ജില്ല / പ്രദേശം (District - ഓപ്ഷണൽ)
                     </label>
+                    <select
+                      value={formDistrict}
+                      onChange={(e) => setFormDistrict(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
+                    >
+                      <option value="">കേരളം (പൊതുവായത്)</option>
+                      {KERALA_DISTRICTS.map((dist) => (
+                        <option key={dist} value={dist}>
+                          {dist}
+                        </option>
+                      ))}
+                      <option value="പ്രവാസം / ഗൾഫ്">പ്രവാസം / ഗൾഫ്</option>
+                      <option value="ദേശീയം">ദേശീയം</option>
+                      <option value="അന്തർദേശീയം">അന്തർദേശീയം</option>
+                    </select>
+                  </div>
+                </div>
 
-                    {/* Presets Gallery */}
-                    <div>
-                      <span className="text-[11px] font-semibold text-slate-500 mb-2 block">
-                        തയ്യാറാക്കിയ വാർത്താ ചിത്രങ്ങളിൽ നിന്ന് തിരഞ്ഞെടുക്കാം (1-Click Presets):
+                {/* 3. Featured Photo (Optional - Clean Upload or URL) */}
+                <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-slate-600" />
+                      <label className="text-xs font-bold text-slate-800">
+                        വാർത്താ ചിത്രം (Featured Photo)
+                      </label>
+                      <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-semibold">
+                        ഓപ്ഷണൽ
                       </span>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        {PHOTO_PRESETS.map((preset) => (
-                          <div
-                            key={preset.name}
-                            onClick={() => {
-                              setFormImageUrl(preset.url);
-                              setFormImageCaption(preset.caption);
-                              setFormCategory(preset.category);
-                            }}
-                            className={`p-1.5 rounded-lg border text-left cursor-pointer transition-all hover:border-editorial-crimson bg-white flex flex-col gap-1 ${
-                              formImageUrl === preset.url
-                                ? 'border-editorial-crimson ring-2 ring-red-400/30'
-                                : 'border-slate-200'
-                            }`}
-                          >
-                            <img
-                              src={preset.url}
-                              alt={preset.name}
-                              className="w-full h-14 object-cover rounded"
-                            />
-                            <span className="text-[10px] font-bold text-slate-800 truncate">
-                              {preset.name}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
                     </div>
 
-                    {/* Custom Image URL */}
-                    <div className="pt-2">
-                      <div className="flex items-center gap-2">
-                        <ImageIcon className="w-4 h-4 text-slate-500 shrink-0" />
-                        <input
-                          type="url"
-                          value={formImageUrl}
-                          onChange={(e) => setFormImageUrl(e.target.value)}
-                          placeholder="ചിത്രത്തിന്റെ URL നൽകുക (https://...)"
-                          className="flex-1 bg-white border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-editorial-crimson"
-                        />
-                      </div>
-                    </div>
+                    {formImagePreview && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="text-xs text-red-600 hover:underline font-bold flex items-center gap-1"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>ചിത്രം ഒഴിവാക്കുക</span>
+                      </button>
+                    )}
+                  </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                          ചിത്രത്തിന്റെ അടിക്കുറിപ്പ് (Photo Caption)
-                        </label>
+                  {formImagePreview ? (
+                    <div className="flex items-center gap-4 bg-white p-3 rounded-lg border border-slate-200">
+                      <img
+                        src={formImagePreview}
+                        alt="Selected Photo"
+                        className="w-24 h-16 object-cover rounded-md border border-slate-200 shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs text-emerald-700 font-bold block mb-1">
+                          ✓ ചിത്രം ചേർത്തു
+                        </span>
                         <input
                           type="text"
                           value={formImageCaption}
                           onChange={(e) => setFormImageCaption(e.target.value)}
-                          placeholder="ഉദാ: പദ്ധതി പ്രദേശത്തെ ആകാശ ദൃശ്യം"
-                          className="w-full bg-white border border-slate-300 rounded-lg py-1.5 px-3 text-xs text-slate-900"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                          വായനാ സമയം (Read Time)
-                        </label>
-                        <input
-                          type="text"
-                          value={formReadTime}
-                          onChange={(e) => setFormReadTime(e.target.value)}
-                          placeholder="3 മിനിറ്റ് വായന"
-                          className="w-full bg-white border border-slate-300 rounded-lg py-1.5 px-3 text-xs text-slate-900"
+                          placeholder="ചിത്രത്തിന്റെ അടിക്കുറിപ്പ് (Photo Caption - ഓപ്ഷണൽ)..."
+                          className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1 text-xs text-slate-800 focus:bg-white focus:outline-none"
                         />
                       </div>
                     </div>
-                  </div>
-
-                  <div className="p-4 bg-red-50/50 rounded-xl border border-red-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                      <span className="font-bold text-xs text-editorial-crimson block font-headline">
-                        മുൻപേജ് മുൻഗണന (Frontpage Visibility & Alerts)
-                      </span>
-                      <span className="text-[11px] text-slate-600">
-                        വാർത്ത പ്രധാന പേജിൽ ഏറ്റവും മുകളിലായി വരാൻ ക്രമീകരിക്കുക
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-5">
-                      <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
-                        <input
-                          type="checkbox"
-                          checked={formTrending}
-                          onChange={(e) => setFormTrending(e.target.checked)}
-                          className="w-4 h-4 text-editorial-crimson rounded"
-                        />
-                        <span>🔥 ട്രെൻഡിംഗ് വാർത്ത</span>
-                      </label>
-
-                      <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
-                        <input
-                          type="checkbox"
-                          checked={formBreaking}
-                          onChange={(e) => setFormBreaking(e.target.checked)}
-                          className="w-4 h-4 text-editorial-crimson rounded"
-                        />
-                        <span>🚨 ബ്രേക്കിംഗ് ടിക്ക്ർ (Add to Breaking Ribbon)</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-                    <button
-                      type="button"
-                      onClick={handleResetForm}
-                      className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 font-bold text-xs transition-colors"
-                    >
-                      റീസെറ്റ് ചെയ്യുക (Reset)
-                    </button>
-
-                    <button
-                      type="submit"
-                      disabled={submittingArticle}
-                      className="px-6 py-3 rounded-xl bg-gradient-to-r from-editorial-crimson via-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-red-500/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-                    >
-                      {submittingArticle ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>പ്രസിദ്ധീകരിക്കുന്നു...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-4 h-4" />
-                          <span>തത്സമയം പ്രസിദ്ധീകരിക്കുക (Publish Now to Frontend)</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {/* Right Column (1 Col): Live Broadsheet Preview Card & Quick Actions */}
-              <div className="space-y-5 sticky top-20">
-                {/* Live Card Preview */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col gap-3">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <span className="font-bold text-xs text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                      <Eye className="w-3.5 h-3.5 text-editorial-crimson" />
-                      ലൈവ് ഫ്രണ്ട് പേജ് പ്രിവ്യൂ (Live Reader Preview)
-                    </span>
-                    <span className="text-[10px] bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded">
-                      തത്സമയം
-                    </span>
-                  </div>
-
-                  {/* Card Simulation */}
-                  <div className="bg-parchment-base/50 p-4 rounded-xl border border-slate-200 space-y-3">
-                    <div className="flex items-center justify-between text-xs">
-                      <span
-                        className="text-white text-[11px] font-bold px-2.5 py-0.5 rounded shadow-xs"
-                        style={{ backgroundColor: formCategoryColor || '#C8102E' }}
-                      >
-                        {formCategory}
-                      </span>
-                      <span className="text-[10px] text-slate-500 font-medium">
-                        {formDistrict || 'കേരളം'} • ഇപ്പോൾ
-                      </span>
-                    </div>
-
-                    <h3 className="font-headline font-bold text-base sm:text-lg text-ink-midnight line-clamp-3 leading-snug">
-                      {formTitle || 'ഇവിടെ നിങ്ങൾ നൽകുന്ന വാർത്താ തലക്കെട്ട് കാണാം...'}
-                    </h3>
-
-                    {formImageUrl && (
-                      <div className="relative rounded-lg overflow-hidden aspect-video bg-slate-200">
-                        <img
-                          src={formImageUrl}
-                          alt="Preview"
-                          className="w-full h-full object-cover"
-                        />
-                        <span className="absolute bottom-2 left-2 bg-black/75 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur">
-                          {formReadTime}
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Option A: Direct File Upload */}
+                      <label className="flex items-center justify-center gap-2 p-3 bg-white border border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-editorial-crimson hover:bg-red-50/20 transition-all text-center">
+                        <Upload className="w-4 h-4 text-editorial-crimson" />
+                        <span className="text-xs font-semibold text-slate-700">
+                          ഡിവൈസിൽ നിന്ന് ഫോട്ടോ അപ്‌ലോഡ് ചെയ്യുക
                         </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {/* Option B: Direct Image URL */}
+                      <div className="flex items-center">
+                        <input
+                          type="url"
+                          value={formImageUrl}
+                          onChange={(e) => {
+                            setFormImageUrl(e.target.value);
+                            setFormImagePreview(e.target.value);
+                          }}
+                          placeholder="അല്ലെങ്കിൽ ഇമേജ് URL നൽകാം (https://...)"
+                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-editorial-crimson"
+                        />
                       </div>
-                    )}
-
-                    <p className="text-xs text-slate-700 line-clamp-3 leading-relaxed">
-                      {formLead || 'വാർത്തയുടെ ആമുഖം ഇവിടെ ദൃശ്യമാകും. വായനക്കാർക്ക് ആദ്യകാഴ്ചയിൽ തന്നെ പൂർണ്ണ വിവരങ്ങൾ ലഭ്യമാകും...'}
-                    </p>
-
-                    <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
-                      <span className="font-semibold text-slate-700">
-                        റിപ്പോർട്ടർ: {user?.name || 'കേരളദേശം ന്യൂസ് ഡെസ്ക്'}
-                      </span>
-                      <span className="text-primary font-bold">തുടർന്ന് വായിക്കുക →</span>
                     </div>
+                  )}
+                  <p className="text-[11px] text-slate-500">
+                    ℹ️ ചിത്രം നൽകിയില്ലെങ്കിലും വാർത്ത സാധാരണപോലെ വെബ്‌സൈറ്റിൽ പ്രസിദ്ധീകരിക്കപ്പെടും.
+                  </p>
+                </div>
+
+                {/* 4. Full Article Body (Spacious, unlimited copy-paste) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-slate-800">
+                      വാർത്താ വിവരണം (Full Article Body / Content) *
+                    </label>
+                    <span className="text-[11px] font-mono text-slate-500 font-semibold">
+                      {contentStats.parasCount} ഖണ്ഡികകൾ • {contentStats.words} വാക്കുകൾ
+                    </span>
                   </div>
 
-                  {/* Quick Action Box */}
-                  <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs text-slate-600 space-y-2">
-                    <span className="font-bold text-slate-800 block">
-                      📌 എഡിറ്റർമാർ ശ്രദ്ധിക്കുക:
+                  <textarea
+                    rows={12}
+                    required
+                    value={formContent}
+                    onPaste={handleContentPaste}
+                    onChange={(e) => setFormContent(e.target.value)}
+                    placeholder="വാർത്തയുടെ പൂർണ്ണ വിവരങ്ങൾ ഇവിടെ പേസ്റ്റ് ചെയ്യുക അല്ലെങ്കിൽ ടൈപ്പ് ചെയ്യുക...&#10;&#10;എത്ര വലിയ വാർത്തയും ഖണ്ഡികകളും ഇവിടെ നൽകാം (ക്യാരക്ടർ ലിമിറ്റില്ല)."
+                    className="w-full bg-slate-50/70 border border-slate-300 rounded-xl p-4 text-xs sm:text-sm text-slate-900 leading-relaxed font-sans focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson focus:border-editorial-crimson transition-all"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                    <span>💡 വാക്യങ്ങൾക്കിടയിലെ പുതിയ വരികൾ (Line breaks) തനിയെ അടുത്ത ഖണ്ഡികയായി മാറും.</span>
+                    <span className="font-mono text-slate-400">{contentStats.chars} അക്ഷരങ്ങൾ</span>
+                  </p>
+                </div>
+
+                {/* 5. Optional Custom Lead Summary Accordion */}
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowLeadAccordion(!showLeadAccordion)}
+                    className="w-full px-4 py-2.5 bg-slate-50 hover:bg-slate-100 flex items-center justify-between text-xs font-bold text-slate-700 transition"
+                  >
+                    <span>പ്രധാന പേജിലെ കാർഡ് ആമുഖം മാറ്റണോ? (Optional Custom Lead)</span>
+                    {showLeadAccordion ? (
+                      <ChevronUp className="w-4 h-4 text-slate-500" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-slate-500" />
+                    )}
+                  </button>
+                  {showLeadAccordion && (
+                    <div className="p-4 bg-white border-t border-slate-200 space-y-2">
+                      <p className="text-[11px] text-slate-500">
+                        നൽകിയില്ലെങ്കിൽ വാർത്തയുടെ ആദ്യ ഖണ്ഡിക തനിയെ ഹോംപേജ് കാർഡിലെ ആമുഖമായി എടുക്കും.
+                      </p>
+                      <textarea
+                        rows={2}
+                        value={formCustomLead}
+                        onChange={(e) => setFormCustomLead(e.target.value)}
+                        placeholder="പ്രത്യേക ആമുഖം ആവശ്യമെങ്കിൽ മാത്രം ഇവിടെ 1-2 വാക്യത്തിൽ നൽകാം..."
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-editorial-crimson"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* 6. Frontpage Options */}
+                <div className="p-4 bg-red-50/50 rounded-xl border border-red-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <span className="font-bold text-xs text-editorial-crimson block font-headline">
+                      മുൻഗണനാ ക്രമീകരണങ്ങൾ
                     </span>
-                    <p className="leading-relaxed text-[11px]">
-                      ‘പ്രസിദ്ധീകരിക്കുക’ ക്ലിക്ക് ചെയ്യുമ്പോൾ തന്നെ വാർത്ത നേരിട്ട് ഡാറ്റാബേസിൽ സേവ് ചെയ്യപ്പെടുകയും, വായനക്കാരുടെ ഹോംപേജിൽ തത്സമയം ഏറ്റവും മുകളിലായി എത്തുകയും ചെയ്യും.
-                    </p>
+                    <span className="text-[11px] text-slate-600">
+                      വാർത്തയ്ക്ക് പ്രത്യേക ശ്രദ്ധ ലഭിക്കാൻ താഴെയുള്ളവ തിരഞ്ഞെടുക്കാം
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4 sm:gap-5">
+                    <label className="flex items-center gap-2 cursor-pointer font-bold text-amber-900 text-xs bg-amber-100/70 hover:bg-amber-100 px-3 py-1.5 rounded-lg border border-amber-300 transition shadow-sm">
+                      <input
+                        type="checkbox"
+                        checked={formHeadline}
+                        onChange={(e) => setFormHeadline(e.target.checked)}
+                        className="w-4 h-4 text-amber-600 rounded accent-amber-600"
+                      />
+                      <span className="flex items-center gap-1">⭐ പ്രധാന വാർത്ത (Main Headline)</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={formTrending}
+                        onChange={(e) => setFormTrending(e.target.checked)}
+                        className="w-4 h-4 text-editorial-crimson rounded accent-editorial-crimson"
+                      />
+                      <span>🔥 ട്രെൻഡിംഗ്</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={formBreaking}
+                        onChange={(e) => setFormBreaking(e.target.checked)}
+                        className="w-4 h-4 text-editorial-crimson rounded accent-editorial-crimson"
+                      />
+                      <span>🚨 ബ്രേക്കിംഗ് ടിക്കർ</span>
+                    </label>
                   </div>
                 </div>
-              </div>
+
+                {/* 7. Action Buttons */}
+                <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+                  <button
+                    type="button"
+                    onClick={handleResetForm}
+                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-600 hover:bg-slate-100 font-bold text-xs transition"
+                  >
+                    ശൂന്യമാക്കുക (Clear)
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={submittingArticle}
+                    className="px-7 py-3 rounded-xl bg-gradient-to-r from-editorial-crimson via-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-red-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {submittingArticle ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>പ്രസിദ്ധീകരിക്കുന്നു...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>തത്സമയം പ്രസിദ്ധീകരിക്കുക (Publish News)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
 
+        {/* TAB 2: MANAGE ARTICLES */}
         {activeTab === 'articles' && (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 flex flex-col gap-4">
-            {/* Filter & Search Bar */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-              {/* Search Box */}
-              <div className="relative w-full md:w-80">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 flex flex-col gap-4">
+            {/* Search and Filter */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="relative w-full sm:w-80">
                 <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="വാർത്തകൾ തിരയുക..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white transition-all"
+                  placeholder="തലക്കെട്ടോ ജില്ലയോ തിരയുക..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white"
                 />
               </div>
 
-              {/* Category Filter */}
-              <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <span className="text-xs text-slate-500 font-semibold shrink-0">വിഭാഗം:</span>
                 <select
                   value={selectedCategoryFilter}
                   onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-1.5 text-slate-700 focus:outline-none"
                 >
-                  <option value="all">എല്ലാ വിഭാഗങ്ങളും</option>
+                  <option value="all">എല്ലാം</option>
                   {CATEGORY_OPTIONS.map((c) => (
                     <option key={c.name} value={c.name}>
                       {c.name}
@@ -1058,18 +1047,18 @@ export default function AdminPortalPage() {
             {/* Articles Table */}
             {loadingData ? (
               <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-500 text-xs">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <span>ഡാറ്റാബേസിൽ നിന്ന് വാർത്തകൾ ലഭ്യമാക്കുന്നു...</span>
+                <Loader2 className="w-6 h-6 animate-spin text-editorial-crimson" />
+                <span>വാർത്തകൾ ലോഡ് ചെയ്യുന്നു...</span>
               </div>
             ) : filteredArticles.length === 0 ? (
               <div className="py-12 text-center text-slate-500 text-xs flex flex-col items-center gap-3">
                 <FileText className="w-8 h-8 text-slate-300" />
                 <p>വാർത്തകളൊന്നും കണ്ടെത്താനായില്ല.</p>
                 <button
-                  onClick={handleOpenUploadTab}
+                  onClick={() => setActiveTab('upload')}
                   className="text-xs font-bold text-editorial-crimson hover:underline"
                 >
-                  + പുതിയ വാർത്ത ചേർക്കുക
+                  + പുതിയ വാർത്ത എഴുതുക
                 </button>
               </div>
             ) : (
@@ -1080,7 +1069,7 @@ export default function AdminPortalPage() {
                       <th className="py-3 px-3">വാർത്ത</th>
                       <th className="py-3 px-3">വിഭാഗം</th>
                       <th className="py-3 px-3">റിപ്പോർട്ടർ</th>
-                      <th className="py-3 px-3">സമയം</th>
+                      <th className="py-3 px-3">തീയതി</th>
                       <th className="py-3 px-3 text-right">നടപടികൾ</th>
                     </tr>
                   </thead>
@@ -1089,11 +1078,17 @@ export default function AdminPortalPage() {
                       <tr key={art.id} className="hover:bg-slate-50/80 transition-colors group">
                         <td className="py-3 px-3 max-w-md">
                           <div className="flex items-start gap-3">
-                            <img
-                              src={art.imageUrl}
-                              alt={art.title}
-                              className="w-14 h-11 object-cover rounded shrink-0 bg-slate-100 border border-slate-200"
-                            />
+                            {art.imageUrl ? (
+                              <img
+                                src={art.imageUrl}
+                                alt={art.title}
+                                className="w-12 h-10 object-cover rounded shrink-0 bg-slate-100 border border-slate-200"
+                              />
+                            ) : (
+                              <div className="w-12 h-10 rounded shrink-0 bg-slate-100 border border-slate-200 flex items-center justify-center text-[9px] text-slate-400 font-bold">
+                                NEWS
+                              </div>
+                            )}
                             <div>
                               <Link
                                 href={`/article/${art.id}`}
@@ -1102,13 +1097,17 @@ export default function AdminPortalPage() {
                               >
                                 {art.title}
                               </Link>
-                              <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-400">
+                              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                                {art.isHeadline && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-black tracking-wide text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded shadow-xs">
+                                    <Star className="w-3 h-3 fill-amber-500 text-amber-600" /> പ്രധാന വാർത്ത
+                                  </span>
+                                )}
                                 {art.trending && (
-                                  <span className="text-amber-600 font-bold flex items-center gap-0.5">
+                                  <span className="text-[10px] text-amber-600 font-bold flex items-center gap-0.5">
                                     <Flame className="w-3 h-3" /> ട്രെൻഡിംഗ്
                                   </span>
                                 )}
-                                <span>• {art.views} views</span>
                               </div>
                             </div>
                           </div>
@@ -1132,22 +1131,35 @@ export default function AdminPortalPage() {
                           <span className="font-semibold text-slate-800 block">
                             {art.author?.name || 'കേരളദേശം ഡെസ്ക്'}
                           </span>
-                          <span className="text-[10px] text-slate-400">
-                            {art.author?.designation}
-                          </span>
                         </td>
 
-                        <td className="py-3 px-3 whitespace-nowrap text-[11px] text-slate-500">
-                          {art.timeAgo}
+                        <td className="py-3 px-3 whitespace-nowrap text-slate-500 text-[11px]">
+                          {art.timeAgo || art.publishedAt || 'ഇപ്പോൾ'}
                         </td>
 
                         <td className="py-3 px-3 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => handleToggleHeadline(art)}
+                              title={
+                                art.isHeadline
+                                  ? 'പ്രധാന വാർത്താ പദവി ഒഴിവാക്കുക'
+                                  : 'പ്രധാന വാർത്തയായി സെറ്റ് ചെയ്യുക (Set as Main Headline)'
+                              }
+                              className={`p-1.5 rounded transition ${
+                                art.isHeadline
+                                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 ring-1 ring-amber-400'
+                                  : 'hover:bg-amber-50 text-slate-400 hover:text-amber-600'
+                              }`}
+                            >
+                              <Star className={`w-4 h-4 ${art.isHeadline ? 'fill-amber-500 text-amber-600' : ''}`} />
+                            </button>
+
                             <Link
                               href={`/article/${art.id}`}
                               target="_blank"
-                              title="വായനക്കാരന്റെ കാഴ്ചയിൽ കാണുക"
-                              className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition-colors"
+                              title="സൈറ്റിൽ കാണുക"
+                              className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition"
                             >
                               <Eye className="w-4 h-4" />
                             </Link>
@@ -1155,7 +1167,7 @@ export default function AdminPortalPage() {
                             <button
                               onClick={() => handleOpenEdit(art)}
                               title="എഡിറ്റ് ചെയ്യുക"
-                              className="p-1.5 rounded hover:bg-blue-100 text-blue-700 transition-colors"
+                              className="p-1.5 rounded hover:bg-blue-100 text-blue-700 transition"
                             >
                               <Edit3 className="w-4 h-4" />
                             </button>
@@ -1163,7 +1175,7 @@ export default function AdminPortalPage() {
                             <button
                               onClick={() => handleDeleteArticle(art.id, art.title)}
                               title="ഡിലീറ്റ് ചെയ്യുക"
-                              className="p-1.5 rounded hover:bg-red-100 text-editorial-crimson transition-colors"
+                              className="p-1.5 rounded hover:bg-red-100 text-editorial-crimson transition"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1178,13 +1190,13 @@ export default function AdminPortalPage() {
           </div>
         )}
 
+        {/* TAB 3: BREAKING NEWS TICKER */}
         {activeTab === 'breaking' && (
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 flex flex-col gap-6">
-            {/* Quick Add Breaking Form */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col gap-6">
             <div className="p-4 bg-red-50/70 border border-red-200 rounded-xl">
-              <h4 className="font-bold text-sm text-editorial-crimson flex items-center gap-2 mb-2 font-headline">
+              <h4 className="font-bold text-sm text-editorial-crimson flex items-center gap-2 mb-1.5 font-headline">
                 <Radio className="w-4 h-4 animate-pulse" />
-                തത്സമയ ബ്രേക്കിംഗ് ന്യൂസ് ചേർക്കുക (Instant Ticker Broadcast)
+                തത്സമയ ബ്രേക്കിംഗ് ന്യൂസ് ചേർക്കുക (Breaking News Ticker)
               </h4>
               <p className="text-xs text-slate-600 mb-3">
                 ഇവിടെ നൽകുന്ന വാർത്താ തലക്കെട്ട് തത്സമയം വെബ്‌സൈറ്റിന്റെ ഏറ്റവും മുകളിലെ ചുവപ്പ് ടിക്കറിൽ സ്ക്രോൾ ചെയ്യപ്പെടും.
@@ -1195,19 +1207,18 @@ export default function AdminPortalPage() {
                   required
                   value={newBreakingText}
                   onChange={(e) => setNewBreakingText(e.target.value)}
-                  placeholder="ബ്രേക്കിംഗ് ന്യൂസ് തലക്കെട്ട് ഇവിടെ ടൈപ്പ് ചെയ്യുക..."
+                  placeholder="ബ്രേക്കിംഗ് ന്യൂസ് തലക്കെട്ട് ഇവിടെ നൽകുക..."
                   className="flex-1 bg-white border border-red-300 rounded-lg py-2 px-3 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
                 />
                 <button
                   type="submit"
                   disabled={submittingBreaking}
-                  className="px-4 py-2 rounded-lg bg-editorial-crimson hover:bg-red-700 text-white font-bold text-xs transition-colors shadow-sm disabled:opacity-50 shrink-0 flex items-center gap-1.5 justify-center"
+                  className="px-5 py-2 rounded-lg bg-editorial-crimson hover:bg-red-700 text-white font-bold text-xs transition shadow-sm disabled:opacity-50 shrink-0 flex items-center gap-1.5 justify-center"
                 >
                   {submittingBreaking ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      <Plus className="w-4 h-4" />
                       <span>ബ്രോഡ്കാസ്റ്റ് ചെയ്യുക</span>
                     </>
                   )}
@@ -1215,33 +1226,85 @@ export default function AdminPortalPage() {
               </form>
             </div>
 
-            {/* Current Active Breaking Headlines */}
             <div>
               <h4 className="font-bold text-xs text-slate-500 uppercase tracking-wider mb-3">
                 നിലവിലെ ബ്രേക്കിംഗ് തലക്കെട്ടുകൾ ({breakingList.length})
               </h4>
               <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white">
                 {breakingList.length === 0 ? (
-                  <p className="p-6 text-center text-xs text-slate-400">നിലവിൽ ബ്രേക്കിംഗ് തലക്കെട്ടുകളൊന്നുമില്ല.</p>
+                  <p className="p-6 text-center text-xs text-slate-400">നിലവിൽ ബ്രേക്കിംഗ് വാർത്തകളൊന്നുമില്ല.</p>
                 ) : (
                   breakingList.map((item) => (
                     <div
                       key={item._id}
                       className="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors"
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="w-2 h-2 rounded-full bg-editorial-crimson animate-ping shrink-0" />
-                        <span className="text-xs font-semibold text-slate-800 leading-snug">
-                          {item.headline}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => handleDeleteBreaking(item._id)}
-                        className="p-1.5 rounded hover:bg-red-100 text-editorial-crimson transition-colors shrink-0"
-                        title="നീക്കം ചെയ്യുക"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {editingBreakingId === item._id ? (
+                        <div className="flex-1 flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={editingBreakingText}
+                            onChange={(e) => setEditingBreakingText(e.target.value)}
+                            className="flex-1 bg-white border border-editorial-crimson rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleUpdateBreaking(item._id)}
+                            className="p-1.5 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition"
+                            title="സേവ് ചെയ്യുക"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingBreakingId(null);
+                              setEditingBreakingText('');
+                            }}
+                            className="p-1.5 bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition"
+                            title="റദ്ദാക്കുക"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <button
+                              onClick={() => handleToggleActiveBreaking(item._id, item.active)}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shrink-0 transition ${
+                                item.active
+                                  ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                  : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                              }`}
+                              title={item.active ? 'ടിക്കറിൽ നിന്ന് താൽക്കാലികമായി മാറ്റാൻ ക്ലിക്ക് ചെയ്യുക' : 'ടിക്കറിൽ സജീവമാക്കാൻ ക്ലിക്ക് ചെയ്യുക'}
+                            >
+                              {item.active ? 'ലൈവ്' : 'മാറ്റി'}
+                            </button>
+                            <span className={`text-xs font-semibold leading-snug truncate ${item.active ? 'text-slate-800' : 'text-slate-400 line-through'}`}>
+                              {item.headline}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={() => {
+                                setEditingBreakingId(item._id);
+                                setEditingBreakingText(item.headline);
+                              }}
+                              className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition"
+                              title="എഡിറ്റ് ചെയ്യുക"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBreaking(item._id)}
+                              className="p-1.5 rounded hover:bg-red-100 text-editorial-crimson transition"
+                              title="നീക്കം ചെയ്യുക"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))
                 )}
@@ -1249,35 +1312,311 @@ export default function AdminPortalPage() {
             </div>
           </div>
         )}
-      </main>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5">
-          <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
-            {/* Modal Header */}
-            <div className="px-6 py-4 bg-ink-midnight text-white flex items-center justify-between border-b border-white/10 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-editorial-crimson text-white">
-                  <Edit3 className="w-4 h-4" />
+        {/* TAB 4: VIDEO SHORTS STUDIO */}
+        {activeTab === 'videos' && (
+          <div className="space-y-6">
+            {/* Upload Video Card */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+              <div className="flex items-center gap-3 mb-5 pb-4 border-b border-slate-200">
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                  <PlaySquare className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-headline text-base font-bold text-white">
-                    വാർത്ത തിരുത്തുക (Edit Article)
+                  <h3 className="font-headline text-base sm:text-lg font-bold text-slate-900">
+                    പുതിയ വീഡിയോ ഷോർട്ട് ചേർക്കുക (Upload Video)
                   </h3>
-                  <span className="text-[11px] text-slate-300">
-                    ഡാറ്റാബേസിൽ തത്സമയം അപ്‌ഡേറ്റ് ചെയ്യപ്പെടും
-                  </span>
+                  <p className="text-xs text-slate-500">
+                    ഹോംപേജിൽ പ്രദർശിപ്പിക്കേണ്ട YouTube ഷോർട്ട്സ്, വീഡിയോ അല്ലെങ്കിൽ direct MP4 ലിങ്കുകൾ ചേർക്കുക.
+                  </p>
                 </div>
+              </div>
+
+              <form onSubmit={handleCreateVideo} className="space-y-4">
+                {/* Title */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                    വീഡിയോ തലക്കെട്ട് (Title) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formVideoTitle}
+                    onChange={(e) => setFormVideoTitle(e.target.value)}
+                    placeholder="ഉദാ: വയനാട് തുരങ്കപാത: റൂട്ട് മാപ്പും 3D ദൃശ്യങ്ങളും..."
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Category */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      വിഭാഗം (Category) *
+                    </label>
+                    <select
+                      value={formVideoCategory}
+                      onChange={(e) => setFormVideoCategory(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      <option value="DEVELOPMENT">DEVELOPMENT (വികസനം)</option>
+                      <option value="METRO">METRO (മെട്രോ)</option>
+                      <option value="PRAVASI">PRAVASI (പ്രവാസി)</option>
+                      <option value="WEATHER">WEATHER (കാലാവസ്ഥ)</option>
+                      <option value="KERALA">KERALA (കേരളം)</option>
+                      <option value="POLITICS">POLITICS (രാഷ്ട്രീയം)</option>
+                      <option value="CINEMA">CINEMA (സിനിമ)</option>
+                      <option value="SPORTS">SPORTS (കായികം)</option>
+                      <option value="SPECIAL">SPECIAL (പ്രത്യേകം)</option>
+                    </select>
+                  </div>
+
+                  {/* Duration */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      ദൈർഘ്യം (Duration)
+                    </label>
+                    <input
+                      type="text"
+                      value={formVideoDuration}
+                      onChange={(e) => setFormVideoDuration(e.target.value)}
+                      placeholder="01:30"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+
+                  {/* Initial Views */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      കാഴ്‌ചക്കാർ (Views Count)
+                    </label>
+                    <input
+                      type="text"
+                      value={formVideoViews}
+                      onChange={(e) => setFormVideoViews(e.target.value)}
+                      placeholder="120K"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Video URL */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                    വീഡിയോ ലിങ്ക് (YouTube Shorts / Video URL / MP4 URL) *
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    value={formVideoUrl}
+                    onChange={(e) => setFormVideoUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=... അല്ലെങ്കിൽ https://youtube.com/shorts/..."
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    💡 YouTube ലിങ്ക് നൽകുമ്പോൾ ലഘുചിത്രം (thumbnail) ഓട്ടോമാറ്റിക്കായി ലഭ്യമാക്കും.
+                  </p>
+                </div>
+
+                {/* Custom Thumbnail Options */}
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                  <span className="block text-xs font-bold text-slate-800 mb-2">
+                    പ്രത്യേക ലഘുചിത്രം (Custom Thumbnail - ഓപ്ഷണൽ)
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] text-slate-600 mb-1 font-medium">
+                        ഇമേജ് URL നൽകുക
+                      </label>
+                      <input
+                        type="url"
+                        value={formVideoThumbnail}
+                        onChange={(e) => setFormVideoThumbnail(e.target.value)}
+                        placeholder="https://example.com/thumbnail.jpg"
+                        className="w-full bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-slate-600 mb-1 font-medium">
+                        ഫോട്ടോ അപ്‌ലോഡ് ചെയ്യുക (File Upload)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleVideoThumbnailChange}
+                        className="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  {formVideoThumbnailPreview && (
+                    <div className="mt-3 relative w-32 aspect-video rounded-lg overflow-hidden border border-slate-300 shadow-xs">
+                      <img
+                        src={formVideoThumbnailPreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormVideoThumbnailFile(null);
+                          setFormVideoThumbnailPreview('');
+                        }}
+                        className="absolute top-1 right-1 p-0.5 rounded-full bg-black/60 text-white hover:bg-black"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                    വിവരണം (Description - ഓപ്ഷണൽ)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={formVideoDescription}
+                    onChange={(e) => setFormVideoDescription(e.target.value)}
+                    placeholder="വീഡിയോയെക്കുറിച്ചുള്ള ലഘുവിവരണം..."
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                {/* Submit button */}
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={submittingVideo}
+                    className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition shadow-md disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {submittingVideo ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>അപ്‌ലോഡ് ചെയ്യുന്നു...</span>
+                      </>
+                    ) : (
+                      <>
+                        <PlaySquare className="w-4 h-4" />
+                        <span>വീഡിയോ പ്രസിദ്ധീകരിക്കുക (Publish Video)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* List Existing Videos */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-200">
+                <div>
+                  <h3 className="font-headline text-base sm:text-lg font-bold text-slate-900">
+                    നിലവിലെ വീഡിയോകൾ (Active Videos - {videosList.length})
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    ഹോംപേജിൽ തത്സമയം ലഭ്യമായിട്ടുള്ള എല്ലാ വീഡിയോകളുടെയും പട്ടിക.
+                  </p>
+                </div>
+              </div>
+
+              {loadingData ? (
+                <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-500 text-xs">
+                  <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
+                  <span>വീഡിയോകൾ ലോഡ് ചെയ്യുന്നു...</span>
+                </div>
+              ) : videosList.length === 0 ? (
+                <div className="py-12 text-center text-slate-500 text-xs flex flex-col items-center gap-3">
+                  <PlaySquare className="w-8 h-8 text-slate-300" />
+                  <p>ഡാറ്റാബേസിൽ വീഡിയോകളൊന്നും ലഭ്യമല്ല. മുകളിൽ പുതിയ വീഡിയോ ചേർക്കുക.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {videosList.map((vid) => (
+                    <div
+                      key={vid.id || vid._id}
+                      className="group relative rounded-xl overflow-hidden border border-slate-200 bg-white flex flex-col shadow-xs hover:shadow-md transition"
+                    >
+                      {/* Thumbnail frame */}
+                      <div className="relative aspect-[9/13] bg-neutral-900 overflow-hidden">
+                        <img
+                          src={vid.thumbnail}
+                          alt={vid.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30" />
+
+                        {/* Category badge */}
+                        <span className="absolute top-2 left-2 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-editorial-crimson text-white shadow-xs">
+                          {vid.category}
+                        </span>
+
+                        {/* Duration badge */}
+                        <span className="absolute top-2 right-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/60 text-white backdrop-blur">
+                          {vid.duration}
+                        </span>
+
+                        {/* Title at bottom of thumbnail */}
+                        <div className="absolute bottom-2 left-2 right-2 text-white">
+                          <h4 className="text-xs font-bold line-clamp-2 leading-snug">
+                            {vid.title}
+                          </h4>
+                          <span className="text-[10px] text-amber-300 mt-1 flex items-center gap-1 font-medium">
+                            <Eye className="w-3 h-3" /> {vid.views}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Footer Actions */}
+                      <div className="p-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
+                        <a
+                          href={vid.videoUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] font-semibold text-slate-700 hover:text-amber-700 flex items-center gap-1"
+                        >
+                          <ExternalLink className="w-3 h-3" /> കാണുക
+                        </a>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteVideo(vid.id || vid._id || '')}
+                          className="p-1 rounded text-red-600 hover:bg-red-50 hover:text-red-700 transition"
+                          title="വീഡിയോ നീക്കം ചെയ്യുക"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* EDIT ARTICLE MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5">
+          <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+            <div className="px-6 py-4 bg-ink-midnight text-white flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-editorial-crimson" />
+                <h3 className="font-headline text-base font-bold text-white">
+                  വാർത്ത തിരുത്തുക (Edit Article)
+                </h3>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-1 rounded-lg text-slate-400 hover:text-white transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Modal Body */}
             <form onSubmit={handleSubmitArticle} className="p-6 overflow-y-auto space-y-5 text-xs">
               {modalFeedback && (
                 <div
@@ -1292,10 +1631,9 @@ export default function AdminPortalPage() {
                 </div>
               )}
 
-              {/* Title & Headline */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 mb-1">
-                  വാർത്താ തലക്കെട്ട് (Title / Headline) *
+                  വാർത്താ തലക്കെട്ട് *
                 </label>
                 <textarea
                   rows={2}
@@ -1306,11 +1644,10 @@ export default function AdminPortalPage() {
                 />
               </div>
 
-              {/* Category & District */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1">
-                    വിഭാഗം (Category) *
+                    വിഭാഗം *
                   </label>
                   <select
                     value={formCategory}
@@ -1319,7 +1656,7 @@ export default function AdminPortalPage() {
                       setFormCategory(e.target.value);
                       if (sel) setFormCategoryColor(sel.color);
                     }}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
                   >
                     {CATEGORY_OPTIONS.map((cat) => (
                       <option key={cat.name} value={cat.name}>
@@ -1331,12 +1668,12 @@ export default function AdminPortalPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1">
-                    ജില്ല (District / Region)
+                    ജില്ല / പ്രദേശം
                   </label>
                   <select
                     value={formDistrict}
                     onChange={(e) => setFormDistrict(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
                   >
                     <option value="">കേരളം (പൊതുവായത്)</option>
                     {KERALA_DISTRICTS.map((dist) => (
@@ -1349,85 +1686,81 @@ export default function AdminPortalPage() {
                 </div>
               </div>
 
-              {/* Lead Summary */}
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  വാർത്താ ആമുഖം (Lead Paragraph) *
-                </label>
-                <textarea
-                  rows={2}
-                  required
-                  value={formLead}
-                  onChange={(e) => setFormLead(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-800 leading-relaxed focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
-                />
-              </div>
-
               {/* Image URL & Caption */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    ചിത്രത്തിന്റെ URL (Image URL)
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-800">
+                      ചിത്രത്തിന്റെ URL (ഓപ്ഷണൽ)
+                    </label>
+                    {formImageUrl && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="text-[11px] text-red-600 hover:underline font-bold"
+                      >
+                        ചിത്രം നീക്കം ചെയ്യുക
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="url"
                     value={formImageUrl}
                     onChange={(e) => setFormImageUrl(e.target.value)}
+                    placeholder="https://... (ചിത്രമില്ലെങ്കിൽ ശൂന്യമായി വിടാം)"
                     className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1">
-                    ചിത്രത്തിന്റെ അടിക്കുറിപ്പ് (Caption)
+                    ചിത്രത്തിന്റെ അടിക്കുറിപ്പ്
                   </label>
                   <input
                     type="text"
                     value={formImageCaption}
                     onChange={(e) => setFormImageCaption(e.target.value)}
+                    placeholder="അടിക്കുറിപ്പ്..."
                     className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
                   />
                 </div>
               </div>
 
-              {/* Paragraphs */}
+              {/* Full Article Content */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-slate-800">
-                    വാർത്താ ഖണ്ഡികകൾ (Paragraphs)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setFormParagraphs([...formParagraphs, ''])}
-                    className="text-[11px] text-editorial-crimson hover:underline font-bold"
-                  >
-                    + ഖണ്ഡിക ചേർക്കുക
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {formParagraphs.map((para, idx) => (
-                    <div key={idx} className="relative">
-                      <textarea
-                        rows={3}
-                        value={para}
-                        onChange={(e) => {
-                          const updated = [...formParagraphs];
-                          updated[idx] = e.target.value;
-                          setFormParagraphs(updated);
-                        }}
-                        className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-800 leading-relaxed"
-                      />
-                      {formParagraphs.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => setFormParagraphs(formParagraphs.filter((_, i) => i !== idx))}
-                          className="absolute top-2 right-2 p-1 text-slate-400 hover:text-red-500"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <label className="block text-xs font-bold text-slate-800 mb-1">
+                  വാർത്താ വിവരണം (Full Article Body) *
+                </label>
+                <textarea
+                  rows={10}
+                  required
+                  value={formContent}
+                  onPaste={handleContentPaste}
+                  onChange={(e) => setFormContent(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-slate-800 leading-relaxed font-sans"
+                />
+              </div>
+
+              {/* Frontpage Checkboxes */}
+              <div className="flex items-center gap-5 pt-2">
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={formTrending}
+                    onChange={(e) => setFormTrending(e.target.checked)}
+                    className="w-4 h-4 text-editorial-crimson rounded accent-editorial-crimson"
+                  />
+                  <span>🔥 ട്രെൻഡിംഗ് വാർത്ത</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={formBreaking}
+                    onChange={(e) => setFormBreaking(e.target.checked)}
+                    className="w-4 h-4 text-editorial-crimson rounded accent-editorial-crimson"
+                  />
+                  <span>🚨 ബ്രേക്കിംഗ് ടിക്കർ</span>
+                </label>
               </div>
 
               {/* Submit Buttons */}
@@ -1435,16 +1768,23 @@ export default function AdminPortalPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 font-bold text-xs"
+                  className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 font-bold text-xs hover:bg-slate-50"
                 >
                   റദ്ദാക്കുക
                 </button>
                 <button
                   type="submit"
                   disabled={submittingArticle}
-                  className="px-5 py-2 rounded-lg bg-editorial-crimson hover:bg-red-700 text-white font-bold text-xs"
+                  className="px-6 py-2 rounded-lg bg-editorial-crimson hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm disabled:opacity-50"
                 >
-                  {submittingArticle ? 'സേവ് ചെയ്യുന്നു...' : 'മാറ്റങ്ങൾ സൂക്ഷിക്കുക'}
+                  {submittingArticle ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>അപ്‌ഡേറ്റ് ചെയ്യുന്നു...</span>
+                    </>
+                  ) : (
+                    <span>അപ്‌ഡേറ്റ് ചെയ്യുക</span>
+                  )}
                 </button>
               </div>
             </form>

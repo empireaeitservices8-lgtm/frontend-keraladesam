@@ -6,15 +6,10 @@ import {
   MapPin,
   Clock,
   Eye,
-  Filter,
   ArrowRight,
-  ShieldAlert,
-  Building2,
-  GraduationCap,
-  Sparkles,
-  Share2,
   Bookmark,
-  Loader2
+  TrendingUp,
+  MessageCircle
 } from 'lucide-react';
 import { Article, KERALA_DISTRICTS } from '@/data/newsData';
 import { getRealArticles } from '@/lib/api';
@@ -23,18 +18,18 @@ import { useFont } from '@/components/FontContext';
 export default function KeralaPage() {
   const { toggleBookmark, isBookmarked } = useFont();
 
-  const [selectedDistrict, setSelectedDistrict] = useState('എല്ലാം');
-  const [selectedCategory, setSelectedCategory] = useState('സമഗ്രം');
+  const [selectedDistrict, setSelectedDistrict] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
 
   const categories = [
-    'സമഗ്രം',
-    'രാഷ്ട്രീയം',
-    'ഭരണം & നിയമസഭ',
-    'വിദ്യാഭ്യാസം',
-    'ക്രൈം & ക്രമസമാധാനം',
-    'വികസനം & അടിസ്ഥാനസൗകര്യം',
+    { label: 'ALL', filter: 'ALL' },
+    { label: 'POLITICS', filter: 'രാഷ്ട്രീയം' },
+    { label: 'GOVERNANCE', filter: 'ഭരണം' },
+    { label: 'EDUCATION', filter: 'വിദ്യാഭ്യാസം' },
+    { label: 'CRIME & SAFETY', filter: 'ക്രൈം' },
+    { label: 'DEVELOPMENT', filter: 'വികസനം' },
   ];
 
   React.useEffect(() => {
@@ -43,8 +38,11 @@ export default function KeralaPage() {
       try {
         setLoading(true);
         const params: any = {};
-        if (selectedDistrict !== 'എല്ലാം') params.district = selectedDistrict;
-        if (selectedCategory !== 'സമഗ്രം') params.category = selectedCategory;
+        if (selectedDistrict !== 'All' && selectedDistrict !== 'എല്ലാം') params.district = selectedDistrict;
+        if (selectedCategory !== 'ALL') {
+          const match = categories.find((c) => c.label === selectedCategory);
+          if (match) params.category = match.filter;
+        }
         const data = await getRealArticles(params);
         if (isMounted) {
           setArticles(data);
@@ -62,7 +60,6 @@ export default function KeralaPage() {
   }, [selectedDistrict, selectedCategory]);
 
   const filteredArticles = articles;
-  const spotlightDistrict = selectedDistrict === 'എല്ലാം' ? 'വയനാട്' : selectedDistrict;
 
   return (
     <div className="flex flex-col w-full pb-16">
@@ -71,18 +68,14 @@ export default function KeralaPage() {
         <div className="max-w-[1360px] mx-auto px-4 md:px-margin-desktop py-4">
           {/* Breadcrumb & Live Stamp */}
           <div className="flex flex-wrap items-center justify-between gap-2 mb-2 text-xs text-secondary">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 uppercase font-medium">
               <Link href="/" className="hover:text-primary transition-colors">
-                ഹോം
+                HOME
               </Link>
               <span>/</span>
-              <span className="text-editorial-crimson font-bold">കേരളം</span>
+              <span className="text-editorial-crimson font-bold">KERALA</span>
               <span>/</span>
-              <span className="text-on-surface">സമഗ്ര വാർത്തകൾ</span>
-            </div>
-            <div className="flex items-center gap-2 bg-surface-container-low px-2.5 py-1 rounded-full text-secondary text-xs">
-              <span className="inline-block w-2 h-2 rounded-full bg-live-alert animate-ping" />
-              <span className="font-bold">തത്സമയ ഡെസ്ക് • 14 ജില്ലകൾ സജീവം</span>
+              <span className="text-on-surface">ALL DISTRICTS</span>
             </div>
           </div>
 
@@ -90,26 +83,22 @@ export default function KeralaPage() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 md:gap-4 pb-2">
             <div className="flex items-baseline gap-2.5 sm:gap-3">
               <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl text-ink-midnight font-bold tracking-tight">
-                കേരളം
+                KERALA NEWS
               </h1>
-              <span className="text-[11px] sm:text-xs text-secondary uppercase tracking-widest font-bold">
-                State Newsroom
-              </span>
             </div>
 
             {/* Category Navigation Chips */}
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
               {categories.map((cat) => (
                 <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1 text-xs rounded transition-all whitespace-nowrap font-medium ${
-                    selectedCategory === cat
-                      ? 'bg-primary text-white font-bold shadow-sm'
-                      : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'
-                  }`}
+                  key={cat.label}
+                  onClick={() => setSelectedCategory(cat.label)}
+                  className={`px-3 py-1 text-xs rounded transition-all whitespace-nowrap font-medium ${selectedCategory === cat.label
+                    ? 'bg-primary text-white font-bold shadow-sm'
+                    : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'
+                    }`}
                 >
-                  {cat}
+                  {cat.label}
                 </button>
               ))}
             </div>
@@ -117,20 +106,19 @@ export default function KeralaPage() {
 
           {/* 14 District Quick Filter Pills Bar */}
           <div className="pt-3 mt-1 border-t border-slate-border/60 flex items-center gap-2 overflow-x-auto no-scrollbar">
-            <div className="flex items-center gap-1 text-xs text-secondary shrink-0 pr-1 font-semibold">
+            <div className="flex items-center gap-1 text-xs text-secondary shrink-0 pr-1 font-semibold uppercase tracking-wider">
               <MapPin className="w-3.5 h-3.5 text-editorial-crimson" />
-              <span>ജില്ലകൾ:</span>
+              <span>DISTRICTS:</span>
             </div>
             <div className="flex items-center gap-1.5 min-w-max pb-1">
-              {KERALA_DISTRICTS.map((dist) => (
+              {['All', ...KERALA_DISTRICTS.filter(d => d !== 'എല്ലാം')].map((dist) => (
                 <button
                   key={dist}
                   onClick={() => setSelectedDistrict(dist)}
-                  className={`px-3 py-1 rounded-full text-xs transition-colors font-medium ${
-                    selectedDistrict === dist
-                      ? 'bg-ink-midnight text-white font-bold shadow-xs'
-                      : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
-                  }`}
+                  className={`px-3 py-1 rounded-full text-xs transition-colors font-medium ${selectedDistrict === dist
+                    ? 'bg-ink-midnight text-white font-bold shadow-xs'
+                    : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                    }`}
                 >
                   {dist}
                 </button>
@@ -142,70 +130,53 @@ export default function KeralaPage() {
 
       {/* Main District Content Grid */}
       <main className="w-full max-w-[1360px] mx-auto px-4 md:px-margin-desktop py-6">
-        {/* District Spotlight Header */}
-        <div className="bg-surface-pure rounded p-4 mb-6 shadow-sm border border-slate-border flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-editorial-crimson/10 text-editorial-crimson flex items-center justify-center font-bold">
-              <MapPin className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="font-headline text-lg font-bold text-ink-midnight">
-                {selectedDistrict === 'എല്ലാം'
-                  ? 'കേരളം: 14 ജില്ലകളിലെ പ്രധാന വിവരങ്ങൾ'
-                  : `${selectedDistrict} ജില്ലാ വിശേഷങ്ങൾ`}
-              </h2>
-              <p className="text-xs text-secondary">
-                {filteredArticles.length} വാർത്തകൾ കണ്ടെത്തി • തത്സമയ റിപ്പോർട്ടുകൾ
-              </p>
-            </div>
-          </div>
-
-          {selectedDistrict !== 'എല്ലാം' && (
-            <button
-              onClick={() => setSelectedDistrict('എല്ലാം')}
-              className="text-xs text-primary font-bold hover:underline"
-            >
-              എല്ലാ ജില്ലകളും കാണിക്കുക &times;
-            </button>
-          )}
-        </div>
 
         {/* 2-Column Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main Story Feed (8 cols) */}
           <div className="lg:col-span-8 space-y-6">
             {filteredArticles.length === 0 ? (
-              <div className="bg-surface-pure p-8 rounded text-center border border-slate-border">
-                <p className="text-sm text-secondary">
-                  തിരഞ്ഞെടുത്ത ഫിൽട്ടറിൽ വാർത്തകൾ ഒന്നും കണ്ടെത്തിയില്ല.
+              <div className="bg-surface-pure rounded-xl p-10 sm:p-14 text-center border border-slate-border shadow-xs">
+                <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-200 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                  <MapPin className="w-7 h-7 text-secondary" />
+                </div>
+                <h3 className="text-lg font-bold text-ink-midnight mb-2 font-headline uppercase">
+                  {selectedDistrict !== 'All' && selectedDistrict !== 'എല്ലാം'
+                    ? `NO STORIES IN ${selectedDistrict}`
+                    : 'NO KERALA STORIES FOUND'}
+                </h3>
+                <p className="text-xs text-secondary max-w-md mx-auto mb-5 leading-relaxed">
+                  ഈ സെക്ഷനിൽ പുതിയ വാർത്തകൾ ഇപ്പോൾ ലഭ്യമല്ല. ഡെസ്കിൽ നിന്ന് വാർത്തകൾ ഉടൻ അപ്‌ഡേറ്റ് ചെയ്യുന്നതാണ്.
                 </p>
                 <button
                   onClick={() => {
-                    setSelectedDistrict('എല്ലാം');
-                    setSelectedCategory('സമഗ്രം');
+                    setSelectedDistrict('All');
+                    setSelectedCategory('ALL');
                   }}
-                  className="mt-3 px-4 py-1.5 rounded bg-primary text-white text-xs font-bold"
+                  className="px-4 py-2 rounded bg-primary text-white text-xs font-bold hover:bg-editorial-crimson transition-colors uppercase tracking-wider"
                 >
-                  ഫിൽട്ടർ പുനഃക്രമീകരിക്കുക
+                  View All Kerala News
                 </button>
               </div>
             ) : (
-              filteredArticles.map((art, index) => (
+              filteredArticles.map((art) => (
                 <article
                   key={art.id}
                   className="bg-surface-pure rounded p-3.5 sm:p-5 shadow-sm border border-slate-border flex flex-col md:flex-row gap-3.5 sm:gap-5 group"
                 >
                   {/* Article Thumbnail */}
-                  <div className="md:w-5/12 overflow-hidden rounded shrink-0">
-                    <img
-                      src={art.imageUrl}
-                      alt={art.title}
-                      className="w-full h-44 sm:h-48 md:h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded"
-                    />
-                  </div>
+                  {art.imageUrl ? (
+                    <div className="md:w-5/12 overflow-hidden rounded shrink-0">
+                      <img
+                        src={art.imageUrl}
+                        alt={art.title}
+                        className="w-full h-44 sm:h-48 md:h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded"
+                      />
+                    </div>
+                  ) : null}
 
                   {/* Article Meta & Content */}
-                  <div className="md:w-7/12 flex flex-col justify-between">
+                  <div className={`${art.imageUrl ? 'md:w-7/12' : 'w-full'} flex flex-col justify-between`}>
                     <div>
                       <div className="flex items-center justify-between mb-1.5 text-xs">
                         <span
@@ -224,9 +195,8 @@ export default function KeralaPage() {
                             title="ബുക്ക്‌മാർക്ക്"
                           >
                             <Bookmark
-                              className={`w-3.5 h-3.5 ${
-                                isBookmarked(art.id) ? 'fill-primary text-primary' : ''
-                              }`}
+                              className={`w-3.5 h-3.5 ${isBookmarked(art.id) ? 'fill-primary text-primary' : ''
+                                }`}
                             />
                           </button>
                         </div>
@@ -253,93 +223,13 @@ export default function KeralaPage() {
                         href={`/article/${art.id}`}
                         className="text-primary hover:underline font-bold flex items-center gap-1"
                       >
-                        വായിക്കുക <ArrowRight className="w-3.5 h-3.5" />
+                        Read More <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
                     </div>
                   </div>
                 </article>
               ))
             )}
-          </div>
-
-          {/* Right District Sidebar (4 cols) */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* District Quick Statistics Card */}
-            <div className="bg-surface-pure rounded p-4 shadow-sm border border-slate-border">
-              <h3 className="font-headline text-base font-bold text-ink-midnight pb-2 border-b border-slate-border mb-3 flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-editorial-crimson" />
-                കേരളം ഒറ്റനോട്ടത്തിൽ
-              </h3>
-              <div className="space-y-2.5 text-xs">
-                <div className="flex justify-between p-2 rounded bg-surface-container-low">
-                  <span className="text-secondary">ആകെ ജില്ലകൾ:</span>
-                  <span className="font-bold text-ink-midnight">14 എണ്ണം</span>
-                </div>
-                <div className="flex justify-between p-2 rounded bg-surface-container-low">
-                  <span className="text-secondary">നിയമസഭാ മണ്ഡലങ്ങൾ:</span>
-                  <span className="font-bold text-ink-midnight">140</span>
-                </div>
-                <div className="flex justify-between p-2 rounded bg-surface-container-low">
-                  <span className="text-secondary">ലോക്‌സഭാ മണ്ഡലങ്ങൾ:</span>
-                  <span className="font-bold text-ink-midnight">20</span>
-                </div>
-                <div className="flex justify-between p-2 rounded bg-surface-container-low">
-                  <span className="text-secondary">അന്താരാഷ്ട്ര വിമാനത്താവളങ്ങൾ:</span>
-                  <span className="font-bold text-ink-midnight">4 (തിരുവനന്തപുരം, കൊച്ചി, കോഴിക്കോട്, കണ്ണൂർ)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Crime & Law Enforcement Desk */}
-            <div className="bg-surface-pure rounded p-4 shadow-sm border border-slate-border">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-border mb-3">
-                <h4 className="font-headline text-base font-bold text-ink-midnight flex items-center gap-1.5">
-                  <ShieldAlert className="w-4 h-4 text-editorial-crimson" />
-                  ക്രൈം & സുരക്ഷാ ഡെസ്ക്
-                </h4>
-                <span className="text-[10px] text-secondary">അടിയന്തര മുന്നറിയിപ്പ്</span>
-              </div>
-              <div className="space-y-3 text-xs">
-                <div className="p-2 rounded bg-red-50/70 border border-red-200/70">
-                  <span className="text-[10px] text-editorial-crimson font-bold block mb-1">
-                    സൈബർ സുരക്ഷാ ജാഗ്രത
-                  </span>
-                  <p className="font-medium text-ink-midnight leading-snug">
-                    ഓൺലൈൻ ട്രേഡിംഗ് തട്ടിപ്പുകൾക്കെതിരെ പോലീസ് മുന്നറിയിപ്പ്; അപരിചിത ലിങ്കുകളിൽ ക്ലിക്ക് ചെയ്യരുത്.
-                  </p>
-                </div>
-                <div className="p-2 rounded bg-amber-50/70 border border-amber-200/70">
-                  <span className="text-[10px] text-amber-800 font-bold block mb-1">
-                    ട്രാഫിക് അഡ്വൈസറി
-                  </span>
-                  <p className="font-medium text-ink-midnight leading-snug">
-                    ദേശീയപാത 66 വികസനവുമായി ബന്ധപ്പെട്ട് കോഴിക്കോട്-മലപ്പുറം അതിർത്തികളിൽ ഗതാഗത നിയന്ത്രണം.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Education & Employment Bulletin */}
-            <div className="bg-surface-pure rounded p-4 shadow-sm border border-slate-border">
-              <h4 className="font-headline text-base font-bold text-ink-midnight pb-2 border-b border-slate-border mb-3 flex items-center gap-1.5">
-                <GraduationCap className="w-4 h-4 text-tertiary-container" />
-                വിദ്യാഭ്യാസം & തൊഴിൽ
-              </h4>
-              <ul className="space-y-2 text-xs divide-y divide-slate-border">
-                <li className="pt-1.5 first:pt-0">
-                  <span className="font-semibold text-on-surface hover:text-primary cursor-pointer block leading-snug">
-                    എസ്എസ്എൽസി, പ്ലസ് ടു പരീക്ഷാ മൂല്യനിർണയം ഏപ്രിൽ ആദ്യവാരം തുടങ്ങും
-                  </span>
-                  <span className="text-[10px] text-secondary">വിദ്യാഭ്യാസ വകുപ്പ്</span>
-                </li>
-                <li className="pt-2">
-                  <span className="font-semibold text-on-surface hover:text-primary cursor-pointer block leading-snug">
-                    കേരള പി.എസ്.സി എൽ.ഡി ക്ലർക്ക് പുതിയ വിജ്ഞാപനം ഈ മാസം അവസാനം
-                  </span>
-                  <span className="text-[10px] text-secondary">പി.എസ്.സി ബുള്ളറ്റിൻ</span>
-                </li>
-              </ul>
-            </div>
           </div>
         </div>
       </main>

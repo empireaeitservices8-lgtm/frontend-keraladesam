@@ -1,6 +1,6 @@
-import { Article } from '@/data/newsData';
+import { Article, VideoItem } from '@/data/newsData';
 
-function getApiBaseUrl(): string {
+export function getApiBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
     return 'http://localhost:5000/api';
@@ -8,9 +8,34 @@ function getApiBaseUrl(): string {
   return 'https://kerala-dhesam-admin.vercel.app/api';
 }
 
+export function getMalayalamAudioUrl(text: string): string {
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}/tts?text=${encodeURIComponent(text)}`;
+}
+
 const API_BASE_URL = getApiBaseUrl();
 
+export function formatUploadDateTime(rawDate?: string | Date): string {
+  if (!rawDate) return 'തത്സമയം';
+  const d = new Date(rawDate);
+  if (isNaN(d.getTime())) return 'തത്സമയം';
+
+  const day = d.getDate();
+  const months = ['ജനു', 'ഫെബ്രു', 'മാർച്ച്', 'ഏപ്രിൽ', 'മേയ്', 'ജൂൺ', 'ജൂലൈ', 'ഓഗ', 'സെപ്റ്റം', 'ഒക്ടോ', 'നവം', 'ഡിസം'];
+  const monthName = months[d.getMonth()] || '';
+  const year = d.getFullYear();
+  const timeStr = d.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata',
+  });
+
+  return `${day} ${monthName} ${year} | ${timeStr}`;
+}
+
 export function normalizeArticle(raw: any): Article {
+  const uploadFormatted = formatUploadDateTime(raw.createdAt || raw.publishedAt);
   return {
     id: raw.customId || raw._id || 'article',
     customId: raw.customId || raw._id,
@@ -18,20 +43,24 @@ export function normalizeArticle(raw: any): Article {
     lead: raw.lead || '',
     category: raw.category || 'പ്രധാനം',
     categoryColor: raw.categoryColor || '#006b9a',
-    timeAgo: raw.publishedAt || raw.createdAt ? new Date(raw.createdAt || Date.now()).toLocaleTimeString('ml-IN', { hour: '2-digit', minute: '2-digit' }) : 'തത്സമയം',
-    publishedAt: raw.publishedAt || new Date().toLocaleString('ml-IN'),
-    updatedAt: raw.updatedAt || '',
+    timeAgo: uploadFormatted,
+    publishedAt: raw.publishedAt || uploadFormatted,
+    updatedAt: raw.updatedAt ? new Date(raw.updatedAt).toLocaleString('ml-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '',
+    createdAt: raw.createdAt ? new Date(raw.createdAt).toISOString() : (raw.publishedAt || new Date().toISOString()),
     author: {
-      name: raw.author?.name || 'കേരളദേശം ന്യൂസ് ഡെസ്ക്',
-      designation: raw.author?.designation || 'റിപ്പോർട്ടർ',
+      name: raw.author?.name === 'Chief Editor' ? 'ചീഫ് എഡിറ്റർ' : (raw.author?.name || 'കേരളദേശം ന്യൂസ് ഡെസ്ക്'),
+      designation: raw.author?.designation || 'ഡെസ്ക് റിപ്പോർട്ടർ',
       location: raw.author?.location || 'കേരളം',
-      avatar: raw.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      avatar:
+        raw.author?.avatar && !raw.author.avatar.includes('534528741775')
+          ? raw.author.avatar
+          : 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=400&q=80',
       verified: raw.author?.verified ?? true,
     },
     district: raw.district || '',
     country: raw.country || '',
-    views: raw.views || '1.2k',
-    imageUrl: raw.imageUrl || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
+    views: raw.viewsCount ? String(raw.viewsCount) : (raw.views && raw.views !== '1.2k' ? String(raw.views) : '1'),
+    imageUrl: raw.imageUrl || '',
     imageCaption: raw.imageCaption || '',
     readTime: raw.readTime || '3 മിനിറ്റ് വായന',
     audioDuration: raw.audioDuration || '03:00',
@@ -40,6 +69,7 @@ export function normalizeArticle(raw: any): Article {
     tags: Array.isArray(raw.tags) ? raw.tags : [],
     trending: Boolean(raw.trending),
     breaking: Boolean(raw.breaking),
+    isHeadline: Boolean(raw.isHeadline),
   };
 }
 
@@ -176,41 +206,105 @@ export async function adminGetMe(token: string): Promise<{ success: boolean; use
   }
 }
 
+
 export async function adminCreateArticle(
   articleData: Partial<Article>,
-  token: string
+  token: string,
+  imageFile?: File
 ): Promise<{ success: boolean; article?: Article; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/articles`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(articleData),
-    });
+    let res: Response;
+
+    if (imageFile) {
+      const formData = new FormData();
+      Object.entries(articleData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(
+            key,
+            typeof value === 'object' ? JSON.stringify(value) : String(value)
+          );
+        }
+      });
+      formData.append('image', imageFile);
+
+      res = await fetch(`${API_BASE_URL}/articles`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+    } else {
+      res = await fetch(`${API_BASE_URL}/articles`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(articleData),
+      });
+    }
+
     const data = await res.json();
-    if (!res.ok) return { success: false, error: data.error || 'Failed to create article' };
-    return { success: true, article: normalizeArticle(data.article) };
+
+    if (!res.ok) {
+      return {
+        success: false,
+        error: data.error || 'Failed to create article',
+      };
+    }
+
+    return {
+      success: true,
+      article: normalizeArticle(data.article),
+    };
   } catch (err: any) {
-    return { success: false, error: err.message || 'Network error' };
+    return {
+      success: false,
+      error: err.message || 'Network error',
+    };
   }
 }
 
 export async function adminUpdateArticle(
   id: string,
   articleData: Partial<Article>,
-  token: string
+  token: string,
+  imageFile?: File
 ): Promise<{ success: boolean; article?: Article; error?: string }> {
   try {
-    const res = await fetch(`${API_BASE_URL}/articles/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(articleData),
-    });
+    let res: Response;
+
+    if (imageFile) {
+      const formData = new FormData();
+      Object.entries(articleData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(
+            key,
+            typeof value === 'object' ? JSON.stringify(value) : String(value)
+          );
+        }
+      });
+      formData.append('image', imageFile);
+
+      res = await fetch(`${API_BASE_URL}/articles/${id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+    } else {
+      res = await fetch(`${API_BASE_URL}/articles/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(articleData),
+      });
+    }
+
     const data = await res.json();
     if (!res.ok) return { success: false, error: data.error || 'Failed to update article' };
     return { success: true, article: normalizeArticle(data.article) };
@@ -284,7 +378,183 @@ export async function adminDeleteBreaking(
   }
 }
 
+export async function adminUpdateBreaking(
+  id: string,
+  payload: { headline?: string; active?: boolean; category?: string },
+  token: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/breaking/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Failed to update headline' };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network error' };
+  }
+}
+
 // Aliases for compatibility
 export const getRealArticles = getArticles;
 export const getRealArticleById = getArticleById;
 export const getRealBreakingNews = getBreakingNews;
+
+
+export function normalizeVideo(raw: any): VideoItem {
+  return {
+    id: raw._id || raw.id || 'vid',
+    _id: raw._id || raw.id,
+    title: raw.title || '',
+    category: raw.category || 'KERALA',
+    duration: raw.duration || '01:30',
+    views: raw.views || (raw.viewsCount ? `${Math.round(raw.viewsCount / 1000)}K` : '1.2K'),
+    viewsCount: raw.viewsCount || 1,
+    thumbnail:
+      raw.thumbnail ||
+      (raw.youtubeId ? `https://img.youtube.com/vi/${raw.youtubeId}/hqdefault.jpg` : '') ||
+      'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=400&q=80',
+    videoUrl: raw.videoUrl || '',
+    youtubeId: raw.youtubeId || '',
+    description: raw.description || '',
+    createdAt: raw.createdAt || new Date().toISOString(),
+  };
+}
+
+export async function getVideos(params?: { category?: string; limit?: number; page?: number }): Promise<VideoItem[]> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const url = new URL(`${baseUrl}/videos`);
+    if (params?.category && params.category !== 'all' && params.category !== 'എല്ലാം') {
+      url.searchParams.set('category', params.category);
+    }
+    if (params?.limit) {
+      url.searchParams.set('limit', params.limit.toString());
+    }
+    if (params?.page) {
+      url.searchParams.set('page', params.page.toString());
+    }
+    url.searchParams.set('_t', Date.now().toString());
+
+    const res = await fetch(url.toString(), { cache: 'no-store' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return Array.isArray(data.videos) ? data.videos.map(normalizeVideo) : [];
+  } catch (error) {
+    console.error('Failed to fetch videos from API:', error);
+    return [];
+  }
+}
+
+export async function getVideoById(id: string): Promise<VideoItem | null> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/videos/${id}?_t=${Date.now()}`, { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.video) return normalizeVideo(data.video);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function adminCreateVideo(
+  videoData: {
+    title: string;
+    category?: string;
+    duration?: string;
+    views?: string;
+    videoUrl: string;
+    thumbnail?: string;
+    description?: string;
+  },
+  token: string,
+  thumbnailFile?: File
+): Promise<{ success: boolean; video?: VideoItem; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    let res: Response;
+
+    if (thumbnailFile) {
+      const formData = new FormData();
+      Object.entries(videoData).forEach(([k, v]) => {
+        if (v !== undefined && v !== null) {
+          formData.append(k, String(v));
+        }
+      });
+      formData.append('thumbnail', thumbnailFile);
+
+      res = await fetch(`${baseUrl}/videos`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+    } else {
+      res = await fetch(`${baseUrl}/videos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(videoData),
+      });
+    }
+
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Failed to create video' };
+    return { success: true, video: data.video ? normalizeVideo(data.video) : undefined };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network error' };
+  }
+}
+
+export async function adminDeleteVideo(
+  id: string,
+  token: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/videos/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Failed to delete video' };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network error' };
+  }
+}
+
+export const getRealVideos = getVideos;
+
+export async function adminToggleHeadline(
+  id: string,
+  token: string
+): Promise<{ success: boolean; isHeadline?: boolean; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/articles/${id}/headline`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Failed to toggle headline' };
+    return { success: true, isHeadline: data.isHeadline };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network error' };
+  }
+}
+
+

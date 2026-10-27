@@ -78,3 +78,136 @@
 .animate-ticker:hover {
   animation-play-state: paused;
 }
+
+/* Kerala Desam — Editorial Design Enhancements */
+
+@layer base {
+  body {
+    font-family: var(--font-noto-sans);
+    line-height: 1.65;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: pretty;
+  }
+
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background: #dbeafe;
+    color: #111c2d;
+  }
+}
+
+@layer components {
+  /* Editorial headline */
+  .newspaper-lead {
+    font-family: var(--font-newsreader);
+    font-weight: 750;
+    line-height: 1.35;
+    letter-spacing: -0.025em;
+    text-wrap: pretty;
+  }
+
+  /* Reusable section heading */
+  .news-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    border-bottom: 2px solid #111c2d;
+    padding-bottom: 0.65rem;
+    margin-bottom: 1.25rem;
+    font-weight: 800;
+  }
+
+  .news-section-title::before {
+    content: "";
+    display: block;
+    width: 5px;
+    height: 1.5rem;
+    background: #c8102e;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* News card hover */
+  .news-card {
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .news-card:hover {
+    transform: translateY(-3px);
+  }
+
+  .news-card img {
+    transition: transform 250ms ease;
+  }
+
+  .news-card:hover img {
+    transform: scale(1.025);
+  }
+
+  /* Image crop helper */
+  .news-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Breaking news label */
+  .breaking-label {
+    display: inline-flex;
+    align-items: center;
+    background: #c8102e;
+    color: #fff;
+    font-weight: 800;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+/* Kerala Desam - Continuous Breaking News Ticker */
+
+.breaking-track {
+  display: flex;
+  width: max-content;
+  flex-shrink: 0;
+  animation: breaking-scroll 24s linear infinite;
+  will-change: transform;
+}
+
+.breaking-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes breaking-scroll {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-33.333%);
+  }
+}

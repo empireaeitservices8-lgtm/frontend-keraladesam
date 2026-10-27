@@ -20,12 +20,12 @@ import {
   Film,
   Trophy,
   MessageSquare,
-  Loader2
+  Loader2,
+  Newspaper
 } from 'lucide-react';
 import { CATEGORY_CONFIGS, Article } from '@/data/newsData';
 import { getRealArticles } from '@/lib/api';
 import { useFont } from '@/components/FontContext';
-import DamWeatherWidget from '@/components/DamWeatherWidget';
 
 export default function CategoryPage() {
   const params = useParams();
@@ -60,9 +60,9 @@ export default function CategoryPage() {
     slug,
     name: slug.charAt(0).toUpperCase() + slug.slice(1),
     englishTitle: `${slug.toUpperCase()} NEWS`,
-    description: 'കേരളത്തിലെയും ആഗോളതലത്തിലെയും സമഗ്ര വാർത്തകളും തത്സമയ വിശകലനങ്ങളും.',
+    description: 'Comprehensive coverage, in-depth reports, and live analysis from Kerala Desam.',
     color: '#006b9a',
-    tags: ['പ്രധാന വാർത്തകൾ', 'സമകാലികം', 'തത്സമയം']
+    tags: ['TOP STORIES', 'LATEST', 'SPECIAL']
   };
 
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -70,64 +70,80 @@ export default function CategoryPage() {
   const [sortBy, setSortBy] = useState<'latest' | 'popular'>('latest');
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Filter articles for this category
+  // Filter articles strictly for this category
   const categoryArticles = useMemo(() => {
     return allArticles.filter((article) => {
-      let matchesCategory = false;
+      const artCat = (article.category || '').toLowerCase();
+      const tags = article.tags || [];
 
       if (slug === 'world') {
-        matchesCategory = Boolean(
-          article.category.includes('ലോകം') ||
-          article.category.includes('ആഗോള') ||
-          article.category.includes('പ്രവാസ') ||
-          article.category.includes('സൗദി') ||
-          article.tags?.some((t) => ['WorldNews', 'GlobalAffairs', 'UNClimate', 'MiddleEast'].includes(t))
+        return Boolean(
+          artCat.includes('ലോകം') ||
+          artCat.includes('ആഗോള') ||
+          artCat.includes('അന്താരാഷ്ട്ര') ||
+          artCat.includes('അന്തർദേശീയ') ||
+          artCat.includes('world') ||
+          artCat.includes('international') ||
+          (article.district && (article.district.includes('അന്തർദേശീയം') || article.district.includes('അന്താരാഷ്ട്രം'))) ||
+          tags.some((t) => ['WorldNews', 'GlobalAffairs', 'UNClimate', 'MiddleEast', 'World', 'International'].some(kw => t.toLowerCase().includes(kw.toLowerCase())))
         );
       } else if (slug === 'politics') {
-        matchesCategory = Boolean(
-          article.category.includes('രാഷ്ട്രീയം') ||
-          article.category.includes('ഭരണം') ||
-          article.category.includes('നിയമസഭ') ||
-          article.tags?.some((t) => ['KeralaAssembly', 'Politics', 'Parliament', 'Delimitation', 'StateAssembly'].includes(t))
+        return Boolean(
+          artCat.includes('രാഷ്ട്രീയം') ||
+          artCat.includes('ഭരണം') ||
+          artCat.includes('നിയമസഭ') ||
+          artCat.includes('politics') ||
+          tags.some((t) => ['KeralaAssembly', 'Politics', 'Parliament', 'Delimitation', 'StateAssembly'].some(kw => t.toLowerCase().includes(kw.toLowerCase())))
         );
       } else if (slug === 'business') {
-        matchesCategory = Boolean(
-          article.category.includes('ബിസിനസ്') ||
-          article.category.includes('വികസനം') ||
-          article.category.includes('നഗരവികസനം') ||
-          article.tags?.some((t) => ['BusinessNews', 'Economy', 'GoldRate', 'VizhinjamPort'].includes(t))
+        return Boolean(
+          artCat.includes('ബിസിനസ്') ||
+          artCat.includes('സമ്പദ്') ||
+          artCat.includes('വിപണി') ||
+          artCat.includes('business') ||
+          tags.some((t) => ['BusinessNews', 'Economy', 'GoldRate', 'VizhinjamPort'].some(kw => t.toLowerCase().includes(kw.toLowerCase())))
         );
       } else if (slug === 'cinema') {
-        matchesCategory = Boolean(
-          article.category.includes('സിനിമ') ||
-          article.category.includes('കല') ||
-          article.category.includes('യാത്ര') ||
-          article.tags?.some((t) => ['Mollywood', 'MalayalamCinema', 'Culture', 'UNESCOCityOfLiterature'].includes(t))
+        return Boolean(
+          artCat.includes('സിനിമ') ||
+          artCat.includes('കല') ||
+          artCat.includes('ചലച്ചിത്ര') ||
+          artCat.includes('cinema') ||
+          tags.some((t) => ['Mollywood', 'MalayalamCinema', 'Culture', 'Film', 'Cinema'].some(kw => t.toLowerCase().includes(kw.toLowerCase())))
         );
       } else if (slug === 'sports') {
-        matchesCategory = Boolean(
-          article.category.includes('സ്പോർട്സ്') ||
-          article.tags?.some((t) => ['Sports', 'Football', 'Cricket', 'IPL2025', 'SantoshTrophy', 'SanjuSamson'].includes(t))
+        return Boolean(
+          artCat.includes('സ്പോർട്സ്') ||
+          artCat.includes('കായികം') ||
+          artCat.includes('sports') ||
+          tags.some((t) => ['Sports', 'Football', 'Cricket', 'IPL2025', 'SantoshTrophy', 'SanjuSamson'].some(kw => t.toLowerCase().includes(kw.toLowerCase())))
         );
       } else if (slug === 'opinion') {
-        matchesCategory = Boolean(
-          article.category.includes('അഭിപ്രായം') ||
-          article.tags?.some((t) => ['Opinion', 'Education', 'KeralaFuture'].includes(t))
+        return Boolean(
+          artCat.includes('അഭിപ്രായം') ||
+          artCat.includes('എഡിറ്റോറിയൽ') ||
+          artCat.includes('വിശകലനം') ||
+          artCat.includes('opinion') ||
+          tags.some((t) => ['Opinion', 'Education', 'KeralaFuture', 'Editorial'].some(kw => t.toLowerCase().includes(kw.toLowerCase())))
+        );
+      } else if (slug === 'special') {
+        return Boolean(
+          artCat.includes('പ്രത്യേക') ||
+          artCat.includes('അന്വേഷണ') ||
+          artCat.includes('special') ||
+          tags.some((t) => ['SpecialReport', 'Investigation', 'Special'].some(kw => t.toLowerCase().includes(kw.toLowerCase())))
         );
       } else {
-        matchesCategory = Boolean(
-          article.category.toLowerCase().includes(slug) ||
-          article.tags?.some((t) => t.toLowerCase().includes(slug))
+        return Boolean(
+          artCat.includes(slug.toLowerCase()) ||
+          tags.some((t) => t.toLowerCase().includes(slug.toLowerCase()))
         );
       }
-
-      // If no direct matches, return general fallback so page is never empty
-      return matchesCategory;
     });
   }, [slug, allArticles]);
 
-  // Fallback if specific category filter yielded too few
-  const displayedArticlesList = categoryArticles.length > 0 ? categoryArticles : allArticles.slice(0, 6);
+  // Strictly only show articles belonging to this category - zero fallback bleed
+  const displayedArticlesList = categoryArticles;
 
   // Apply tag and search filtering
   const filteredArticles = useMemo(() => {
@@ -154,8 +170,8 @@ export default function CategoryPage() {
 
     if (sortBy === 'popular') {
       list.sort((a, b) => {
-        const viewsA = parseFloat(a.views.replace('k', '')) || 0;
-        const viewsB = parseFloat(b.views.replace('k', '')) || 0;
+        const viewsA = parseFloat(a.views.replace(/[^0-9.]/g, '')) || 0;
+        const viewsB = parseFloat(b.views.replace(/[^0-9.]/g, '')) || 0;
         return viewsB - viewsA;
       });
     }
@@ -163,8 +179,8 @@ export default function CategoryPage() {
     return list;
   }, [displayedArticlesList, selectedTag, searchFilter, sortBy]);
 
-  const heroArticle = filteredArticles[0] || displayedArticlesList[0];
-  const gridArticles = filteredArticles.slice(1);
+  const heroArticle = filteredArticles.length > 0 ? filteredArticles[0] : null;
+  const gridArticles = filteredArticles.length > 1 ? filteredArticles.slice(1) : [];
 
   const handleShare = (e: React.MouseEvent, articleId: string) => {
     e.preventDefault();
@@ -196,73 +212,77 @@ export default function CategoryPage() {
 
   return (
     <div className="flex flex-col w-full pb-16 bg-[#fbfbfb]">
-      {/* Category Hero Masthead Banner */}
-      <section
-        className="w-full text-white py-10 px-4 md:px-margin-desktop border-b shadow-sm relative overflow-hidden"
-        style={{ backgroundColor: config.color || '#006b9a' }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/25 to-transparent pointer-events-none" />
-
-        <div className="max-w-[1360px] mx-auto relative z-10">
+      {/* Category Hero Masthead Banner - Clean White Background with Category Accent */}
+      <section className="w-full bg-surface-pure border-b border-slate-border py-6 sm:py-8 px-4 md:px-margin-desktop shadow-xs">
+        <div className="max-w-[1360px] mx-auto">
           {/* Breadcrumbs */}
-          <div className="flex items-center gap-2 text-xs text-white/80 mb-3">
-            <Link href="/" className="hover:underline">
-              ഹോം
+          <div className="flex items-center gap-2 text-xs text-secondary mb-3 uppercase tracking-wider font-medium">
+            <Link href="/" className="hover:text-primary transition-colors">
+              HOME
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />
-            <span className="font-bold text-white">{config.name}</span>
+            <Link href="/" className="hover:text-primary transition-colors">
+              CATEGORIES
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <span className="font-bold" style={{ color: config.color || '#C8102E' }}>
+              {config.name}
+            </span>
           </div>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="p-1.5 rounded-md bg-white/20 backdrop-blur-sm">
+                <span
+                  className="p-1.5 rounded-md text-white shadow-xs flex items-center justify-center"
+                  style={{ backgroundColor: config.color || '#C8102E' }}
+                >
                   {getCategoryIcon()}
                 </span>
-                <span className="text-xs font-bold uppercase tracking-wider text-white/90">
-                  {config.englishTitle}
-                </span>
+                
               </div>
-              <h1 className="font-headline text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-2">
-                {config.name}
+              <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl text-ink-midnight font-bold tracking-tight mb-2 uppercase">
+                {config.englishTitle}
               </h1>
-              <p className="text-xs sm:text-sm text-white/85 max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-secondary max-w-2xl leading-relaxed">
                 {config.description}
               </p>
             </div>
 
             {/* Quick Stats Pill */}
-            <div className="flex items-center gap-2 self-start md:self-auto bg-black/30 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 text-xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <div className="flex items-center gap-2 self-start md:self-auto bg-surface-container-low px-3.5 py-1.5 rounded-full border border-slate-200 text-xs text-secondary font-medium shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
               <span>
-                ലഭ്യമായ വാർത്തകൾ: <strong>{filteredArticles.length}</strong>
+                Stories: <strong className="text-ink-midnight">{filteredArticles.length}</strong>
               </span>
             </div>
           </div>
 
-          {/* Sub-tags Pill Bar */}
-          <div className="mt-6 pt-4 border-t border-white/20 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {/* Sub-tags Pill Bar (without #) */}
+          <div className="mt-5 pt-3.5 border-t border-slate-200 flex items-center gap-2 overflow-x-auto no-scrollbar">
             <button
               onClick={() => setSelectedTag(null)}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
+              className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
                 selectedTag === null
-                  ? 'bg-white text-ink-midnight shadow-sm'
-                  : 'bg-white/15 hover:bg-white/25 text-white'
+                  ? 'text-white font-bold shadow-xs scale-105'
+                  : 'bg-surface-container-low hover:bg-surface-container-high text-on-surface border border-slate-200/80'
               }`}
+              style={selectedTag === null ? { backgroundColor: config.color || '#C8102E' } : undefined}
             >
-              എല്ലാം (All)
+              ALL
             </button>
             {config.tags.map((t) => (
               <button
                 key={t}
                 onClick={() => setSelectedTag(selectedTag === t ? null : t)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+                className={`px-3.5 py-1 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
                   selectedTag === t
-                    ? 'bg-white text-ink-midnight font-bold shadow-sm'
-                    : 'bg-white/15 hover:bg-white/25 text-white'
+                    ? 'text-white font-bold shadow-xs scale-105'
+                    : 'bg-surface-container-low hover:bg-surface-container-high text-on-surface border border-slate-200/80'
                 }`}
+                style={selectedTag === t ? { backgroundColor: config.color || '#C8102E' } : undefined}
               >
-                #{t}
+                {t}
               </button>
             ))}
           </div>
@@ -271,21 +291,50 @@ export default function CategoryPage() {
 
       {/* Main Content Area */}
       <main className="max-w-[1360px] mx-auto px-4 md:px-margin-desktop py-8 w-full">
-        {/* Controls Bar: Search & Sort */}
-        <div className="bg-surface-pure rounded-lg p-3 sm:p-4 border border-slate-border shadow-xs mb-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 absolute left-3 top-2.5 text-secondary" />
-            <input
-              type="text"
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              placeholder={`${config.name} വാർത്തകളിൽ തിരയുക...`}
-              className="w-full bg-surface-container-low pl-9 pr-3 py-1.5 text-xs rounded-md border border-slate-border focus:outline-none focus:ring-1 focus:ring-primary"
-            />
+        {displayedArticlesList.length === 0 ? (
+          /* Dedicated Category Empty State */
+          <div className="bg-surface-pure rounded-xl p-10 sm:p-16 text-center border border-slate-border my-6 shadow-xs max-w-xl mx-auto">
+            <div className="w-16 h-16 rounded-full bg-slate-100 border border-slate-200 text-slate-400 flex items-center justify-center mx-auto mb-4">
+              <Newspaper className="w-8 h-8 text-secondary" />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-ink-midnight mb-2 font-headline uppercase">
+              NO {config.englishTitle} AVAILABLE
+            </h2>
+            <p className="text-sm text-secondary max-w-md mx-auto mb-6 leading-relaxed">
+              ഈ വിഭാഗത്തിൽ പുതിയ വാർത്തകൾ ഇപ്പോൾ ലഭ്യമായിട്ടില്ല. ന്യൂസ് ഡെസ്കിൽ നിന്ന് വാർത്തകൾ ഉടൻ അപ്‌ഡേറ്റ് ചെയ്യുന്നതാണ്.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/"
+                className="px-5 py-2.5 bg-primary text-white text-xs font-bold rounded shadow-xs hover:bg-editorial-crimson transition-colors uppercase tracking-wider"
+              >
+                Return to Top Stories
+              </Link>
+              <Link
+                href="/kerala"
+                className="px-5 py-2.5 bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-bold rounded transition-colors uppercase tracking-wider"
+              >
+                View Kerala News
+              </Link>
+            </div>
           </div>
+        ) : (
+          <>
+            {/* Controls Bar: Search & Sort */}
+            <div className="bg-surface-pure rounded-lg p-3 sm:p-4 border border-slate-border shadow-xs mb-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 absolute left-3 top-2.5 text-secondary" />
+                <input
+                  type="text"
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  placeholder={`Search in ${config.name} stories...`}
+                  className="w-full bg-surface-container-low pl-9 pr-3 py-1.5 text-xs rounded-md border border-slate-border focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
 
           <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-3 text-xs">
-            <span className="text-secondary font-medium">ക്രമീകരിക്കുക:</span>
+            <span className="text-secondary font-medium uppercase tracking-wider text-[11px]">SORT BY:</span>
             <div className="flex items-center gap-1 bg-surface-container-low p-1 rounded-md border border-slate-border">
               <button
                 onClick={() => setSortBy('latest')}
@@ -295,7 +344,7 @@ export default function CategoryPage() {
                     : 'text-secondary hover:text-on-surface'
                 }`}
               >
-                ഏറ്റവും പുതിയത്
+                LATEST
               </button>
               <button
                 onClick={() => setSortBy('popular')}
@@ -305,7 +354,7 @@ export default function CategoryPage() {
                     : 'text-secondary hover:text-on-surface'
                 }`}
               >
-                ജനപ്രിയം
+                POPULAR
               </button>
             </div>
           </div>
@@ -319,14 +368,19 @@ export default function CategoryPage() {
                 href={`/article/${heroArticle.id}`}
                 className="lg:col-span-7 overflow-hidden rounded-lg relative block"
               >
-                <img
-                  src={heroArticle.imageUrl}
-                  alt={heroArticle.title}
-                  className="w-full h-64 sm:h-80 md:h-96 object-cover group-hover:scale-[1.02] transition-transform duration-500"
-                />
-                <span className="absolute top-3 left-3 bg-editorial-crimson text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded shadow-xs">
-                  {heroArticle.category}
-                </span>
+                {heroArticle.imageUrl ? (
+                  <img
+                    src={heroArticle.imageUrl}
+                    alt={heroArticle.title}
+                    className="w-full h-64 sm:h-80 md:h-96 object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="w-full h-64 sm:h-80 md:h-96 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center p-6 border border-slate-border">
+                    <span className="text-sm font-serif font-bold text-slate-400">
+                      കേരളദേശം • {heroArticle.category}
+                    </span>
+                  </div>
+                )}
                 <span className="absolute bottom-3 left-3 bg-black/75 backdrop-blur text-white text-xs px-2.5 py-1 rounded">
                   {heroArticle.readTime}
                 </span>
@@ -398,7 +452,7 @@ export default function CategoryPage() {
                       href={`/article/${heroArticle.id}`}
                       className="px-3.5 py-1.5 rounded bg-primary text-white text-xs font-bold hover:bg-editorial-crimson transition-colors flex items-center gap-1 shadow-xs ml-1"
                     >
-                      വായിക്കുക <ArrowRight className="w-3.5 h-3.5" />
+                      Read More <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 </div>
@@ -419,17 +473,19 @@ export default function CategoryPage() {
                   href={`/article/${article.id}`}
                   className="block overflow-hidden rounded-lg mb-3.5 relative"
                 >
-                  <img
-                    src={article.imageUrl}
-                    alt={article.title}
-                    className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <span
-                    className="absolute top-2 left-2 text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white shadow-xs"
-                    style={{ backgroundColor: article.categoryColor || config.color }}
-                  >
-                    {article.category}
-                  </span>
+                  {article.imageUrl ? (
+                    <img
+                      src={article.imageUrl}
+                      alt={article.title}
+                      className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-44 bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center p-3">
+                      <span className="text-xs font-serif font-bold text-slate-400">
+                        കേരളദേശം വാർത്ത
+                      </span>
+                    </div>
+                  )}
                 </Link>
 
                 <div className="flex items-center justify-between text-[11px] text-secondary mb-2">
@@ -490,26 +546,28 @@ export default function CategoryPage() {
           ))}
         </div>
 
-        {/* Empty State */}
-        {filteredArticles.length === 0 && (
-          <div className="bg-surface-pure rounded-xl p-12 text-center border border-slate-border my-6">
-            <Search className="w-10 h-10 text-secondary mx-auto mb-3" />
-            <h3 className="text-base font-bold text-ink-midnight mb-1">
-              വാർത്തകളൊന്നും കണ്ടെത്താനായില്ല
-            </h3>
-            <p className="text-xs text-secondary max-w-md mx-auto mb-4">
-              തിരഞ്ഞെടുത്ത ഫിൽട്ടറുകൾ അല്ലെങ്കിൽ തിരച്ചിൽ പദങ്ങൾക്ക് അനുയോജ്യമായ വാർത്തകൾ ഇപ്പോൾ ലഭ്യമല്ല.
-            </p>
-            <button
-              onClick={() => {
-                setSearchFilter('');
-                setSelectedTag(null);
-              }}
-              className="px-4 py-2 bg-primary text-white text-xs font-bold rounded shadow-xs hover:bg-editorial-crimson transition-colors"
-            >
-              ഫിൽട്ടറുകൾ ഒഴിവാക്കുക
-            </button>
-          </div>
+            {/* Filter Search Empty State */}
+            {filteredArticles.length === 0 && (
+              <div className="bg-surface-pure rounded-xl p-12 text-center border border-slate-border my-6">
+                <Search className="w-10 h-10 text-secondary mx-auto mb-3" />
+                <h3 className="text-base font-bold text-ink-midnight mb-1">
+                  വാർത്തകളൊന്നും കണ്ടെത്താനായില്ല
+                </h3>
+                <p className="text-xs text-secondary max-w-md mx-auto mb-4">
+                  തിരഞ്ഞെടുത്ത ഫിൽട്ടറുകൾ അല്ലെങ്കിൽ തിരച്ചിൽ പദങ്ങൾക്ക് അനുയോജ്യമായ വാർത്തകൾ ഇപ്പോൾ ലഭ്യമല്ല.
+                </p>
+                <button
+                  onClick={() => {
+                    setSearchFilter('');
+                    setSelectedTag(null);
+                  }}
+                  className="px-4 py-2 bg-primary text-white text-xs font-bold rounded shadow-xs hover:bg-editorial-crimson transition-colors"
+                >
+                  ഫിൽട്ടറുകൾ ഒഴിവാക്കുക
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {/* Toast for Copied Link */}

@@ -60,8 +60,8 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
               <Radio className="w-4 h-4 text-live-alert" />
               <span>{selectedChannel.name}</span>
             </span>
-            <span className="text-[11px] bg-red-950/80 text-red-300 font-semibold px-2 py-0.5 rounded border border-red-800/40">
-              തത്സമയം
+            <span className="text-[11px] bg-red-950/80 text-red-300 font-semibold px-2 py-0.5 rounded border border-red-800/40 uppercase tracking-wider">
+              LIVE
             </span>
           </div>
 
@@ -70,7 +70,7 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
             <button
               onClick={() => setIsMuted(!isMuted)}
               className="p-1.5 rounded-md hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
-              title={isMuted ? 'ഓഡിയോ ഓൺ ചെയ്യുക' : 'മ്യൂട്ട് ചെയ്യുക'}
+              title={isMuted ? 'Unmute' : 'Mute'}
             >
               {isMuted ? <VolumeX className="w-4 h-4 text-amber-400" /> : <Volume2 className="w-4 h-4" />}
             </button>
@@ -79,7 +79,7 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
             <button
               onClick={onClose}
               className="p-1.5 rounded-md hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
-              title="ക്ലോസ് ചെയ്യുക"
+              title="Close"
             >
               <X className="w-5 h-5" />
             </button>
@@ -109,7 +109,7 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/70" />
 
               {/* On-Air Live Badge Top Left */}
-              <div className="absolute top-4 left-4 flex items-center gap-2 bg-live-alert text-white px-2.5 py-1 rounded-sm text-xs font-bold shadow-lg">
+              <div className="absolute top-4 left-4 flex items-center gap-2 bg-live-alert text-white px-2.5 py-1 rounded-sm text-xs font-bold shadow-lg uppercase tracking-wider">
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                 LIVE
               </div>
@@ -117,7 +117,7 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
               {/* Active Viewers Counter Top Right */}
               <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/70 backdrop-blur px-2.5 py-1 rounded text-xs text-white border border-white/10">
                 <Users className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{viewerCount.toLocaleString('ml-IN')} പേർ കാണുന്നു</span>
+                <span>{viewerCount.toLocaleString('en-IN')} watching</span>
               </div>
 
               {/* Center Play Graphic */}
@@ -130,7 +130,7 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
                     }
                   }}
                   className="w-16 h-16 rounded-full bg-primary/90 text-white flex items-center justify-center mx-auto shadow-2xl hover:scale-110 transition-all cursor-pointer border-2 border-white/50 group"
-                  title="തത്സമയ സ്ട്രീം കാണുക"
+                  title="Watch Live Stream"
                 >
                   <Play className="w-7 h-7 fill-current translate-x-0.5 group-hover:scale-110 transition-transform" />
                 </div>
@@ -146,10 +146,10 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
                       setUseIframe(true);
                       setSelectedChannel(CHANNELS[1]);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold shadow transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold shadow transition-colors uppercase tracking-wider"
                   >
                     <Tv className="w-3.5 h-3.5" />
-                    യൂട്യൂബ് ലൈവ് സ്ട്രീം പ്ലേ ചെയ്യുക
+                    PLAY YOUTUBE LIVE
                   </button>
                 </div>
               </div>
@@ -157,7 +157,7 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
               {/* News Flash Ticker Inside Video */}
               <div className="absolute bottom-0 left-0 right-0 bg-neutral-950/95 border-t border-neutral-800 p-2.5 flex items-center gap-3">
                 <span className="bg-editorial-crimson text-white text-[10px] font-bold px-2 py-0.5 rounded shrink-0 uppercase tracking-wider">
-                  ബ്രേക്കിംഗ്
+                  BREAKING
                 </span>
                 <div className="overflow-hidden whitespace-nowrap text-xs text-neutral-200 font-medium">
                   <span className="inline-block animate-ticker">
@@ -172,8 +172,8 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
         {/* Channel Selection & Audio Quality Ribbon */}
         <div className="p-3.5 bg-neutral-950 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs border-t border-neutral-800">
           <div className="flex items-center flex-wrap gap-2">
-            <span className="text-neutral-400 font-semibold flex items-center gap-1">
-              <Tv className="w-3.5 h-3.5 text-primary" /> ചാനലുകൾ:
+            <span className="text-neutral-400 font-semibold flex items-center gap-1 uppercase tracking-wider text-[11px]">
+              <Tv className="w-3.5 h-3.5 text-primary" /> CHANNELS:
             </span>
             {CHANNELS.map((ch) => {
               const isCurrent = selectedChannel.id === ch.id;
@@ -202,13 +202,13 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
 
           <div className="flex items-center gap-2 w-full md:w-auto justify-end">
             <span className="text-neutral-400 text-[11px] hidden sm:inline">
-              HD 1080p • മലയാളം
+              HD 1080p • Malayalam
             </span>
             <button
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-white font-medium transition-colors"
+              className="px-3.5 py-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-white font-medium transition-colors uppercase tracking-wider text-[11px]"
             >
-              വാർത്തകളിലേക്ക് മടങ്ങുക
+              CLOSE
             </button>
           </div>
         </div>

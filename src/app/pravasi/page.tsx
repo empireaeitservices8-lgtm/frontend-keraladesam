@@ -6,21 +6,16 @@ import {
   Globe,
   Plane,
   HeartHandshake,
-  TrendingUp,
   Clock,
   ArrowRight,
   ShieldCheck,
-  Building,
-  Coins,
   Bell
 } from 'lucide-react';
 import {
   Article,
-  CURRENCY_RATES,
   PRAVASI_COUNTRIES
 } from '@/data/newsData';
 import { getRealArticles } from '@/lib/api';
-import CurrencyConverter from '@/components/CurrencyConverter';
 
 export default function PravasiPage() {
   const [selectedCountry, setSelectedCountry] = useState('all');
@@ -32,69 +27,51 @@ export default function PravasiPage() {
     async function loadPravasi() {
       try {
         setLoading(true);
-        const data = await getRealArticles();
+        const articlesData = await getRealArticles();
         if (isMounted) {
-          setArticles(data);
+          setArticles(articlesData);
         }
       } catch (e) {
-        console.error('Error fetching pravasi articles:', e);
+        console.error('Error fetching pravasi data:', e);
       } finally {
         if (isMounted) setLoading(false);
       }
     }
     loadPravasi();
+
     return () => {
       isMounted = false;
     };
   }, []);
 
   const pravasiArticles = articles.filter((art) => {
+    const ctry = (art.country || '').trim().toLowerCase();
+    const dist = (art.district || '').trim().toLowerCase();
+    const hasCountry = Boolean(ctry && ctry !== 'india' && ctry !== 'kerala');
+    const isPravasiCat = Boolean(
+      art.category.includes('പ്രവാസ') ||
+      art.category.includes('ഗൾഫ്') ||
+      dist.includes('പ്രവാസം') ||
+      dist.includes('ഗൾഫ്') ||
+      art.tags?.some((t) => t.toLowerCase().includes('pravasi') || t.toLowerCase().includes('gulf'))
+    );
+
     if (selectedCountry === 'all') {
-      return (
-        art.country !== undefined ||
-        art.category.includes('പ്രവാസ') ||
-        art.tags?.some((t) => t.toLowerCase().includes('pravasi') || t.toLowerCase().includes('gulf'))
-      );
+      return hasCountry || isPravasiCat;
     }
-    return art.country === selectedCountry;
+    const matchesCountry = ctry === selectedCountry ||
+      art.title.toLowerCase().includes(selectedCountry) ||
+      (selectedCountry === 'qatar' && (art.title.includes('ഖത്തർ') || dist.includes('ഖത്തർ'))) ||
+      (selectedCountry === 'uae' && (art.title.includes('യുഎഇ') || art.title.includes('ദുബായ്') || dist.includes('യുഎഇ'))) ||
+      (selectedCountry === 'saudi' && (art.title.includes('സൗദി') || dist.includes('സൗദി'))) ||
+      (selectedCountry === 'kuwait' && (art.title.includes('കുവൈറ്റ്') || dist.includes('കുവൈറ്റ്'))) ||
+      (selectedCountry === 'oman' && (art.title.includes('ഒമാൻ') || dist.includes('ഒമാൻ'))) ||
+      (selectedCountry === 'bahrain' && (art.title.includes('ബഹ്റൈൻ') || dist.includes('ബഹ്റൈൻ')));
+    return matchesCountry;
   });
 
   return (
     <div className="flex flex-col w-full pb-16">
-      {/* Live Currency & Gold Exchange Rate Ribbon */}
-      <section className="w-full bg-ink-midnight text-surface-pure shadow-sm border-b border-surface-pure/10">
-        <div className="max-w-[1360px] mx-auto px-4 md:px-margin-desktop py-2.5 flex flex-col lg:flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto no-scrollbar py-0.5">
-            <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-tertiary-fixed shrink-0">
-              <TrendingUp className="w-3.5 h-3.5 text-opinion-ochre" />
-              ലൈവ് വിനിമയ നിരക്കുകൾ:
-            </span>
-            <div className="flex items-center gap-4 whitespace-nowrap text-secondary-fixed-dim shrink-0">
-              {CURRENCY_RATES.map((c) => (
-                <span key={c.code} className="flex items-center gap-1">
-                  <span className="text-surface-pure font-semibold">1 {c.code}</span> = ₹{c.inrRate}{' '}
-                  {c.change === 'up' && (
-                    <span className="text-emerald-400 text-[10px]">▲</span>
-                  )}
-                  {c.change === 'down' && (
-                    <span className="text-editorial-crimson text-[10px]">▼</span>
-                  )}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0 bg-surface-pure/10 px-3 py-1 rounded-full text-surface-pure text-xs">
-            <span className="flex items-center gap-1 text-opinion-ochre font-bold">
-              <Coins className="w-3.5 h-3.5" /> സ്വർണ്ണവില (22K പവൻ):
-            </span>
-            <span className="font-semibold">കേരളം: ₹58,400</span>
-            <span className="text-secondary-fixed-dim">|</span>
-            <span className="font-semibold">ദുബായ്: AED 2,820</span>
-          </div>
-        </div>
-      </section>
-
       {/* Diaspora Identity & Region Bar */}
       <section className="w-full bg-surface-pure shadow-sm border-b border-slate-border">
         <div className="max-w-[1360px] mx-auto px-4 md:px-margin-desktop py-4">
@@ -102,14 +79,14 @@ export default function PravasiPage() {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="px-2 py-0.5 rounded text-white bg-primary text-[10px] font-bold uppercase tracking-wider">
-                  ഗൾഫ് & പ്രവാസി പതിപ്പ്
+                  GLOBAL MALAYALI NEWSROOM
                 </span>
-                <span className="text-secondary text-xs">
-                  24x7 ആഗോള മലയാളി ന്യൂസ് ഡെസ്ക്
+                <span className="text-secondary text-xs font-medium">
+                  24x7 Global Malayali & Diaspora News Desk
                 </span>
               </div>
               <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl text-ink-midnight font-bold tracking-tight">
-                പ്രവാസി ലോകം
+                PRAVASI & GULF NEWS
               </h1>
             </div>
 
@@ -119,9 +96,9 @@ export default function PravasiPage() {
               </span>
               <button
                 onClick={() => alert('പ്രവാസി അടിയന്തര ഹെൽപ്പ്‌ലൈൻ: നോർക്ക റൂട്ട്സ് ടോൾ ഫ്രീ 1800 425 3939')}
-                className="flex items-center gap-1 bg-primary text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded hover:bg-editorial-crimson transition-colors font-medium shadow-xs text-[11px] sm:text-xs"
+                className="flex items-center gap-1 bg-primary text-white px-2.5 sm:px-3 py-1 sm:py-1.5 rounded hover:bg-editorial-crimson transition-colors font-medium shadow-xs text-[11px] sm:text-xs uppercase tracking-wider"
               >
-                <Bell className="w-3.5 h-3.5" /> ഹെൽപ്പ്‌ലൈൻ
+                <Bell className="w-3.5 h-3.5" /> HELPLINE
               </button>
             </div>
           </div>
@@ -151,68 +128,94 @@ export default function PravasiPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Main Diaspora News Feed (8 cols) */}
           <div className="lg:col-span-8 space-y-6">
-            {pravasiArticles.map((art) => (
-              <article
-                key={art.id}
-                className="bg-surface-pure rounded p-3.5 sm:p-5 shadow-sm border border-slate-border flex flex-col md:flex-row gap-3.5 sm:gap-5 group"
-              >
-                <div className="md:w-5/12 overflow-hidden rounded shrink-0">
-                  <img
-                    src={art.imageUrl}
-                    alt={art.title}
-                    className="w-full h-44 sm:h-48 md:h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded"
-                  />
+            {loading ? (
+              <div className="bg-surface-pure rounded-xl p-10 text-center border border-slate-border">
+                <p className="text-xs text-secondary font-semibold">വാർത്തകൾ ലഭ്യമാക്കുന്നു...</p>
+              </div>
+            ) : pravasiArticles.length === 0 ? (
+              <div className="bg-surface-pure rounded-xl p-10 sm:p-14 text-center border border-slate-border shadow-xs">
+                <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-200 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                  <Globe className="w-7 h-7 text-secondary" />
                 </div>
+                <h3 className="text-lg font-bold text-ink-midnight mb-2 font-headline uppercase">
+                  NO PRAVASI STORIES FOUND
+                </h3>
+                <p className="text-xs text-secondary max-w-md mx-auto mb-5 leading-relaxed">
+                  ഈ വിഭാഗത്തിൽ പുതിയ വാർത്തകൾ ഇപ്പോൾ ലഭ്യമല്ല. ഡെസ്കിൽ നിന്ന് വാർത്തകൾ ഉടൻ അപ്‌ഡേറ്റ് ചെയ്യുന്നതാണ്.
+                </p>
+                <Link
+                  href="/"
+                  className="px-4 py-2 bg-primary text-white text-xs font-bold rounded hover:bg-editorial-crimson transition-colors inline-block uppercase tracking-wider"
+                >
+                  Return to Home
+                </Link>
+              </div>
+            ) : (
+              pravasiArticles.map((art) => (
+                <article
+                  key={art.id}
+                  className="bg-surface-pure rounded p-3.5 sm:p-5 shadow-sm border border-slate-border flex flex-col md:flex-row gap-3.5 sm:gap-5 group"
+                >
+                  {art.imageUrl ? (
+                    <div className="md:w-5/12 overflow-hidden rounded shrink-0">
+                      <img
+                        src={art.imageUrl}
+                        alt={art.title}
+                        className="w-full h-44 sm:h-48 md:h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded"
+                      />
+                    </div>
+                  ) : null}
 
-                <div className="md:w-7/12 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5 text-xs">
-                      <span
-                        className="font-bold uppercase tracking-wider text-[10px] sm:text-[11px]"
-                        style={{ color: art.categoryColor }}
-                      >
-                        {art.category}
-                      </span>
-                      <span className="text-secondary text-[10px] sm:text-[11px] flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {art.timeAgo}
-                      </span>
+                  <div className={`${art.imageUrl ? 'md:w-7/12' : 'w-full'} flex flex-col justify-between`}>
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5 text-xs">
+                        <span
+                          className="font-bold uppercase tracking-wider text-[10px] sm:text-[11px]"
+                          style={{ color: art.categoryColor }}
+                        >
+                          {art.category}
+                        </span>
+                        <span className="text-secondary text-[10px] sm:text-[11px] flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> {art.timeAgo}
+                        </span>
+                      </div>
+
+                      <Link href={`/article/${art.id}`}>
+                        <h3 className="font-headline text-base sm:text-lg font-bold text-ink-midnight group-hover:text-primary transition-colors leading-snug mb-2">
+                          {art.title}
+                        </h3>
+                      </Link>
+
+                      <p className="text-xs text-on-surface-variant line-clamp-2 sm:line-clamp-3 leading-relaxed mb-3">
+                        {art.lead}
+                      </p>
                     </div>
 
-                    <Link href={`/article/${art.id}`}>
-                      <h3 className="font-headline text-base sm:text-lg font-bold text-ink-midnight group-hover:text-primary transition-colors leading-snug mb-2">
-                        {art.title}
-                      </h3>
-                    </Link>
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-border text-xs text-secondary">
+                      <span className="font-medium text-ink-midnight">
+                        ലേഖകൻ: {art.author.name} ({art.author.location})
+                      </span>
 
-                    <p className="text-xs text-on-surface-variant line-clamp-2 sm:line-clamp-3 leading-relaxed mb-3">
-                      {art.lead}
-                    </p>
+                      <Link
+                        href={`/article/${art.id}`}
+                        className="text-primary hover:underline font-bold flex items-center gap-1"
+                      >
+                        Read More <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-border text-xs text-secondary">
-                    <span className="font-medium text-ink-midnight">
-                      ലേഖകൻ: {art.author.name} ({art.author.location})
-                    </span>
-
-                    <Link
-                      href={`/article/${art.id}`}
-                      className="text-primary hover:underline font-bold flex items-center gap-1"
-                    >
-                      വായിക്കുക <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              ))
+            )}
 
             {/* Flight & Airline Updates Strip */}
             <div className="bg-surface-pure rounded p-5 shadow-sm border border-slate-border">
               <div className="flex items-center justify-between pb-2 border-b border-slate-border mb-3">
-                <h3 className="font-headline text-base font-bold text-ink-midnight flex items-center gap-2">
+                <h3 className="font-headline text-base font-bold text-ink-midnight flex items-center gap-2 uppercase tracking-wide">
                   <Plane className="w-4 h-4 text-editorial-crimson" />
-                  വിമാന സർവീസുകൾ & എയർപോർട്ട് വിവരങ്ങൾ
+                  AVIATION & FLIGHT UPDATES
                 </h3>
-                <span className="text-xs text-primary font-bold">ഏവിയേഷൻ ഡെസ്ക്</span>
+                <span className="text-xs text-primary font-bold uppercase tracking-wider">Aviation Desk</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 <div className="p-3 rounded bg-surface-container-low border border-slate-border">
@@ -237,18 +240,15 @@ export default function PravasiPage() {
 
           {/* Right Diaspora Sidebar (4 cols) */}
           <div className="lg:col-span-4 space-y-6">
-            {/* Live Currency Calculator */}
-            <CurrencyConverter />
-
             {/* NORKA & Pravasi Welfare Card */}
             <div className="bg-surface-pure rounded p-4 shadow-sm border border-slate-border">
               <div className="flex items-center justify-between pb-2 border-b border-slate-border mb-3">
-                <h4 className="font-headline text-base font-bold text-ink-midnight flex items-center gap-1.5">
+                <h4 className="font-headline text-base font-bold text-ink-midnight flex items-center gap-1.5 uppercase tracking-wide">
                   <HeartHandshake className="w-4 h-4 text-editorial-crimson" />
-                  നോർക്ക & പ്രവാസി ക്ഷേമം
+                  NORKA & PRAVASI WELFARE
                 </h4>
-                <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold">
-                  ഔദ്യോഗികം
+                <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold uppercase">
+                  OFFICIAL
                 </span>
               </div>
               <ul className="space-y-3 text-xs">
@@ -281,18 +281,18 @@ export default function PravasiPage() {
 
             {/* Gulf Visa & Legal Guide */}
             <div className="bg-[#FDFBF7] rounded p-4 shadow-sm border border-amber-200">
-              <h4 className="font-headline text-base font-bold text-ink-midnight pb-2 border-b border-amber-200 mb-2 flex items-center gap-1.5">
+              <h4 className="font-headline text-base font-bold text-ink-midnight pb-2 border-b border-amber-200 mb-2 flex items-center gap-1.5 uppercase tracking-wide">
                 <ShieldCheck className="w-4 h-4 text-opinion-ochre" />
-                വിസ & തൊഴിൽ നിയമങ്ങൾ
+                VISA & LABOUR REGULATIONS
               </h4>
               <p className="text-xs text-secondary leading-relaxed mb-3">
                 ഗൾഫ് രാജ്യങ്ങളിലെ പുതിയ ലേബർ ലോ പരിഷ്കരണങ്ങളും പ്രവാസികൾ അറിഞ്ഞിരിക്കേണ്ട നിയമപരമായ സംശയങ്ങളും.
               </p>
               <button
                 onClick={() => alert('നിയമ സഹായ സെൽ ഉടൻ സമ്പർക്കത്തിൽ വരും.')}
-                className="w-full py-1.5 rounded bg-opinion-ochre text-white text-xs font-bold hover:bg-amber-700 transition-colors shadow-xs"
+                className="w-full py-1.5 rounded bg-opinion-ochre text-white text-xs font-bold hover:bg-amber-700 transition-colors shadow-xs uppercase tracking-wider"
               >
-                നിയമ സഹായം തേടുക
+                Request Legal Assistance
               </button>
             </div>
           </div>

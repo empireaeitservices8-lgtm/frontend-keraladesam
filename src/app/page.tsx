@@ -1,192 +1,208 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   Clock,
   Eye,
   Bookmark,
   Share2,
-  TrendingUp,
-  Flame,
-  CheckCircle2,
   ArrowRight,
-  Vote,
-  Sparkles,
   PlayCircle,
-  Volume2,
-  Loader2
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
 } from 'lucide-react';
-import { CURRENCY_RATES, Article } from '@/data/newsData';
-import { getRealArticles } from '@/lib/api';
-import DamWeatherWidget from '@/components/DamWeatherWidget';
+import { Article, VideoItem } from '@/data/newsData';
+import { getRealArticles, getRealVideos } from '@/lib/api';
 import { useFont } from '@/components/FontContext';
+import VideoPlayerModal from '@/components/VideoPlayerModal';
 
 export default function HomePage() {
   const { toggleBookmark, isBookmarked } = useFont();
 
   const [articles, setArticles] = useState<Article[]>([]);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTrendingTag, setActiveTrendingTag] = useState<string | null>(null);
-  const [pollVoted, setPollVoted] = useState<number | null>(null);
-  const [pollCounts, setPollCounts] = useState([68, 24, 8]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
+
+  const videosSliderRef = useRef<HTMLDivElement>(null);
+  const photoSliderRef = useRef<HTMLDivElement>(null);
+
+  const ITEMS_PER_PAGE = 8;
+
+  const categoriesList = [
+    { label: 'ALL', filter: 'ALL' },
+    { label: 'KERALA', filter: 'kerala' },
+    { label: 'INTERNATIONAL', filter: 'world' },
+    { label: 'SPECIAL REPORTS', filter: 'special' },
+    { label: 'POLITICS', filter: 'politics' },
+    { label: 'BUSINESS', filter: 'business' },
+    { label: 'CINEMA', filter: 'cinema' },
+  ];
+
+  const slideLeft = (ref: React.RefObject<HTMLDivElement | null>) => {
+    if (ref.current) {
+      ref.current.scrollBy({ left: -280, behavior: 'smooth' });
+    }
+  };
+
+  const slideRight = (ref: React.RefObject<HTMLDivElement | null>) => {
+    if (ref.current) {
+      ref.current.scrollBy({ left: 280, behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
-    async function loadArticles() {
+    async function loadData() {
       try {
-        const data = await getRealArticles();
-        if (isMounted && data.length > 0) {
-          setArticles(data);
+        const [articlesData, videosData] = await Promise.all([
+          getRealArticles(),
+          getRealVideos(),
+        ]);
+        if (isMounted) {
+          if (articlesData && articlesData.length > 0) {
+            setArticles(articlesData);
+          }
+          if (videosData && videosData.length > 0) {
+            setVideos(videosData);
+          }
         }
       } catch (err) {
-        console.error('Failed to load articles from backend database:', err);
+        console.error('Failed to load homepage data:', err);
       } finally {
         if (isMounted) setLoading(false);
       }
     }
-    loadArticles();
+    loadData();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const heroArticle = articles[0] || null;
-  const secondaryArticles = articles.slice(1, 5);
-  const opinionArticles = [
-    {
-      id: 'opinion-1',
-      title: 'വികസനവും പരിസ്ഥിതിയും: വയനാട് തുരങ്കപാത ഉയർത്തുന്ന ചോദ്യങ്ങൾ',
-      author: 'പ്രൊഫ. എം. കെ. സാനു',
-      role: 'പ്രമുഖ സാഹിത്യ നിരൂപകൻ & ചിന്തകൻ',
-      image:
-        'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80',
-    },
-    {
-      id: 'opinion-2',
-      title: 'പ്രവാസി നിക്ഷേപങ്ങളും കേരളത്തിന്റെ വ്യവസായ വളർച്ചയും',
-      author: 'സി. പി. ജോൺ',
-      role: 'സാമ്പത്തിക നിരീക്ഷകൻ',
-      image:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
-    },
-  ];
+  // Pinned headline article takes hero spot; otherwise newest article
+  const heroArticle = articles.find((a) => a.isHeadline) || articles[0] || null;
+  const remainingArticles = useMemo(
+    () => (heroArticle ? articles.filter((a) => a.id !== heroArticle.id) : articles.slice(1)),
+    [articles, heroArticle]
+  );
 
-  const handleVote = (idx: number) => {
-    if (pollVoted === null) {
-      setPollVoted(idx);
-      setPollCounts((prev) => {
-        const next = [...prev];
-        next[idx] += 1;
-        return next;
-      });
+  // Filter remaining articles by selected category (matches navbar sections)
+  const filteredRemaining = useMemo(() => {
+    if (selectedCategory === 'ALL' || selectedCategory === 'all') return remainingArticles;
+
+    return remainingArticles.filter((a) => {
+      const cat = (a.category || '').toLowerCase();
+      const dist = (a.district || '').toLowerCase();
+
+      if (selectedCategory === 'kerala') {
+        return (
+          dist !== 'ദേശീയം' &&
+          dist !== 'അന്തർദേശീയം' &&
+          dist !== 'പ്രവാസം / ഗൾഫ്' &&
+          !cat.includes('ലോകം') &&
+          !cat.includes('world') &&
+          !cat.includes('international')
+        );
+      }
+      if (selectedCategory === 'world' || selectedCategory === 'international' || selectedCategory === 'internatioanl') {
+        return (
+          cat.includes('ലോകം') ||
+          cat.includes('ആഗോള') ||
+          cat.includes('അന്താരാഷ്ട്ര') ||
+          cat.includes('അന്തർദേശീയ') ||
+          cat.includes('world') ||
+          cat.includes('international') ||
+          dist === 'അന്തർദേശീയം' ||
+          dist === 'അന്താരാഷ്ട്രം'
+        );
+      }
+      if (selectedCategory === 'special' || selectedCategory === 'special reports') {
+        return (
+          cat.includes('പ്രത്യേക') ||
+          cat.includes('അന്വേഷണ') ||
+          cat.includes('special') ||
+          cat.includes('feature') ||
+          Boolean(a.breaking || a.tags?.some((t) => t.toLowerCase().includes('special')))
+        );
+      }
+      if (selectedCategory === 'politics') {
+        return (
+          cat.includes('രാഷ്ട്രീയ') ||
+          cat.includes('ഭരണം') ||
+          cat.includes('നിയമസഭ') ||
+          cat.includes('politic')
+        );
+      }
+      if (selectedCategory === 'business' || selectedCategory === 'bussiness') {
+        return (
+          cat.includes('ബിസിനസ്') ||
+          cat.includes('സമ്പദ്') ||
+          cat.includes('വികസന') ||
+          cat.includes('business') ||
+          cat.includes('economy')
+        );
+      }
+      if (selectedCategory === 'cinema') {
+        return (
+          cat.includes('സിനിമ') ||
+          cat.includes('കല') ||
+          cat.includes('entertainment') ||
+          cat.includes('cinema') ||
+          cat.includes('film')
+        );
+      }
+      return true;
+    });
+  }, [remainingArticles, selectedCategory]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRemaining.length / ITEMS_PER_PAGE));
+  const paginatedArticles = filteredRemaining.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const handleCategorySelect = (filterKey: string) => {
+    setSelectedCategory(filterKey);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      const gridEl = document.getElementById('latest-stories');
+      if (gridEl) {
+        gridEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
   };
 
   const handleShare = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
-    navigator.clipboard?.writeText(window.location.origin + `/article/${id}`);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2500);
+    if (typeof window !== 'undefined') {
+      navigator.clipboard?.writeText(window.location.origin + `/article/${id}`);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2500);
+    }
   };
-
-  const videoShorts = [
-    {
-      id: 'v1',
-      title: 'വയനാട് തുരങ്കപാത: റൂട്ട് മാപ്പും 3D ആകാശ ദൃശ്യങ്ങളും പുറത്ത്',
-      category: 'വികസനം',
-      duration: '01:45',
-      views: '420K',
-      thumbnail: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 'v2',
-      title: 'മെട്രോ പുതിയ പാത കാക്കനാട്: ട്രയൽ റൺ തത്സമയം കാണാം',
-      category: 'മെട്രോ',
-      duration: '02:10',
-      views: '285K',
-      thumbnail: 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 'v3',
-      title: 'സൗദി ഗോൾഡൻ റെസിഡൻസി: പ്രവാസികൾ അറിഞ്ഞിരിക്കേണ്ട 5 മാറ്റങ്ങൾ',
-      category: 'പ്രവാസം',
-      duration: '03:15',
-      views: '510K',
-      thumbnail: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 'v4',
-      title: 'വേനൽമഴ ശക്തമാകുന്നു: തെക്കൻ ജില്ലകളിൽ അതീവ ജാഗ്രതാ നിർദ്ദേശം',
-      category: 'കാലാവസ്ഥ',
-      duration: '01:20',
-      views: '190K',
-      thumbnail: 'https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&w=400&q=80',
-    },
-  ];
-
-  const topTrendingReads = articles.filter((a) => a.trending).length > 0
-    ? articles.filter((a) => a.trending).slice(0, 4)
-    : articles.slice(0, 4);
-
-  const totalVotes = pollCounts.reduce((a, b) => a + b, 0);
-  const pollPercentages = pollCounts.map((c) => Math.round((c / totalVotes) * 100));
-
-  const trendingTags = [
-    '#WayanadTunnel',
-    '#KeralaBudget2025',
-    '#PravasiHolidays',
-    '#KochiMetro',
-    '#SantoshTrophy',
-    '#SummerRainAlert',
-  ];
 
   return (
     <div className="flex flex-col w-full pb-16">
-      {/* Trending Topics & Kerala Desam Focus Strip */}
-      <section className="w-full bg-surface-pure border-b border-slate-border py-2.5 px-4 md:px-margin-desktop">
-        <div className="max-w-[1360px] mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-          <div className="flex items-center gap-2 overflow-hidden text-xs">
-            <span className="font-bold text-ink-midnight flex items-center gap-1.5 shrink-0">
-              <span className="w-2 h-2 rounded-full bg-editorial-crimson" />
-              കേരളദേശം ഫോക്കസ്:
-            </span>
-            <p className="text-secondary truncate text-xs font-medium">
-              ആഗോള സമകാലികം • ഭാരതം • കേരളത്തിലെ 14 ജില്ലകളിലെ തത്സമയ വാർത്തകൾ
-            </p>
-          </div>
-
-          {/* Quick Topic Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto text-xs no-scrollbar py-0.5 shrink-0 w-full md:w-auto">
-            <span className="text-secondary font-bold shrink-0 flex items-center gap-1">
-              <Flame className="w-3.5 h-3.5 text-opinion-ochre" />
-              ട്രെൻഡിംഗ്:
-            </span>
-            {trendingTags.map((tag) => (
-              <button
-                key={tag}
-                onClick={() =>
-                  setActiveTrendingTag(activeTrendingTag === tag ? null : tag)
-                }
-                className={`px-2.5 py-0.5 rounded-full transition-colors whitespace-nowrap text-xs font-medium ${
-                  activeTrendingTag === tag
-                    ? 'bg-primary text-white font-bold shadow-xs'
-                    : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Main Editorial Centered Layout */}
-      <main className="w-full max-w-[1040px] mx-auto px-4 sm:px-6 md:px-8 py-6">
-        <div className="flex flex-col gap-8">
+      <main className="w-full max-w-[1360px] mx-auto px-3 sm:px-5 lg:px-8 py-4 sm:py-6 md:py-8">
+        <div className="flex flex-col gap-6 sm:gap-8">
           {/* Loading State or Hero Article */}
           {loading && !heroArticle ? (
             <div className="bg-surface-pure rounded-lg p-10 border border-slate-border flex flex-col items-center justify-center text-center gap-3">
@@ -198,459 +214,411 @@ export default function HomePage() {
               <p className="text-sm font-semibold text-slate-700">നിലവിൽ വാർത്തകൾ ലഭ്യമല്ല. ദയവായി അല്പം കഴിഞ്ഞ് വീണ്ടും പരിശോധിക്കുക.</p>
             </div>
           ) : (
-          /* Lead Broadsheet Hero Article */
-          <article className="bg-surface-pure rounded-lg p-4 sm:p-6 md:p-8 shadow-sm border border-slate-border relative group">
-            {/* Category & Badge */}
-            <div className="flex items-center justify-between mb-3 text-xs">
-              <span className="bg-primary text-white px-2.5 py-1 rounded text-[11px] font-bold uppercase tracking-wider shadow-xs">
-                പ്രധാന വാർത്ത
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={(e) => handleShare(e, heroArticle.id)}
-                  className="p-1.5 text-secondary hover:text-primary transition-colors rounded-full hover:bg-surface-container"
-                  title="പങ്കുവെക്കുക"
-                >
-                  <Share2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => toggleBookmark(heroArticle.id)}
-                  className={`p-1.5 transition-colors rounded-full hover:bg-surface-container ${
-                    isBookmarked(heroArticle.id)
-                      ? 'text-primary fill-current'
-                      : 'text-secondary hover:text-primary'
-                  }`}
-                  title="ബുക്ക്‌മാർക്ക് ചെയ്യുക"
-                >
-                  <Bookmark
-                    className={`w-4 h-4 ${
-                      isBookmarked(heroArticle.id) ? 'fill-primary' : ''
-                    }`}
-                  />
-                </button>
+            /* Lead Broadsheet Hero Article (Main Headline) */
+            <article className="bg-surface-pure rounded-xl p-3.5 sm:p-5 md:p-6 shadow-sm border border-slate-border relative group overflow-hidden">
+              {/* Category & Badge */}
+              <div className="flex items-center justify-between mb-3 text-xs">
+                <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                  LEAD EDITORIAL
+                </span>
+
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <button
+                    onClick={(e) => handleShare(e, heroArticle.id)}
+                    className="p-1.5 text-secondary hover:text-primary transition-colors rounded-full hover:bg-surface-container"
+                    title="പങ്കുവെക്കുക"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => toggleBookmark(heroArticle.id)}
+                    className={`p-1.5 transition-colors rounded-full hover:bg-surface-container ${isBookmarked(heroArticle.id)
+                        ? 'text-primary fill-current'
+                        : 'text-secondary hover:text-primary'
+                      }`}
+                    title="ബുക്ക്‌മാർക്ക് ചെയ്യുക"
+                  >
+                    <Bookmark
+                      className={`w-4 h-4 ${isBookmarked(heroArticle.id) ? 'fill-primary' : ''
+                        }`}
+                    />
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Dominant Headline */}
-            <Link href={`/article/${heroArticle.id}`}>
-              <h1 className="font-headline text-xl sm:text-2xl md:text-4xl text-ink-midnight font-bold leading-tight group-hover:text-primary transition-colors mb-4">
-                {heroArticle.title}
-              </h1>
-            </Link>
+              {/* Hero editorial layout */}
+              <div className={`grid grid-cols-1 ${heroArticle.imageUrl ? 'lg:grid-cols-2' : ''} gap-4 sm:gap-6 lg:gap-8 items-center`}>
+                {/* Headline and summary */}
+                <div className={`flex flex-col ${heroArticle.imageUrl ? 'order-2 lg:order-1' : ''} justify-center`}>
+                  <Link href={`/article/${heroArticle.id}`}>
+                    <h1 className="newspaper-lead text-xl sm:text-2xl md:text-3xl lg:text-4xl text-ink-midnight font-bold leading-snug sm:leading-tight hover:text-primary transition-colors mb-3 sm:mb-4">
+                      {heroArticle.title}
+                    </h1>
+                  </Link>
 
-            {/* Lead Image */}
-            <Link href={`/article/${heroArticle.id}`} className="block overflow-hidden rounded-lg relative mb-4 sm:mb-5">
-              <img
-                src={heroArticle.imageUrl}
-                alt={heroArticle.title}
-                className="w-full h-56 sm:h-72 md:h-96 object-cover group-hover:scale-[1.02] transition-transform duration-500"
-              />
-              <span className="absolute bottom-3 left-3 bg-ink-midnight/85 backdrop-blur text-white text-xs px-2.5 py-1 rounded font-medium shadow-md">
-                {heroArticle.readTime} • ശബ്ദരൂപം ലഭ്യമാണ്
-              </span>
-            </Link>
+                  <p className="text-xs sm:text-sm md:text-base text-slate-700 leading-relaxed sm:leading-8 mb-4 sm:mb-5">
+                    {heroArticle.lead}
+                  </p>
 
-            {/* Lead Paragraph & Highlights Content */}
-            <div className="flex flex-col gap-4 mb-6">
-              <p className="text-[15px] sm:text-base md:text-lg text-slate-800 leading-[1.8] font-normal">
-                {heroArticle.paragraphs[0]}
-              </p>
-
-              {heroArticle.paragraphs[1] && (
-                <p className="text-xs sm:text-sm text-secondary leading-relaxed">
-                  {heroArticle.paragraphs[1]}
-                </p>
-              )}
-
-              {heroArticle.highlights && (
-                <div className="bg-gradient-to-br from-amber-50/80 via-white to-red-50/40 p-4 rounded-xl border border-amber-200/60 shadow-xs">
-                  <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-amber-200/50">
-                    <h4 className="text-xs sm:text-sm font-bold text-ink-midnight uppercase tracking-wider flex items-center gap-1.5 font-headline">
-                      <Sparkles className="w-4 h-4 text-editorial-crimson" />
-                      പ്രധാന കണ്ടെത്തലുകൾ:
-                    </h4>
-                    <span className="text-[10px] font-bold text-editorial-crimson bg-red-100/70 px-2 py-0.5 rounded">
-                      KEY POINTS
-                    </span>
+                  <div className="flex items-center gap-2 sm:gap-3 text-xs text-secondary mb-4 sm:mb-5">
+                    <span className="font-semibold">{heroArticle.author.name}</span>
+                    <span>•</span>
+                    <span>{heroArticle.timeAgo}</span>
                   </div>
-                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs sm:text-sm text-slate-800">
-                    {heroArticle.highlights.map((h, i) => (
-                      <li key={i} className="flex items-start gap-2.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-editorial-crimson mt-2 shrink-0" />
-                        <span className="leading-relaxed font-medium">{h}</span>
-                      </li>
-                    ))}
-                  </ul>
+
+                  <Link
+                    href={`/article/${heroArticle.id}`}
+                    className="inline-flex w-fit items-center gap-2 rounded-md bg-primary px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold text-white hover:bg-editorial-crimson transition-colors shadow-sm"
+                  >
+                    Read Full Story
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+
+                {/* Right: Lead image (only if image exists) */}
+                {heroArticle.imageUrl && (
+                  <Link
+                    href={`/article/${heroArticle.id}`}
+                    className="order-1 lg:order-2 block overflow-hidden rounded-lg"
+                  >
+                    <img
+                      src={heroArticle.imageUrl}
+                      alt={heroArticle.title}
+                      className="w-full h-full min-h-[200px] sm:min-h-[280px] max-h-[380px] sm:max-h-[420px] aspect-[16/10] object-cover transition-transform duration-500 hover:scale-[1.02]"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </Link>
+                )}
+              </div>
+
+              {copiedId === heroArticle.id && (
+                <div className="absolute top-4 right-16 bg-ink-midnight text-white text-xs px-3 py-1.5 rounded shadow-lg animate-in fade-in">
+                  Link copied to clipboard!
                 </div>
               )}
-            </div>
-
-            {/* Byline & Read More */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-border text-xs sm:text-sm">
-              <div className="flex items-center gap-3">
-                <img
-                  src={heroArticle.author.avatar}
-                  alt={heroArticle.author.name}
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-border"
-                />
-                <div>
-                  <span className="font-bold text-ink-midnight block text-xs sm:text-sm">
-                    {heroArticle.author.name}
-                  </span>
-                  <span className="text-[11px] sm:text-xs text-secondary">
-                    {heroArticle.author.location} • {heroArticle.timeAgo}
-                  </span>
-                </div>
-              </div>
-
-              <Link
-                href={`/article/${heroArticle.id}`}
-                className="px-4 py-2 rounded bg-primary text-white font-bold hover:bg-editorial-crimson transition-colors flex items-center gap-1.5 shadow-xs"
-              >
-                വായിക്കുക <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-
-            {copiedId === heroArticle.id && (
-              <div className="absolute top-4 right-16 bg-ink-midnight text-white text-xs px-3 py-1.5 rounded shadow-lg animate-in fade-in">
-                ലിങ്ക് കോപ്പി ചെയ്തു!
-              </div>
-            )}
-          </article>
+            </article>
           )}
 
-          {/* Secondary 2-Column Story Grid (All 4 Articles) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {secondaryArticles.map((item) => (
-              <article
-                key={item.id}
-                className="bg-surface-pure rounded-lg p-5 shadow-sm border border-slate-border flex flex-col justify-between group hover:shadow-md transition-shadow"
-              >
-                <div>
-                  <div className="overflow-hidden rounded-md mb-3.5 relative">
-                    <img
-                      src={item.imageUrl}
-                      alt={item.title}
-                      className="w-full h-44 sm:h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <span
-                      className="absolute top-2 left-2 text-[10px] font-bold uppercase px-2 py-0.5 rounded text-white shadow-xs"
-                      style={{ backgroundColor: item.categoryColor || '#C8102E' }}
-                    >
-                      {item.category}
-                    </span>
-                  </div>
-                  <Link href={`/article/${item.id}`}>
-                    <h3 className="font-headline text-base sm:text-lg font-bold text-ink-midnight group-hover:text-primary transition-colors leading-snug mb-2.5">
-                      {item.title}
-                    </h3>
-                  </Link>
-                  <p className="text-xs sm:text-sm text-on-surface-variant line-clamp-3 mb-4 leading-relaxed">
-                    {item.lead}
-                  </p>
-                </div>
-
-                <div className="flex items-center justify-between pt-3 border-t border-slate-border text-xs text-secondary">
-                  <span>{item.timeAgo}</span>
-                  <Link
-                    href={`/article/${item.id}`}
-                    className="text-primary hover:underline font-bold flex items-center gap-1"
-                  >
-                    വിശദമായി <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </article>
-            ))}
+          {/* Sliding Effect 1: Smooth Horizontal Sliding Category Strip */}
+          <div className="w-full overflow-x-auto no-scrollbar scroll-smooth py-1 border-y border-slate-200/80">
+            <div className="flex items-center gap-2 min-w-max px-0.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-secondary mr-1 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-editorial-crimson" />
+                SECTIONS:
+              </span>
+              {categoriesList.map((cat) => (
+                <button
+                  key={cat.filter}
+                  onClick={() => handleCategorySelect(cat.filter)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${selectedCategory === cat.filter
+                      ? 'bg-primary text-white shadow-xs font-bold scale-105'
+                      : 'bg-surface-pure hover:bg-surface-container-high text-on-surface border border-slate-200/80'
+                    }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Visual Journalism / Photo Feature Banner */}
-          <div className="bg-ink-midnight text-surface-pure rounded-lg p-6 sm:p-8 relative overflow-hidden shadow-sm">
+          {/* Section Header for Latest News with Pagination */}
+          <div id="latest-stories" className="flex flex-col sm:flex-row sm:items-end justify-between gap-2 sm:gap-4 border-b border-slate-200 pb-3 pt-2 scroll-mt-24">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-primary">
+                  LATEST HEADLINES
+                </span>
+              </div>
+              <h2 className="font-headline text-2xl sm:text-3xl font-bold text-ink-midnight tracking-tight">
+                പ്രധാന വാർത്തകൾ
+              </h2>
+              <p className="text-xs sm:text-sm text-secondary mt-0.5">
+                Continuous live dispatches and breaking reports from across Kerala and the world
+              </p>
+            </div>
+            {filteredRemaining.length > 0 && (
+              <div className="text-xs text-secondary font-medium">
+                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredRemaining.length)} of {filteredRemaining.length} stories
+              </div>
+            )}
+          </div>
+
+          {/* Mobile View: 2 cards per row (grid-cols-2), Responsive across tablet & desktop */}
+          {paginatedArticles.length === 0 ? (
+            <div className="bg-surface-pure rounded-xl p-8 border border-slate-200 text-center text-secondary text-sm">
+              കൂടുതൽ വാർത്തകൾ ലഭ്യമല്ല.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
+              {paginatedArticles.map((item) => (
+                <article
+                  key={item.id}
+                  className="news-card group flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white p-2.5 sm:p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+                >
+                  <div className="flex flex-1 flex-col">
+                    <Link
+                      href={`/article/${item.id}`}
+                      className="relative mb-2 sm:mb-3 overflow-hidden rounded-lg aspect-[16/10] sm:aspect-[16/9] block"
+                    >
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.parentElement?.querySelector('.fallback-card') as HTMLElement;
+                            if (fallback) fallback.classList.remove('hidden');
+                          }}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : null}
+                      <div className={`fallback-card w-full h-full bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 flex items-center justify-center p-2 ${item.imageUrl ? 'hidden' : ''}`}>
+                        <span className="text-[10px] sm:text-xs font-serif font-bold text-slate-400">
+                          കേരളദേശം
+                        </span>
+                      </div>
+                    </Link>
+
+                    <Link href={`/article/${item.id}`}>
+                      <h3 className="mb-1 sm:mb-2 line-clamp-2 sm:line-clamp-3 font-headline text-xs sm:text-base font-bold leading-snug sm:leading-snug text-ink-midnight transition-colors group-hover:text-primary">
+                        {item.title}
+                      </h3>
+                    </Link>
+
+                    <p className="mb-2 sm:mb-3 line-clamp-2 sm:line-clamp-3 text-[11px] sm:text-xs leading-relaxed text-on-surface-variant hidden xs:line-clamp-2">
+                      {item.lead}
+                    </p>
+                  </div>
+
+                  <div className="mt-auto flex items-center justify-between gap-1 sm:gap-2 border-t border-slate-100 pt-2 text-[10px] sm:text-xs text-secondary">
+                    <span className="truncate flex items-center gap-1 font-medium text-slate-500" title={`അപ്‌ലോഡ് ചെയ്ത സമയം: ${item.timeAgo}`}>
+                      <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                      {item.timeAgo}
+                    </span>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => toggleBookmark(item.id)}
+                        className="p-1 text-secondary hover:text-primary rounded-full hover:bg-slate-100 transition-colors"
+                        title="ബുക്ക്‌മാർക്ക്"
+                      >
+                        <Bookmark
+                          className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isBookmarked(item.id) ? 'fill-primary text-primary' : ''
+                            }`}
+                        />
+                      </button>
+                      <Link
+                        href={`/article/${item.id}`}
+                        className="font-bold text-primary hover:underline flex items-center gap-0.5"
+                      >
+                        <span className="hidden sm:inline">Read</span> <ArrowRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <nav aria-label="Page navigation" className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-xs">
+              <div className="text-xs text-secondary font-medium order-2 sm:order-1">
+                Page <span className="font-bold text-ink-midnight">{currentPage}</span> of <span className="font-bold text-ink-midnight">{totalPages}</span>
+              </div>
+
+              <div className="flex items-center gap-1.5 order-1 sm:order-2 flex-wrap justify-center">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${currentPage === 1
+                      ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400'
+                      : 'bg-white border border-slate-200 text-ink-midnight hover:bg-slate-50 hover:border-slate-300 active:scale-95'
+                    }`}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  Previous
+                </button>
+
+                {/* Page Numbers */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                  if (
+                    totalPages <= 7 ||
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    Math.abs(pageNum - currentPage) <= 1
+                  ) {
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`min-w-[34px] h-[34px] px-2.5 rounded-lg text-xs font-bold transition-all ${currentPage === pageNum
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'bg-white border border-slate-200 text-ink-midnight hover:bg-slate-50 hover:border-slate-300'
+                          }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  } else if (
+                    (pageNum === 2 && currentPage > 3) ||
+                    (pageNum === totalPages - 1 && currentPage < totalPages - 2)
+                  ) {
+                    return (
+                      <span key={pageNum} className="px-1 text-slate-400 text-xs">
+                        ...
+                      </span>
+                    );
+                  }
+                  return null;
+                })}
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${currentPage === totalPages
+                      ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400'
+                      : 'bg-white border border-slate-200 text-ink-midnight hover:bg-slate-50 hover:border-slate-300 active:scale-95'
+                    }`}
+                >
+                  Next
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </nav>
+          )}
+
+          {/* Sliding Effect 3: Visual Journalism / Photo Feature Gallery with swipeable mobile slide */}
+          <div className="bg-ink-midnight text-surface-pure rounded-xl p-4 sm:p-7 relative overflow-hidden shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[11px] bg-opinion-ochre text-white px-2.5 py-1 rounded font-bold uppercase tracking-wider">
-                ഫോട്ടോ സ്റ്റോറി
+                PHOTO STORY
               </span>
-              <span className="text-xs text-secondary-fixed-dim">
-                ദൃശ്യങ്ങളിലൂടെ കേരളം
+              <span className="text-xs text-secondary-fixed-dim uppercase tracking-wider font-semibold">
+                KERALA IN FRAMES
               </span>
             </div>
             <h3 className="font-headline text-xl sm:text-2xl font-bold mb-2 text-surface-pure">
               കുട്ടനാടൻ കായൽ ജീവിതം: വേനൽമഴയുടെ വരവറിയിച്ച് ഓളങ്ങൾ
             </h3>
-            <p className="text-xs sm:text-sm text-secondary-fixed-dim mb-5 leading-relaxed max-w-2xl">
-              ആലപ്പുഴയുടെ പച്ചപ്പും കായലോളങ്ങളും പകർത്തുന്ന വിസ്മയകരമായ ക്യാമറ കാഴ്ചകൾ.
+            <p className="text-xs sm:text-sm text-secondary-fixed-dim mb-4 leading-relaxed max-w-2xl">
+              Visual captures of life, landscapes, and backwaters across God&apos;s Own Country.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="overflow-hidden rounded-md group">
+
+            {/* Mobile swipeable slider, desktop 3-col grid */}
+            <div
+              ref={photoSliderRef}
+              className="flex sm:grid sm:grid-cols-3 gap-3 overflow-x-auto sm:overflow-visible no-scrollbar snap-x snap-mandatory pb-2 sm:pb-0"
+            >
+              <div className="w-[260px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-lg group">
                 <img
-                  src="https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=400&q=80"
+                  src="https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=600&q=80"
                   alt="Kuttanad 1"
-                  className="rounded-md object-cover h-36 w-full group-hover:scale-105 transition-transform duration-300"
+                  className="rounded-lg object-cover h-40 sm:h-44 w-full group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <div className="overflow-hidden rounded-md group">
+              <div className="w-[260px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-lg group">
                 <img
-                  src="https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=400&q=80"
+                  src="https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80"
                   alt="Kuttanad 2"
-                  className="rounded-md object-cover h-36 w-full group-hover:scale-105 transition-transform duration-300"
+                  className="rounded-lg object-cover h-40 sm:h-44 w-full group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <div className="overflow-hidden rounded-md group">
+              <div className="w-[260px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-lg group">
                 <img
-                  src="https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&w=400&q=80"
+                  src="https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&w=600&q=80"
                   alt="Kuttanad 3"
-                  className="rounded-md object-cover h-36 w-full group-hover:scale-105 transition-transform duration-300"
+                  className="rounded-lg object-cover h-40 sm:h-44 w-full group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
             </div>
           </div>
 
-          {/* Video News Shorts & Reels Carousel */}
-          <section id="videos" className="bg-surface-pure rounded-lg p-5 sm:p-6 border border-slate-border shadow-xs scroll-mt-24">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-border">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-live-alert animate-ping" />
-                <h3 className="font-headline text-lg sm:text-xl font-bold text-ink-midnight flex items-center gap-1.5">
-                  <PlayCircle className="w-5 h-5 text-editorial-crimson" />
-                  വീഡിയോ വാർത്തകൾ & റീൽസ്
-                </h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {videoShorts.map((vid) => (
-                <div
-                  key={vid.id}
-                  className="group relative rounded-lg overflow-hidden bg-black aspect-[9/14] flex flex-col justify-end p-3 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer"
-                >
-                  <img
-                    src={vid.thumbnail}
-                    alt={vid.title}
-                    className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-90 transition-all duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
-
-                  {/* Play icon overlay */}
-                  <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/60 backdrop-blur flex items-center justify-center text-white group-hover:bg-editorial-crimson transition-colors shadow">
-                    <PlayCircle className="w-4 h-4 fill-white/20" />
-                  </div>
-
-                  {/* Category badge */}
-                  <span className="relative z-10 self-start text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-editorial-crimson text-white mb-1.5 shadow-xs">
-                    {vid.category}
-                  </span>
-
-                  {/* Title */}
-                  <h4 className="relative z-10 text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 mb-2 group-hover:text-amber-300 transition-colors">
-                    {vid.title}
-                  </h4>
-
-                  {/* View count & Duration */}
-                  <div className="relative z-10 flex items-center justify-between text-[10px] text-slate-300 border-t border-white/10 pt-1.5">
-                    <span className="flex items-center gap-1">
-                      <Eye className="w-3 h-3 text-amber-400" /> {vid.views}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-slate-400" /> {vid.duration}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* 2-Column Opinion Columns & Live Reader Poll */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left 7 cols: Exclusive Opinion & Investigative Columns */}
-            <section id="opinion" className="lg:col-span-7 bg-surface-pure rounded-lg p-5 sm:p-6 border border-slate-border shadow-xs flex flex-col justify-between scroll-mt-24">
-              <div>
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-border">
-                  <h3 className="font-headline text-lg sm:text-xl font-bold text-ink-midnight flex items-center gap-2">
-                    <span className="w-2 h-5 bg-opinion-ochre rounded-xs" />
-                    ദേശീയ കോളങ്ങൾ & വിശകലനം
+          {/* Sliding Effect 4: Video Shorts & Reels Horizontal Sliding Carousel */}
+          {videos.length > 0 && (
+            <section id="videos" className="bg-surface-pure rounded-xl p-4 sm:p-6 border border-slate-border shadow-xs scroll-mt-24">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-border">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-live-alert animate-ping" />
+                  <h3 className="font-headline text-base sm:text-lg md:text-xl font-bold text-ink-midnight flex items-center gap-1.5 uppercase tracking-wide">
+                    <PlayCircle className="w-5 h-5 text-editorial-crimson" />
+                    VIDEO SHORTS ({videos.length})
                   </h3>
-                  <span className="text-[11px] font-bold text-opinion-ochre uppercase tracking-wider bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                    EXCLUSIVE
-                  </span>
                 </div>
 
-                <div className="space-y-4">
-                  {opinionArticles.map((op) => (
-                    <article
-                      key={op.id}
-                      className="p-3.5 rounded-lg bg-surface-container-low/60 hover:bg-surface-container-low border border-slate-border transition-colors group"
-                    >
-                      <div className="flex items-start gap-3.5">
-                        <img
-                          src={op.image}
-                          alt={op.author}
-                          className="w-12 h-12 rounded-full object-cover ring-2 ring-opinion-ochre/40 shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 text-xs text-secondary mb-1">
-                            <span className="font-bold text-ink-midnight">
-                              {op.author}
-                            </span>
-                            <span>•</span>
-                            <span className="text-[11px] text-secondary truncate">
-                              {op.role}
-                            </span>
-                          </div>
-                          <Link href={`/article/wayanad-tunnel`}>
-                            <h4 className="font-headline text-sm sm:text-base font-bold text-ink-midnight group-hover:text-primary transition-colors leading-snug">
-                              {op.title}
-                            </h4>
-                          </Link>
-                          <span className="inline-flex items-center gap-1 text-[11px] text-opinion-ochre font-bold mt-2">
-                            കോളം വായിക്കുക <ArrowRight className="w-3 h-3" />
-                          </span>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
+                {/* Slider Controls */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => slideLeft(videosSliderRef)}
+                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-editorial-crimson hover:text-white border border-slate-200 flex items-center justify-center transition-colors text-slate-700 shadow-xs"
+                    title="മുമ്പത്തെ വീഡിയോകൾ"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => slideRight(videosSliderRef)}
+                    className="w-8 h-8 rounded-full bg-slate-100 hover:bg-editorial-crimson hover:text-white border border-slate-200 flex items-center justify-center transition-colors text-slate-700 shadow-xs"
+                    title="അടുത്ത വീഡിയോകൾ"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
-              {/* Editorial Note */}
-              <div className="mt-4 pt-3 border-t border-slate-border text-xs text-secondary flex items-center justify-between">
-                <span>നിഷ്പക്ഷ നിരീക്ഷണം • ആഴ്ചതോറുമുള്ള കോളങ്ങൾ</span>
-                <Link href="/about" className="text-primary font-bold hover:underline">
-                  ഞങ്ങളുടെ വീക്ഷണം →
-                </Link>
-              </div>
-            </section>
+              {/* Swipeable Horizontal Shorts Track */}
+              <div
+                ref={videosSliderRef}
+                className="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory py-1 px-0.5"
+              >
+                {videos.map((vid) => (
+                  <div
+                    key={vid.id || vid._id}
+                    onClick={() => setSelectedVideo(vid)}
+                    className="w-[155px] sm:w-[200px] shrink-0 snap-start group relative rounded-xl overflow-hidden bg-black aspect-[9/15] flex flex-col justify-end p-2.5 sm:p-3 shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer"
+                  >
+                    <img
+                      src={vid.thumbnail}
+                      alt={vid.title}
+                      className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-90 transition-all duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
 
-            {/* Right 5 cols: Live Interactive Reader Poll */}
-            <section className="lg:col-span-5 bg-surface-pure rounded-lg p-5 sm:p-6 border border-slate-border shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-border">
-                  <h3 className="font-headline text-lg sm:text-xl font-bold text-ink-midnight flex items-center gap-2">
-                    <Vote className="w-5 h-5 text-editorial-crimson" />
-                    ജനഹിതം: ലൈവ് പോൾ
-                  </h3>
-                  <span className="text-[10px] font-bold bg-editorial-crimson text-white px-2 py-0.5 rounded uppercase">
-                    ACTIVE POLL
-                  </span>
-                </div>
+                    {/* Play icon overlay */}
+                    <div className="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-black/60 backdrop-blur flex items-center justify-center text-white group-hover:bg-editorial-crimson transition-colors shadow">
+                      <PlayCircle className="w-4 h-4 fill-white/20" />
+                    </div>
 
-                <p className="font-headline text-sm sm:text-base font-bold text-ink-midnight leading-snug mb-4">
-                  വയനാട് തുരങ്കപാത നിർമാണം മലയോര ഗതാഗതത്തിന് പുതിയ കുതിപ്പേകുമോ?
-                </p>
-
-                {/* Poll Options */}
-                <div className="space-y-2.5">
-                  {[
-                    { label: 'അതെ, വികസനത്തിന് അനിവാര്യം', pct: pollPercentages[0] },
-                    { label: 'ഇല്ല, പരിസ്ഥിതി നാശമുണ്ടാക്കാം', pct: pollPercentages[1] },
-                    { label: 'നിഷ്പക്ഷം / അഭിപ്രായമില്ല', pct: pollPercentages[2] },
-                  ].map((opt, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleVote(idx)}
-                      disabled={pollVoted !== null}
-                      className={`w-full text-left p-3 rounded-lg border text-xs sm:text-sm font-medium transition-all relative overflow-hidden ${
-                        pollVoted === idx
-                          ? 'border-editorial-crimson bg-red-50 text-ink-midnight font-bold'
-                          : 'border-slate-border bg-surface-container-low hover:bg-surface-container text-on-surface'
-                      }`}
-                    >
-                      {/* Animated Progress Bar when voted */}
-                      {pollVoted !== null && (
-                        <div
-                          className="absolute inset-y-0 left-0 bg-editorial-crimson/15 transition-all duration-700"
-                          style={{ width: `${opt.pct}%` }}
-                        />
-                      )}
-                      <div className="relative flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          {pollVoted === idx ? (
-                            <CheckCircle2 className="w-4 h-4 text-editorial-crimson shrink-0" />
-                          ) : (
-                            <span className="w-4 h-4 rounded-full border border-secondary shrink-0" />
-                          )}
-                          <span>{opt.label}</span>
-                        </span>
-                        {pollVoted !== null && (
-                          <span className="font-bold text-editorial-crimson ml-2">
-                            {opt.pct}%
-                          </span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Poll footer */}
-              <div className="mt-4 pt-3 border-t border-slate-border flex items-center justify-between text-xs text-secondary">
-                <span>
-                  ആകെ വോട്ടുകൾ: <strong className="text-ink-midnight">{totalVotes.toLocaleString()}</strong>
-                </span>
-                <span className="text-[11px] text-emerald-600 font-bold">
-                  {pollVoted !== null ? '✓ വോട്ട് രേഖപ്പെടുത്തി' : 'വോട്ട് രേഖപ്പെടുത്തുക'}
-                </span>
-              </div>
-            </section>
-          </div>
-
-          {/* Top Trending Reads + Live Gulf Exchange Bar */}
-          <section id="trending" className="bg-surface-pure rounded-lg p-5 sm:p-6 border border-slate-border shadow-xs scroll-mt-24">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-border">
-              <div className="flex items-center gap-2">
-                <Flame className="w-5 h-5 text-opinion-ochre" />
-                <h3 className="font-headline text-lg sm:text-xl font-bold text-ink-midnight">
-                  ഏറ്റവും കൂടുതൽ വായിക്കപ്പെട്ടവ (Top Trending)
-                </h3>
-              </div>
-              <span className="text-xs text-secondary font-medium">
-                കഴിഞ്ഞ 24 മണിക്കൂറിലെ ട്രെൻഡുകൾ
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {topTrendingReads.map((item, idx) => (
-                <Link
-                  key={item.id}
-                  href={`/article/${item.id}`}
-                  className="p-3.5 rounded-lg bg-surface-container-low/50 hover:bg-surface-container border border-slate-border transition-all flex flex-col justify-between group"
-                >
-                  <div className="flex items-start gap-3 mb-2">
-                    <span className="font-headline text-2xl font-black text-slate-300 group-hover:text-editorial-crimson transition-colors leading-none">
-                      0{idx + 1}
-                    </span>
-                    <h4 className="font-headline text-xs sm:text-sm font-bold text-ink-midnight group-hover:text-primary transition-colors leading-snug line-clamp-3">
-                      {item.title}
+                    {/* Title */}
+                    <h4 className="relative z-10 text-xs sm:text-sm font-bold text-white leading-snug line-clamp-2 mb-1.5 sm:mb-2 group-hover:text-amber-300 transition-colors">
+                      {vid.title}
                     </h4>
-                  </div>
-                  <div className="flex items-center justify-between text-[11px] text-secondary border-t border-slate-border/80 pt-2 mt-2">
-                    <span className="font-semibold text-editorial-crimson">
-                      {item.category}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Eye className="w-3 h-3 text-secondary" /> {item.views}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
 
-            {/* Gulf Currency Strip */}
-            <div className="mt-5 pt-3.5 border-t border-slate-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs bg-slate-50 p-3 rounded-lg">
-              <div className="flex items-center gap-2 font-bold text-ink-midnight shrink-0">
-                <span className="text-base">💱</span>
-                <span>ലൈവ് ഗൾഫ് കറൻസി നിരക്ക് (1 വിദേശ കറൻസി = രൂപയിൽ):</span>
-              </div>
-              <div className="flex items-center gap-4 overflow-x-auto no-scrollbar py-0.5 text-xs">
-                {CURRENCY_RATES.slice(0, 4).map((c) => (
-                  <span key={c.code} className="inline-flex items-center gap-1 font-semibold text-on-surface whitespace-nowrap">
-                    <span>{c.flag} {c.code}:</span>
-                    <strong className="text-primary font-bold">₹{c.inrRate.toFixed(2)}</strong>
-                  </span>
+                    {/* View count & Duration */}
+                    <div className="relative z-10 flex items-center justify-between text-[10px] text-slate-300 border-t border-white/10 pt-1.5">
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3 h-3 text-amber-400" /> {vid.views}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-slate-400" /> {vid.duration}
+                      </span>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </div>
-          </section>
+            </section>
+          )}
+
+          {/* Video Player Modal */}
+          <VideoPlayerModal
+            video={selectedVideo}
+            isOpen={!!selectedVideo}
+            onClose={() => setSelectedVideo(null)}
+          />
         </div>
       </main>
     </div>
   );
 }
+

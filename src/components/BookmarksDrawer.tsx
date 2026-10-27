@@ -59,14 +59,14 @@ export default function BookmarksDrawer({ isOpen, onClose }: BookmarksDrawerProp
                 <Bookmark className="w-4 h-4 fill-white" />
               </div>
               <div>
-                <h3 className="font-headline text-base font-bold text-white flex items-center gap-2">
-                  സംരക്ഷിച്ച വാർത്തകൾ
+                <h3 className="font-headline text-base font-bold text-white flex items-center gap-2 uppercase tracking-wide">
+                  SAVED STORIES
                   <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full font-mono">
                     {savedArticles.length}
                   </span>
                 </h3>
                 <span className="text-[11px] text-white/70">
-                  പിന്നീട് വായിക്കാനായി സൂക്ഷിച്ചവ
+                  Your reading list
                 </span>
               </div>
             </div>
@@ -74,7 +74,7 @@ export default function BookmarksDrawer({ isOpen, onClose }: BookmarksDrawerProp
             <button
               onClick={onClose}
               className="p-1.5 rounded-full text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-              title="അടയ്ക്കുക"
+              title="Close"
             >
               <X className="w-5 h-5" />
             </button>
@@ -87,30 +87,36 @@ export default function BookmarksDrawer({ isOpen, onClose }: BookmarksDrawerProp
                 <div className="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center text-secondary mb-4">
                   <Bookmark className="w-8 h-8 text-secondary/60" />
                 </div>
-                <h4 className="font-headline text-base font-bold text-ink-midnight mb-1">
-                  വാർത്തകളൊന്നും സേവ് ചെയ്തിട്ടില്ല
+                <h4 className="font-headline text-base font-bold text-ink-midnight mb-1 uppercase tracking-wide">
+                  NO SAVED STORIES
                 </h4>
                 <p className="text-xs text-secondary leading-relaxed max-w-xs mb-6">
                   വാർത്തകൾ വായിക്കുമ്പോൾ മുകളിൽ കാണുന്ന <strong>ബുക്ക്‌മാർക്ക്</strong> ഐക്കണിൽ ക്ലിക്ക് ചെയ്ത് പിന്നീട് വായിക്കാനായി ഇവിടെ എളുപ്പത്തിൽ സൂക്ഷിക്കാം.
                 </p>
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-md shadow-xs hover:bg-editorial-crimson transition-colors"
+                  className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-md shadow-xs hover:bg-editorial-crimson transition-colors uppercase tracking-wider"
                 >
-                  വാർത്തകൾ വായിക്കുക
+                  START READING
                 </button>
               </div>
             ) : (
-              bookmarkedList.map((item, idx) => (
+              bookmarkedList.map((item) => (
                 <div
                   key={item.id}
-                  className={`pt-3.5 first:pt-0 flex items-start gap-3 group transition-colors`}
+                  className="pt-3.5 first:pt-0 flex items-start gap-3 group transition-colors"
                 >
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="w-20 h-20 rounded-lg object-cover ring-1 ring-slate-border shrink-0"
-                  />
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.title}
+                      className="w-20 h-20 rounded-lg object-cover ring-1 ring-slate-border shrink-0"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-lg bg-slate-100 ring-1 ring-slate-border shrink-0 flex items-center justify-center text-slate-400 font-bold text-[10px]">
+                      NEWS
+                    </div>
+                  )}
 
                   <div className="flex-1 min-w-0">
                     <span className="text-[10px] font-bold uppercase text-editorial-crimson block mb-1">
@@ -133,7 +139,7 @@ export default function BookmarksDrawer({ isOpen, onClose }: BookmarksDrawerProp
                       <button
                         onClick={() => toggleBookmark(item.id)}
                         className="text-secondary hover:text-editorial-crimson transition-colors p-1 rounded"
-                        title="സൂചികയിൽ നിന്ന് നീക്കം ചെയ്യുക"
+                        title="Remove from saved"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -149,16 +155,16 @@ export default function BookmarksDrawer({ isOpen, onClose }: BookmarksDrawerProp
             <div className="p-4 bg-surface-container-low border-t border-slate-border flex items-center justify-between text-xs">
               <button
                 onClick={handleClearAll}
-                className="text-secondary hover:text-editorial-crimson font-medium flex items-center gap-1 transition-colors"
+                className="text-secondary hover:text-editorial-crimson font-medium flex items-center gap-1 transition-colors uppercase tracking-wider text-[11px]"
               >
-                <Trash2 className="w-3.5 h-3.5" /> എല്ലാം നീക്കം ചെയ്യുക
+                <Trash2 className="w-3.5 h-3.5" /> CLEAR ALL
               </button>
 
               <button
                 onClick={onClose}
-                className="px-4 py-2 bg-primary text-white font-bold rounded shadow-xs hover:bg-editorial-crimson transition-colors"
+                className="px-4 py-2 bg-primary text-white font-bold rounded shadow-xs hover:bg-editorial-crimson transition-colors uppercase tracking-wider text-[11px]"
               >
-                പൂർത്തിയായി
+                DONE
               </button>
             </div>
           )}

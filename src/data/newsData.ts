@@ -8,6 +8,7 @@ export interface Article {
   timeAgo: string;
   publishedAt: string;
   updatedAt: string;
+  createdAt?: string;
   author: {
     name: string;
     designation: string;
@@ -28,6 +29,22 @@ export interface Article {
   tags?: string[];
   trending?: boolean;
   breaking?: boolean;
+  isHeadline?: boolean;
+}
+
+export interface VideoItem {
+  id: string;
+  _id?: string;
+  title: string;
+  category: string;
+  duration: string;
+  views: string;
+  viewsCount?: number;
+  thumbnail: string;
+  videoUrl: string;
+  youtubeId?: string;
+  description?: string;
+  createdAt?: string;
 }
 
 export interface DamLevel {
@@ -58,51 +75,59 @@ export interface CategoryConfig {
 export const CATEGORY_CONFIGS: Record<string, CategoryConfig> = {
   world: {
     slug: 'world',
-    name: 'ലോകം',
-    englishTitle: 'World & Global Affairs',
-    description: 'ആഗോള രാഷ്ട്രീയവും നയതന്ത്രവും, രാജ്യാന്തര കരാറുകൾ, വിദേശ വികസനങ്ങൾ എന്നിവയുടെ സമഗ്ര റിപ്പോർട്ടിംഗ്.',
+    name: 'International',
+    englishTitle: 'INTERNATIONAL NEWS',
+    description: 'Global geopolitics, international diplomacy, world economies, and overseas developments.',
     color: '#006b9a',
-    tags: ['ആഗോള നയതന്ത്രം', 'കാലാവസ്ഥ', 'സമ്പദ്‌വ്യവസ്ഥ', 'സാങ്കേതികവിദ്യ', 'മിഡിൽ ഈസ്റ്റ്']
+    tags: ['Diplomacy', 'Climate', 'Economy', 'Technology', 'Middle East']
   },
   politics: {
     slug: 'politics',
-    name: 'രാഷ്ട്രീയം',
-    englishTitle: 'Politics & Governance',
-    description: 'കേരളത്തിലെയും ദേശീയതലത്തിലെയും രാഷ്ട്രീയ സംഭവവികാസങ്ങൾ, നിയമസഭാ നടപടികൾ, നയപരമായ തീരുമാനങ്ങൾ.',
+    name: 'Politics',
+    englishTitle: 'POLITICS & GOVERNANCE',
+    description: 'Kerala and national political developments, state assembly proceedings, policy decisions, and governance.',
     color: '#C8102E',
-    tags: ['നിയമസഭ', 'ഭരണനയം', 'പാർലമെന്റ്', 'തെരഞ്ഞെടുപ്പ്', 'വികസനം']
+    tags: ['Assembly', 'Governance', 'Parliament', 'Elections', 'Policy']
   },
   business: {
     slug: 'business',
-    name: 'ബിസിനസ്',
-    englishTitle: 'Business & Economy',
-    description: 'ഓഹരി വിപണി, സ്വർണ്ണവില, സ്റ്റാർട്ടപ്പുകൾ, ബാങ്കിംഗ്, വിഴിഞ്ഞം അടക്കമുള്ള വൻകിട വാണിജ്യ പദ്ധതികൾ.',
+    name: 'Business',
+    englishTitle: 'BUSINESS & ECONOMY',
+    description: 'Markets, stock exchange, startups, banking, gold trends, and major commercial infrastructure.',
     color: '#005277',
-    tags: ['വിഴിഞ്ഞം', 'സ്വർണവില', 'സ്റ്റാർട്ടപ്പുകൾ', 'ഓഹരിവിപണി', 'ബാങ്കിംഗ്']
+    tags: ['Vizhinjam', 'Markets', 'Startups', 'Stocks', 'Banking']
   },
   cinema: {
     slug: 'cinema',
-    name: 'സിനിമ',
-    englishTitle: 'Cinema & Arts',
-    description: 'മലയാള ചലച്ചിത്ര വിശേഷങ്ങൾ, ബോക്സ് ഓഫീസ് റിപ്പോർട്ടുകൾ, റിവ്യൂകൾ, നാടകം, സാഹിത്യം, കലാരംഗം.',
+    name: 'Cinema',
+    englishTitle: 'CINEMA & ENTERTAINMENT',
+    description: 'Malayalam and Indian film news, box office collections, reviews, OTT releases, and performing arts.',
     color: '#B45309',
-    tags: ['ബോക്സ് ഓഫീസ്', 'അവാർഡുകൾ', 'ഫിലിം ഫെസ്റ്റിവൽ', 'ഒ.ടി.ടി', 'സംഗീതം']
+    tags: ['Box Office', 'Awards', 'Film Festivals', 'OTT', 'Music']
   },
   sports: {
     slug: 'sports',
-    name: 'സ്പോർട്സ്',
-    englishTitle: 'Sports & Games',
-    description: 'ഫുട്ബോൾ, ക്രിക്കറ്റ്, അത്‌ലറ്റിക്സ്, സന്തോഷ് ട്രോഫി, ഐഎസ്എൽ, ഐപിഎൽ എന്നിവയുടെ സമഗ്ര കായിക വിശകലനം.',
+    name: 'Sports',
+    englishTitle: 'SPORTS & GAMES',
+    description: 'Football, cricket, athletics, ISL, IPL, Santosh Trophy, and major national and global tournaments.',
     color: '#15803d',
-    tags: ['സന്തോഷ് ട്രോഫി', 'ഐപിഎൽ', 'കേരള ബ്ലാസ്റ്റേഴ്സ്', 'ക്രിക്കറ്റ്', 'അത്‌ലറ്റിക്സ്']
+    tags: ['Santosh Trophy', 'IPL', 'Kerala Blasters', 'Cricket', 'Athletics']
   },
   opinion: {
     slug: 'opinion',
-    name: 'അഭിപ്രായം',
-    englishTitle: 'Editorial & Opinion',
-    description: 'പ്രമുഖ ചിന്തകരുടെയും എഴുത്തുകാരുടെയും നിരീക്ഷണങ്ങൾ, മുഖപ്രസംഗങ്ങൾ, സമകാലിക വിഷയങ്ങളിലെ തുറന്നെഴുത്ത്.',
+    name: 'Opinion',
+    englishTitle: 'EDITORIAL & OPINION',
+    description: 'Perspectives and commentary from leading writers, editorials, in-depth analyses, and civic discourse.',
     color: '#854d0e',
-    tags: ['എഡിറ്റോറിയൽ', 'വിദ്യാഭ്യാസം', 'പരിസ്ഥിതി', 'സാമൂഹികം', 'സാംസ്കാരികം']
+    tags: ['Editorial', 'Education', 'Environment', 'Society', 'Culture']
+  },
+  special: {
+    slug: 'special',
+    name: 'Special Reports',
+    englishTitle: 'SPECIAL REPORTS',
+    description: 'Investigative stories, exclusive series, ground reports, and deep-dive features from the newsroom.',
+    color: '#991b1b',
+    tags: ['Special Report', 'Investigation', 'Series', 'Exclusives']
   }
 };
 
@@ -116,15 +141,8 @@ export const DAM_LEVELS: DamLevel[] = [
   { name: "തെന്മല (പരപ്പാർ)", capacity: "103.8 മീറ്റർ (62%)", percentage: 62, status: "warning", color: "#B45309" },
 ];
 
-export const CURRENCY_RATES: CurrencyRate[] = [
-  { code: "AED", name: "യു.എ.ഇ ദിർഹം", inrRate: 23.42, change: "up", flag: "🇦🇪" },
-  { code: "SAR", name: "സൗദി റിയാൽ", inrRate: 22.95, change: "up", flag: "🇸🇦" },
-  { code: "QAR", name: "ഖത്തർ റിയാൽ", inrRate: 23.60, change: "same", flag: "🇶🇦" },
-  { code: "KWD", name: "കുവൈത്ത് ദിനാർ", inrRate: 280.15, change: "down", flag: "🇰🇼" },
-  { code: "OMR", name: "ഒമാൻ റിയാൽ", inrRate: 223.80, change: "same", flag: "🇴🇲" },
-  { code: "BHD", name: "ബഹ്റൈൻ ദിനാർ", inrRate: 228.45, change: "up", flag: "🇧🇭" },
-  { code: "USD", name: "യു.എസ് ഡോളർ", inrRate: 86.10, change: "up", flag: "🇺🇸" },
-];
+// Live rates are now fetched 100% dynamically from real-time market APIs
+export const CURRENCY_RATES: CurrencyRate[] = [];
 
 export const KERALA_DISTRICTS: string[] = [
   "എല്ലാം",
@@ -145,15 +163,16 @@ export const KERALA_DISTRICTS: string[] = [
 ];
 
 export const PRAVASI_COUNTRIES = [
-  { id: "all", name: "മുഴുവൻ പ്രവാസം", flag: "🌐" },
-  { id: "uae", name: "യു.എ.ഇ (UAE)", flag: "🇦🇪" },
-  { id: "saudi", name: "സൗദി അറേബ്യ", flag: "🇸🇦" },
-  { id: "qatar", name: "ഖത്തർ", flag: "🇶🇦" },
-  { id: "kuwait", name: "കുവൈത്ത്", flag: "🇰🇼" },
-  { id: "oman", name: "ഒമാൻ", flag: "🇴🇲" },
-  { id: "bahrain", name: "ബഹ്റൈൻ", flag: "🇧🇭" },
-  { id: "europe", name: "യൂറോപ്പ് & യുകെ", flag: "🇬🇧" },
-  { id: "americas", name: "യു.എസ് / കാനഡ", flag: "🇺🇸" },
+  { id: "all", name: "All Countries", flag: "🌐" },
+  { id: "uae", name: "UAE", flag: "🇦🇪" },
+  { id: "saudi", name: "Saudi Arabia", flag: "🇸🇦" },
+  { id: "qatar", name: "Qatar", flag: "🇶🇦" },
+  { id: "kuwait", name: "Kuwait", flag: "🇰🇼" },
+  { id: "oman", name: "Oman", flag: "🇴🇲" },
+  { id: "bahrain", name: "Bahrain", flag: "🇧🇭" },
+  { id: "uk", name: "UK & Europe", flag: "🇬🇧" },
+  { id: "usa", name: "USA & Canada", flag: "🇺🇸" },
+  { id: "australia", name: "Australia", flag: "🇦🇺" },
 ];
 
 export const MAIN_ARTICLES: Article[] = [];
