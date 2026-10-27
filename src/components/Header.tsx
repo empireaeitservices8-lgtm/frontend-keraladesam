@@ -389,15 +389,8 @@ export default function Header() {
         <div className="hidden md:flex items-center justify-between w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 min-h-[130px] lg:min-h-[160px] gap-2 sm:gap-4 lg:gap-6">
 
           {/* Left Column: Subtle Tagline on XL screens for balance */}
-          <div className="hidden xl:flex items-center justify-start flex-1 min-w-[180px]">
-            <div className="text-[11px] text-secondary font-medium space-y-0.5">
-              <span className="block font-headline font-bold text-ink-midnight uppercase tracking-wider text-[12px]">
-                കേരളദേശം വാർത്തകൾ
-              </span>
-              <span className="block text-secondary">
-                സത്യം • ജനപക്ഷം • നിഷ്പക്ഷം
-              </span>
-            </div>
+          <div className="hidden min-w-0px">
+           
           </div>
 
           {/* Center Column: Grand Big & Wide Centered Logo (Responsive, never overlaps) */}
