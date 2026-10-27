@@ -265,28 +265,12 @@ export default function Header() {
                 )}
               </div>
 
-              {/* Clean Editions Ribbon */}
-              <div className="hidden lg:flex items-center gap-2 text-secondary-fixed-dim font-medium uppercase tracking-wider text-[11px]">
-                <span className="text-white/60">EDITIONS:</span>
-                <span className="text-surface-pure font-bold underline">
+              {/* Clean Editions Ribbon - Kochi Only */}
+              <div className="hidden lg:flex items-center gap-1.5 text-secondary-fixed-dim font-medium uppercase tracking-wider text-[11px]">
+                <span className="text-white/60">EDITION:</span>
+                <span className="text-surface-pure font-bold">
                   KOCHI
                 </span>
-                <span className="text-white/30">|</span>
-                <Link href="/world" className="text-secondary-fixed hover:underline font-medium">
-                  AUSTRALIA
-                </Link>
-                <span className="text-white/30">|</span>
-                <Link href="/world" className="text-secondary-fixed hover:underline font-medium">
-                  CANADA
-                </Link>
-                <span className="text-white/30">|</span>
-                <Link href="/world" className="text-secondary-fixed hover:underline font-medium">
-                  UK
-                </Link>
-                <span className="text-white/30">|</span>
-                <Link href="/world" className="text-secondary-fixed hover:underline font-medium">
-                  USA
-                </Link>
               </div>
             </div>
 
@@ -402,34 +386,48 @@ export default function Header() {
         </div>
 
         {/* Main Masthead Banner (Desktop >= md) */}
-        <div className="hidden md:flex relative w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 min-h-[160px] lg:min-h-[175px] items-center justify-center">
+        <div className="hidden md:flex items-center justify-between w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 min-h-[130px] lg:min-h-[160px] gap-2 sm:gap-4 lg:gap-6">
 
-          {/* Centered Grand Big & Wide Center Logo */}
-          <Link
-            href="/"
-            className="flex items-center justify-center group py-2"
-            aria-label="കേരളദേശം"
-          >
-            <div className="relative w-[500px] md:w-[620px] lg:w-[740px] xl:w-[840px] h-[130px] md:h-[150px] lg:h-[165px]">
-              <Image
-                src="/logo.png"
-                alt="കേരളദേശം"
-                fill
-                sizes="(max-width: 1024px) 620px, (max-width: 1280px) 740px, 840px"
-                priority
-                className="object-contain object-center transition-transform duration-200 group-hover:scale-[1.01]"
-              />
+          {/* Left Column: Subtle Tagline on XL screens for balance */}
+          <div className="hidden xl:flex items-center justify-start flex-1 min-w-[180px]">
+            <div className="text-[11px] text-secondary font-medium space-y-0.5">
+              <span className="block font-headline font-bold text-ink-midnight uppercase tracking-wider text-[12px]">
+                കേരളദേശം വാർത്തകൾ
+              </span>
+              <span className="block text-secondary">
+                സത്യം • ജനപക്ഷം • നിഷ്പക്ഷം
+              </span>
             </div>
-          </Link>
+          </div>
 
-          {/* Right-side Search and Actions - Anchored and never squashed */}
-          <div className="absolute right-4 sm:right-6 lg:right-8 flex items-center gap-2.5 lg:gap-3.5 shrink-0 z-20">
+          {/* Center Column: Grand Big & Wide Centered Logo (Responsive, never overlaps) */}
+          <div className="flex-1 flex items-center justify-center min-w-0">
+            <Link
+              href="/"
+              className="flex items-center justify-center group py-2"
+              aria-label="കേരളദേശം"
+            >
+              <div className="relative w-[340px] md:w-[420px] lg:w-[560px] xl:w-[680px] 2xl:w-[780px] max-w-[55vw] h-[95px] md:h-[115px] lg:h-[135px] xl:h-[150px]">
+                <Image
+                  src="/logo.png"
+                  alt="കേരളദേശം"
+                  fill
+                  sizes="(max-width: 1024px) 440px, (max-width: 1280px) 620px, 780px"
+                  priority
+                  className="object-contain object-center transition-transform duration-200 group-hover:scale-[1.01]"
+                />
+              </div>
+            </Link>
+          </div>
+
+          {/* Right-side Search and Actions - Flex container, never overlaps with logo */}
+          <div className="flex items-center justify-end gap-2 lg:gap-3 shrink-0 xl:flex-1 min-w-0 sm:min-w-[180px] z-20">
 
             {/* Search Input Box */}
             <form
               ref={searchContainerRef as any}
               onSubmit={handleSearchSubmit}
-              className="relative hidden md:block w-52 sm:w-60 lg:w-68 xl:w-72 shrink-0"
+              className="relative hidden md:block w-36 sm:w-44 md:w-48 lg:w-60 xl:w-72 shrink-0 transition-all focus-within:w-52 lg:focus-within:w-64 xl:focus-within:w-72"
             >
               <input
                 type="search"
