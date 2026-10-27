@@ -386,15 +386,13 @@ export default function Header() {
         </div>
 
         {/* Main Masthead Banner (Desktop >= md) */}
-        <div className="hidden md:flex items-center justify-between w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 min-h-[130px] lg:min-h-[160px] gap-2 sm:gap-4 lg:gap-6">
+        <div className="hidden md:grid grid-cols-[1fr_auto_1fr] items-center w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 min-h-[130px] lg:min-h-[160px] gap-2 sm:gap-4 lg:gap-6">
 
-          {/* Left Column: Subtle Tagline on XL screens for balance */}
-          <div className="hidden min-w-0px">
-           
-          </div>
+          {/* Left Column: Empty invisible balancer so Logo stays in the EXACT dead-center */}
+          <div className="hidden md:block pointer-events-none" aria-hidden="true" />
 
-          {/* Center Column: Grand Big & Wide Centered Logo (Responsive, never overlaps) */}
-          <div className="flex-1 flex items-center justify-center min-w-0">
+          {/* Center Column: Grand Big & Wide Centered Logo (Dead Center) */}
+          <div className="flex items-center justify-center min-w-0">
             <Link
               href="/"
               className="flex items-center justify-center group py-2"
@@ -413,8 +411,8 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Right-side Search and Actions - Flex container, never overlaps with logo */}
-          <div className="flex items-center justify-end gap-2 lg:gap-3 shrink-0 xl:flex-1 min-w-0 sm:min-w-[180px] z-20">
+          {/* Right-side Search and Actions */}
+          <div className="flex items-center justify-end gap-2 lg:gap-3 shrink-0 z-20">
 
             {/* Search Input Box */}
             <form
