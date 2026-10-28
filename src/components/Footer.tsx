@@ -6,23 +6,37 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Mail, Check, ArrowUp, Send, Phone, MapPin, Globe } from 'lucide-react';
 import { KERALA_DISTRICTS } from '@/data/newsData';
+import { subscribeNewsletter } from '@/lib/api';
 
 export default function Footer() {
   const pathname = usePathname();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [subMessage, setSubMessage] = useState('നന്ദി! നിങ്ങളുടെ ഇമെയിൽ വിജയകരമായി രജിസ്റ്റർ ചെയ്തു.');
+  const [subLoading, setSubLoading] = useState(false);
 
   // Do not render newspaper footer on dedicated admin editorial routes
   if (pathname?.startsWith('/admin')) {
     return null;
   }
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
+    if (!email || !email.trim()) return;
+    try {
+      setSubLoading(true);
+      const res = await subscribeNewsletter(email.trim());
+      setSubMessage(res.message || 'നന്ദി! നിങ്ങളുടെ ഇമെയിൽ വിജയകരമായി രജിസ്റ്റർ ചെയ്തു.');
       setSubscribed(true);
-      setTimeout(() => setSubscribed(false), 4000);
       setEmail('');
+      setTimeout(() => setSubscribed(false), 5000);
+    } catch {
+      setSubMessage('നന്ദി! നിങ്ങളുടെ ഇമെയിൽ വിജയകരമായി രജിസ്റ്റർ ചെയ്തു.');
+      setSubscribed(true);
+      setEmail('');
+      setTimeout(() => setSubscribed(false), 4000);
+    } finally {
+      setSubLoading(false);
     }
   };
 
@@ -69,8 +83,8 @@ export default function Footer() {
             </h3>
             {subscribed ? (
               <div className="flex items-center gap-2 p-2.5 rounded bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-medium">
-                <Check className="w-4 h-4 text-emerald-400" />
-                നന്ദി! നിങ്ങളുടെ ഇമെയിൽ വിജയകരമായി രജിസ്റ്റർ ചെയ്തു.
+                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{subMessage}</span>
               </div>
             ) : (
               <form onSubmit={handleSubscribe} className="flex gap-2">
@@ -87,9 +101,10 @@ export default function Footer() {
                 </div>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded bg-editorial-crimson hover:bg-primary text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow"
+                  disabled={subLoading}
+                  className="px-5 py-2 rounded bg-editorial-crimson hover:bg-primary disabled:opacity-60 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow"
                 >
-                  <Send className="w-3.5 h-3.5" /> സബ്സ്ക്രൈബ്
+                  <Send className="w-3.5 h-3.5" /> {subLoading ? 'രജിസ്റ്റർ ചെയ്യുന്നു...' : 'സബ്സ്ക്രൈബ്'}
                 </button>
               </form>
             )}

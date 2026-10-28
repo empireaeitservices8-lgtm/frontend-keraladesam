@@ -30,6 +30,8 @@ import {
   PlaySquare,
   Video,
   Star,
+  Mail,
+  Copy,
 } from 'lucide-react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Article, VideoItem, KERALA_DISTRICTS } from '@/data/newsData';
@@ -46,6 +48,9 @@ import {
   getRealVideos,
   adminCreateVideo,
   adminDeleteVideo,
+  adminGetSubscribers,
+  adminDeleteSubscriber,
+  SubscriberItem,
 } from '@/lib/api';
 
 interface CategoryGroup {
@@ -143,7 +148,7 @@ const ADMIN_CATEGORIES: CategoryGroup[] = [
   },
 ];
 
-type TabType = 'upload' | 'articles' | 'breaking' | 'videos';
+type TabType = 'upload' | 'articles' | 'breaking' | 'videos' | 'subscribers';
 
 export default function AdminPortalPage() {
   const router = useRouter();
@@ -152,6 +157,10 @@ export default function AdminPortalPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [breakingList, setBreakingList] = useState<Array<{ _id: string; headline: string; active: boolean }>>([]);
   const [videosList, setVideosList] = useState<VideoItem[]>([]);
+  const [subscribersList, setSubscribersList] = useState<SubscriberItem[]>([]);
+  const [subscribersSearch, setSubscribersSearch] = useState('');
+  const [copiedSubscribers, setCopiedSubscribers] = useState(false);
+  const [deletingSubscriberId, setDeletingSubscriberId] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabType>('upload');
 
@@ -218,18 +227,22 @@ export default function AdminPortalPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // Load articles, breaking news, and videos
+  // Load articles, breaking news, videos, and subscribers
   const loadPortalData = async () => {
     try {
       setLoadingData(true);
-      const [artList, brkList, vidList] = await Promise.all([
+      const [artList, brkList, vidList, subRes] = await Promise.all([
         getRealArticles({ limit: 100 }),
         adminGetRawBreaking(),
         getRealVideos({ limit: 100 }),
+        token ? adminGetSubscribers(token) : Promise.resolve({ success: true, subscribers: [] }),
       ]);
       setArticles(artList);
       setBreakingList(brkList);
       setVideosList(vidList);
+      if (subRes && subRes.success) {
+        setSubscribersList(subRes.subscribers);
+      }
     } catch (err) {
       console.error('Failed to load portal data:', err);
     } finally {
@@ -241,7 +254,7 @@ export default function AdminPortalPage() {
     if (isAuthenticated) {
       loadPortalData();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, token]);
 
   // Active subcategories based strictly on the selected Main Category
   const activeSubcategories = useMemo(() => {
@@ -662,6 +675,45 @@ export default function AdminPortalPage() {
     }
   };
 
+  // Subscriber Handlers
+  const handleDeleteSubscriber = async (id: string, email: string) => {
+    if (!token) return;
+    if (!confirm(`'${email}' എന്ന ഇമെയിൽ വരിക്കാരെ ലിസ്റ്റിൽ നിന്നും നീക്കം ചെയ്യണമെന്ന് ഉറപ്പാണോ?`)) return;
+    try {
+      setDeletingSubscriberId(id);
+      const res = await adminDeleteSubscriber(id, token);
+      if (res.success) {
+        setSubscribersList((prev) => prev.filter((s) => s._id !== id));
+        showToast('ഇമെയിൽ വിലാസം നീക്കം ചെയ്തു', 'success');
+      } else {
+        showToast(res.error || 'വരിക്കാരെ നീക്കം ചെയ്യാനായില്ല', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error deleting subscriber', 'error');
+    } finally {
+      setDeletingSubscriberId(null);
+    }
+  };
+
+  const handleCopyAllEmails = async () => {
+    if (!subscribersList.length) return;
+    const allEmails = subscribersList.map((s) => s.email).join(', ');
+    try {
+      await navigator.clipboard.writeText(allEmails);
+      setCopiedSubscribers(true);
+      showToast(`${subscribersList.length} ഇമെയിൽ വിലാസങ്ങൾ കോപ്പി ചെയ്തു!`, 'success');
+      setTimeout(() => setCopiedSubscribers(false), 2500);
+    } catch (err) {
+      showToast('ഇമെയിൽ കോപ്പി ചെയ്യാൻ സാധിച്ചില്ല', 'error');
+    }
+  };
+
+  const filteredSubscribers = useMemo(() => {
+    if (!subscribersSearch.trim()) return subscribersList;
+    const q = subscribersSearch.toLowerCase().trim();
+    return subscribersList.filter((s) => s.email.toLowerCase().includes(q));
+  }, [subscribersList, subscribersSearch]);
+
   // Filtered articles in management table
   const filteredArticles = useMemo(() => {
     return articles.filter((art) => {
@@ -816,6 +868,18 @@ export default function AdminPortalPage() {
             >
               <PlaySquare className="w-3.5 h-3.5" />
               <span>വീഡിയോകൾ ({videosList.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('subscribers')}
+              className={`px-4 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 ${
+                activeTab === 'subscribers'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>ഇമെയിൽ വരിക്കാർ ({subscribersList.length})</span>
             </button>
           </div>
         </div>
@@ -1662,6 +1726,173 @@ export default function AdminPortalPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: SUBSCRIBERS MANAGEMENT */}
+        {activeTab === 'subscribers' && (
+          <div className="space-y-4">
+            {/* Top Info & Action Card */}
+            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 font-headline">
+                      വാർത്താ വരിക്കാർ (Newsletter Subscribers)
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      വെബ്‌സൈറ്റിന്റെ ഫൂട്ടർ ഫോമിലൂടെ രജിസ്റ്റർ ചെയ്ത വായനക്കാരുടെ ഇമെയിൽ ലിസ്റ്റ്.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleCopyAllEmails}
+                  disabled={!subscribersList.length}
+                  className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-sm"
+                >
+                  {copiedSubscribers ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>കോപ്പി ചെയ്തു!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>എല്ലാ ഇമെയിലുകളും കോപ്പി ചെയ്യുക</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* List & Search Container */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              {/* Search Header */}
+              <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={subscribersSearch}
+                    onChange={(e) => setSubscribersSearch(e.target.value)}
+                    placeholder="ഇമെയിൽ വിലാസം തിരയുക..."
+                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {subscribersSearch && (
+                    <button
+                      onClick={() => setSubscribersSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="text-xs font-semibold text-slate-600 flex items-center justify-between sm:justify-end gap-2">
+                  <span>ആകെ വരിക്കാർ: <strong className="text-slate-900">{subscribersList.length}</strong></span>
+                  {subscribersSearch && (
+                    <span className="text-slate-400">| ഫലം: <strong className="text-blue-600">{filteredSubscribers.length}</strong></span>
+                  )}
+                </div>
+              </div>
+
+              {/* Table / Empty State */}
+              {loadingData ? (
+                <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-2 text-xs">
+                  <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                  <span>വരിക്കാരുടെ ലിസ്റ്റ് ലോഡ് ചെയ്യുന്നു...</span>
+                </div>
+              ) : filteredSubscribers.length === 0 ? (
+                <div className="p-12 text-center text-slate-500">
+                  <Mail className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-xs font-bold text-slate-700">
+                    {subscribersSearch ? 'തിരഞ്ഞ ഇമെയിൽ കണ്ടെത്താനായില്ല' : 'ഇതുവരെ വരിക്കാർ ആരും രജിസ്റ്റർ ചെയ്തിട്ടില്ല'}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1 max-w-sm mx-auto">
+                    {subscribersSearch
+                      ? 'മറ്റൊരു ഇമെയിൽ നൽകി തിരഞ്ഞുനോക്കുക.'
+                      : 'വെബ്‌സൈറ്റിന്റെ ഫൂട്ടറിലുള്ള ന്യൂസ്‌ലെറ്റർ ബോക്സ് വഴി വായനക്കാർ ഇമെയിൽ നൽകുമ്പോൾ അവ ഇവിടെ ദൃശ്യമാകും.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100 text-slate-600 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
+                      <tr>
+                        <th className="py-3 px-4 w-12 text-center">#</th>
+                        <th className="py-3 px-4">ഇമെയിൽ വിലാസം</th>
+                        <th className="py-3 px-4 hidden sm:table-cell">രജിസ്റ്റർ ചെയ്ത തീയതി</th>
+                        <th className="py-3 px-4 text-center">അവസ്ഥ</th>
+                        <th className="py-3 px-4 text-right">നടപടി</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-sans">
+                      {filteredSubscribers.map((sub, idx) => {
+                        const dateStr = sub.createdAt
+                          ? new Date(sub.createdAt).toLocaleDateString('ml-IN', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })
+                          : 'ലഭ്യമല്ല';
+
+                        return (
+                          <tr key={sub._id} className="hover:bg-slate-50/80 transition">
+                            <td className="py-3 px-4 text-center text-slate-400 font-mono text-[11px]">
+                              {idx + 1}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="font-semibold text-slate-900 select-all font-mono text-xs">
+                                {sub.email}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 hidden sm:table-cell text-slate-500 text-[11px]">
+                              {dateStr}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                സജീവം (Active)
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="inline-flex items-center gap-1.5 justify-end">
+                                <a
+                                  href={`mailto:${sub.email}`}
+                                  className="p-1.5 rounded-md text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition"
+                                  title="ഇമെയിൽ അയക്കുക"
+                                >
+                                  <Send className="w-3.5 h-3.5" />
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSubscriber(sub._id, sub.email)}
+                                  disabled={deletingSubscriberId === sub._id}
+                                  className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                                  title="ലിസ്റ്റിൽ നിന്ന് നീക്കം ചെയ്യുക"
+                                >
+                                  {deletingSubscriberId === sub._id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-red-600" />
+                                  ) : (
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

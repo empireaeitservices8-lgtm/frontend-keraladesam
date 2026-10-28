@@ -607,4 +607,70 @@ export async function adminToggleHeadline(
   }
 }
 
+export interface SubscriberItem {
+  _id: string;
+  email: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export async function subscribeNewsletter(
+  email: string
+): Promise<{ success: boolean; message: string; alreadySubscribed?: boolean; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/subscribers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, message: data.error || 'സബ്‌സ്ക്രിപ്ഷൻ പരാജയപ്പെട്ടു.', error: data.error };
+    }
+    return {
+      success: true,
+      message: data.message || 'നന്ദി! നിങ്ങളുടെ ഇമെയിൽ വിജയകരമായി രജിസ്റ്റർ ചെയ്തു.',
+      alreadySubscribed: data.alreadySubscribed,
+    };
+  } catch (err: any) {
+    return { success: false, message: 'നെറ്റ്‌വർക്ക് തകരാർ കാരണം രജിസ്റ്റർ ചെയ്യാനായില്ല.', error: err.message };
+  }
+}
+
+export async function adminGetSubscribers(
+  token: string
+): Promise<{ success: boolean; subscribers: SubscriberItem[]; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/subscribers?_t=${Date.now()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, subscribers: [], error: data.error || 'Failed to fetch subscribers' };
+    return { success: true, subscribers: Array.isArray(data.subscribers) ? data.subscribers : [] };
+  } catch (err: any) {
+    return { success: false, subscribers: [], error: err.message };
+  }
+}
+
+export async function adminDeleteSubscriber(
+  id: string,
+  token: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/subscribers/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Failed to delete subscriber' };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+
 
