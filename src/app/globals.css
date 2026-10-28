@@ -194,11 +194,12 @@
   display: flex;
   width: max-content;
   flex-shrink: 0;
-  animation: breaking-scroll 24s linear infinite;
+  animation: breaking-scroll 45s linear infinite;
   will-change: transform;
 }
 
-.breaking-track:hover {
+.breaking-track:hover,
+.breaking-track:focus-within {
   animation-play-state: paused;
 }
 
