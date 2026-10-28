@@ -32,6 +32,7 @@ import {
   Star,
   Mail,
   Copy,
+  RefreshCw,
 } from 'lucide-react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Article, VideoItem, KERALA_DISTRICTS } from '@/data/newsData';
@@ -161,6 +162,7 @@ export default function AdminPortalPage() {
   const [subscribersSearch, setSubscribersSearch] = useState('');
   const [copiedSubscribers, setCopiedSubscribers] = useState(false);
   const [deletingSubscriberId, setDeletingSubscriberId] = useState<string | null>(null);
+  const [refreshingSubscribers, setRefreshingSubscribers] = useState(false);
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabType>('upload');
 
@@ -235,7 +237,7 @@ export default function AdminPortalPage() {
         getRealArticles({ limit: 100 }),
         adminGetRawBreaking(),
         getRealVideos({ limit: 100 }),
-        token ? adminGetSubscribers(token) : Promise.resolve({ success: true, subscribers: [] }),
+        adminGetSubscribers(token || undefined),
       ]);
       setArticles(artList);
       setBreakingList(brkList);
@@ -250,11 +252,32 @@ export default function AdminPortalPage() {
     }
   };
 
+  const loadSubscribersData = async () => {
+    try {
+      setRefreshingSubscribers(true);
+      const subRes = await adminGetSubscribers(token || undefined);
+      if (subRes && subRes.success) {
+        setSubscribersList(subRes.subscribers);
+      }
+    } catch (err) {
+      console.error('Failed to load subscribers:', err);
+    } finally {
+      setRefreshingSubscribers(false);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       loadPortalData();
     }
   }, [isAuthenticated, token]);
+
+  // Auto reload subscribers when opening subscribers tab
+  useEffect(() => {
+    if (activeTab === 'subscribers') {
+      loadSubscribersData();
+    }
+  }, [activeTab]);
 
   // Active subcategories based strictly on the selected Main Category
   const activeSubcategories = useMemo(() => {
@@ -677,11 +700,10 @@ export default function AdminPortalPage() {
 
   // Subscriber Handlers
   const handleDeleteSubscriber = async (id: string, email: string) => {
-    if (!token) return;
     if (!confirm(`'${email}' എന്ന ഇമെയിൽ വരിക്കാരെ ലിസ്റ്റിൽ നിന്നും നീക്കം ചെയ്യണമെന്ന് ഉറപ്പാണോ?`)) return;
     try {
       setDeletingSubscriberId(id);
-      const res = await adminDeleteSubscriber(id, token);
+      const res = await adminDeleteSubscriber(id, token || undefined);
       if (res.success) {
         setSubscribersList((prev) => prev.filter((s) => s._id !== id));
         showToast('ഇമെയിൽ വിലാസം നീക്കം ചെയ്തു', 'success');
@@ -1754,6 +1776,17 @@ export default function AdminPortalPage() {
               </div>
 
               <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={loadSubscribersData}
+                  disabled={refreshingSubscribers}
+                  className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-300"
+                  title="ലിസ്റ്റ് റീഫ്രഷ് ചെയ്യുക"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${refreshingSubscribers ? 'animate-spin text-blue-600' : ''}`} />
+                  <span>റീഫ്രഷ്</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={handleCopyAllEmails}

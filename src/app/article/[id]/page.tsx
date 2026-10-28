@@ -72,7 +72,7 @@ export default function ArticleDetailPage() {
               if (rId) currentIds.add(rId);
               if (rTitleNorm) seenTitles.add(rTitleNorm);
               uniqueRel.push(r);
-              if (uniqueRel.length >= 3) break;
+              if (uniqueRel.length >= 6) break;
             }
             setRelatedArticles(uniqueRel);
           }
@@ -433,14 +433,14 @@ export default function ArticleDetailPage() {
               <h3 className="font-headline text-base font-bold text-ink-midnight pb-2 border-b border-slate-border mb-3 uppercase tracking-wide">
                 RELATED STORIES
               </h3>
-              <div className="space-y-4">
+              <div className="grid grid-cols-2 lg:grid-cols-1 gap-2.5 sm:gap-3">
                 {relatedArticles.map((rel) => (
                   <Link
                     key={rel.id}
                     href={`/article/${rel.id}`}
-                    className="flex gap-3 group"
+                    className="flex flex-col lg:flex-row gap-2 lg:gap-3 group bg-slate-50/50 lg:bg-transparent rounded-lg border border-slate-200/60 lg:border-0 p-2 lg:p-0 hover:bg-slate-100/60 transition"
                   >
-                    <div className="w-20 h-16 rounded overflow-hidden shrink-0 bg-slate-100 border border-slate-200 relative">
+                    <div className="w-full lg:w-20 aspect-[16/10] lg:aspect-auto lg:h-16 rounded overflow-hidden shrink-0 bg-slate-100 border border-slate-200 relative">
                       {rel.imageUrl ? (
                         <img
                           src={rel.imageUrl}
@@ -457,11 +457,11 @@ export default function ArticleDetailPage() {
                         NEWS
                       </div>
                     </div>
-                    <div>
-                      <h4 className="text-xs font-semibold text-ink-midnight group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                    <div className="flex flex-col justify-between flex-1">
+                      <h4 className="text-[11px] sm:text-xs font-semibold text-ink-midnight group-hover:text-primary transition-colors line-clamp-2 leading-snug">
                         {rel.title}
                       </h4>
-                      <span className="text-[10px] text-secondary mt-1 block">
+                      <span className="text-[9px] sm:text-[10px] text-secondary mt-1 block">
                         {rel.category} • {rel.timeAgo}
                       </span>
                     </div>

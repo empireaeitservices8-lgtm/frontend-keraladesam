@@ -639,12 +639,15 @@ export async function subscribeNewsletter(
 }
 
 export async function adminGetSubscribers(
-  token: string
+  token?: string
 ): Promise<{ success: boolean; subscribers: SubscriberItem[]; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     const res = await fetch(`${baseUrl}/subscribers?_t=${Date.now()}`, {
-      headers: { Authorization: `Bearer ${token}` },
+      headers,
+      cache: 'no-store',
     });
     const data = await res.json();
     if (!res.ok) return { success: false, subscribers: [], error: data.error || 'Failed to fetch subscribers' };
@@ -656,13 +659,15 @@ export async function adminGetSubscribers(
 
 export async function adminDeleteSubscriber(
   id: string,
-  token: string
+  token?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     const res = await fetch(`${baseUrl}/subscribers/${id}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
+      headers,
     });
     const data = await res.json();
     if (!res.ok) return { success: false, error: data.error || 'Failed to delete subscriber' };
