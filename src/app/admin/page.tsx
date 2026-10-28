@@ -799,33 +799,33 @@ export default function AdminPortalPage() {
 
       {/* Editorial Header */}
       <header className="bg-ink-midnight text-white border-b border-white/10 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2 sm:gap-4">
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <Link href="/" className="font-headline text-base sm:text-xl font-bold tracking-tight text-white hover:text-red-400 transition-colors">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 shrink-0">
+            <Link href="/" className="font-headline text-lg sm:text-xl font-bold tracking-tight text-white hover:text-red-400 transition-colors">
               കേരളദേശം
             </Link>
-            <span className="h-3.5 sm:h-4 w-[1px] bg-white/20" />
-            <span className="text-[11px] sm:text-xs font-bold text-slate-300 flex items-center gap-1 sm:gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-editorial-crimson shrink-0" />
+            <span className="h-4 w-[1px] bg-white/20" />
+            <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-editorial-crimson shrink-0" />
               <span className="hidden sm:inline">വാർത്താ പാനൽ</span>
               <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-slate-300 font-mono">CMS</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-3 text-xs">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs">
             <Link
               href="/"
               target="_blank"
-              className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 transition-colors font-medium text-xs"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 transition-colors font-medium text-xs"
               title="വെബ്‌സൈറ്റ് കാണുക"
             >
               <ExternalLink className="w-3.5 h-3.5 text-editorial-crimson shrink-0" />
               <span className="hidden md:inline">വെബ്‌സൈറ്റ് കാണുക</span>
             </Link>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 pl-1.5 sm:pl-2 border-l border-white/10 text-slate-300">
+            <div className="flex items-center gap-2 pl-2 border-l border-white/10 text-slate-300">
               <span className="font-semibold text-white text-xs hidden sm:inline">{user?.name || 'Chief Editor'}</span>
-              <span className="text-[10px] bg-editorial-crimson/90 px-1.5 sm:px-2 py-0.5 rounded text-white font-mono uppercase font-bold">
+              <span className="text-[10px] bg-editorial-crimson/90 px-2 py-0.5 rounded text-white font-mono uppercase font-bold">
                 {user?.role === 'admin' ? 'ADMIN' : 'EDITOR'}
               </span>
             </div>
@@ -842,68 +842,88 @@ export default function AdminPortalPage() {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-5xl mx-auto w-full px-3 sm:px-4 py-4 sm:py-6 flex-1 flex flex-col gap-4 sm:gap-5">
-        {/* Modern Tabs - Smoothly horizontal scrollable on mobile */}
-        <div className="w-full overflow-x-auto no-scrollbar pb-1 -mx-3 px-3 sm:mx-0 sm:px-0">
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-max border-b border-slate-200 pb-2">
+      <main className="max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col gap-6">
+        {/* Modern Tabs - Full-width 5-column balanced grid */}
+        <div className="w-full">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2.5 w-full">
             <button
               onClick={() => setActiveTab('upload')}
-              className={`whitespace-nowrap shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 sm:gap-2 ${
+              className={`h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
                 activeTab === 'upload'
-                  ? 'bg-editorial-crimson text-white shadow-sm'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  ? 'bg-editorial-crimson text-white shadow-sm ring-1 ring-editorial-crimson'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span>പുതിയ വാർത്ത <span className="hidden md:inline">(Write News)</span></span>
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span>പുതിയ വാർത്ത ചേർക്കുക</span>
             </button>
 
             <button
               onClick={() => setActiveTab('articles')}
-              className={`whitespace-nowrap shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 sm:gap-2 ${
+              className={`h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
                 activeTab === 'articles'
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  ? 'bg-slate-900 text-white shadow-sm ring-1 ring-slate-900'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
-              <FileText className="w-3.5 h-3.5 shrink-0" />
-              <span>വാർത്തകൾ ({articles.length})</span>
+              <FileText className="w-4 h-4 shrink-0" />
+              <span>വാർത്തകൾ</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                activeTab === 'articles' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
+              }`}>
+                {articles.length}
+              </span>
             </button>
 
             <button
               onClick={() => setActiveTab('breaking')}
-              className={`whitespace-nowrap shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 sm:gap-2 ${
+              className={`h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
                 activeTab === 'breaking'
-                  ? 'bg-red-700 text-white shadow-sm'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  ? 'bg-red-700 text-white shadow-sm ring-1 ring-red-700'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
-              <Radio className="w-3.5 h-3.5 shrink-0" />
-              <span>ബ്രേക്കിംഗ് ന്യൂസ് ({breakingList.length})</span>
+              <Radio className="w-4 h-4 shrink-0" />
+              <span>ബ്രേക്കിംഗ് ന്യൂസ്</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                activeTab === 'breaking' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
+              }`}>
+                {breakingList.length}
+              </span>
             </button>
 
             <button
               onClick={() => setActiveTab('videos')}
-              className={`whitespace-nowrap shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 sm:gap-2 ${
+              className={`h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
                 activeTab === 'videos'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-600'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
-              <PlaySquare className="w-3.5 h-3.5 shrink-0" />
-              <span>വീഡിയോകൾ ({videosList.length})</span>
+              <PlaySquare className="w-4 h-4 shrink-0" />
+              <span>വീഡിയോകൾ</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                activeTab === 'videos' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
+              }`}>
+                {videosList.length}
+              </span>
             </button>
 
             <button
               onClick={() => setActiveTab('subscribers')}
-              className={`whitespace-nowrap shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 sm:gap-2 ${
+              className={`col-span-2 sm:col-span-1 h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
                 activeTab === 'subscribers'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                  ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-600'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
               }`}
             >
-              <Mail className="w-3.5 h-3.5 shrink-0" />
-              <span>ഇമെയിൽ വരിക്കാർ ({subscribersList.length})</span>
+              <Mail className="w-4 h-4 shrink-0" />
+              <span>ഇമെയിൽ വരിക്കാർ</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                activeTab === 'subscribers' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
+              }`}>
+                {subscribersList.length}
+              </span>
             </button>
           </div>
         </div>
@@ -1406,18 +1426,18 @@ export default function AdminPortalPage() {
                 <div className="hidden sm:block overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className="border-b border-slate-200 bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
-                        <th className="py-3 px-3">വാർത്ത</th>
-                        <th className="py-3 px-3">വിഭാഗം</th>
-                        <th className="py-3 px-3">റിപ്പോർട്ടർ</th>
-                        <th className="py-3 px-3">തീയതി</th>
-                        <th className="py-3 px-3 text-right">നടപടികൾ</th>
+                      <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                        <th className="py-3 px-4">വാർത്ത</th>
+                        <th className="py-3 px-4 w-40">വിഭാഗം</th>
+                        <th className="py-3 px-4 w-40">റിപ്പോർട്ടർ</th>
+                        <th className="py-3 px-4 w-36">തീയതി</th>
+                        <th className="py-3 px-4 text-center w-36">നടപടികൾ</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {filteredArticles.map((art) => (
                         <tr key={art.id} className="hover:bg-slate-50/80 transition-colors group">
-                          <td className="py-3 px-3 max-w-md">
+                          <td className="py-3.5 px-4 max-w-md align-middle">
                             <div className="flex items-start gap-3">
                               {art.imageUrl ? (
                                 <img
@@ -1454,32 +1474,32 @@ export default function AdminPortalPage() {
                             </div>
                           </td>
 
-                          <td className="py-3 px-3 whitespace-nowrap">
+                          <td className="py-3.5 px-4 whitespace-nowrap align-middle">
                             <span
-                              className="px-2 py-0.5 rounded text-[10px] font-bold text-white"
+                              className="px-2 py-0.5 rounded text-[10px] font-bold text-white inline-block"
                               style={{ backgroundColor: art.categoryColor || '#C8102E' }}
                             >
                               {art.category}
                             </span>
                             {art.district && (
-                              <span className="block text-[10px] text-slate-400 mt-1">
+                              <span className="block text-[10px] text-slate-500 mt-1">
                                 📍 {art.district}
                               </span>
                             )}
                           </td>
 
-                          <td className="py-3 px-3 whitespace-nowrap">
-                            <span className="font-semibold text-slate-800 block">
+                          <td className="py-3.5 px-4 whitespace-nowrap align-middle">
+                            <span className="font-semibold text-slate-800 block text-xs">
                               {art.author?.name || 'കേരളദേശം ഡെസ്ക്'}
                             </span>
                           </td>
 
-                          <td className="py-3 px-3 whitespace-nowrap text-slate-500 text-[11px]">
+                          <td className="py-3.5 px-4 whitespace-nowrap text-slate-500 text-xs align-middle">
                             {art.timeAgo || art.publishedAt || 'ഇപ്പോൾ'}
                           </td>
 
-                          <td className="py-3 px-3 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1.5">
+                          <td className="py-3.5 px-4 text-center whitespace-nowrap align-middle">
+                            <div className="flex items-center justify-center gap-1.5">
                               <button
                                 onClick={() => handleToggleHeadline(art)}
                                 title={
@@ -1487,7 +1507,7 @@ export default function AdminPortalPage() {
                                     ? 'പ്രധാന വാർത്താ പദവി ഒഴിവാക്കുക'
                                     : 'പ്രധാന വാർത്തയായി സെറ്റ് ചെയ്യുക (Set as Main Headline)'
                                 }
-                                className={`p-1.5 rounded transition ${
+                                className={`p-1.5 rounded-lg transition ${
                                   art.isHeadline
                                     ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 ring-1 ring-amber-400'
                                     : 'hover:bg-amber-50 text-slate-400 hover:text-amber-600'
@@ -1500,7 +1520,7 @@ export default function AdminPortalPage() {
                                 href={`/article/${art.id}`}
                                 target="_blank"
                                 title="സൈറ്റിൽ കാണുക"
-                                className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition"
+                                className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-600 transition"
                               >
                                 <Eye className="w-4 h-4" />
                               </Link>
@@ -1508,7 +1528,7 @@ export default function AdminPortalPage() {
                               <button
                                 onClick={() => handleOpenEdit(art)}
                                 title="എഡിറ്റ് ചെയ്യുക"
-                                className="p-1.5 rounded hover:bg-blue-100 text-blue-700 transition"
+                                className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-700 transition"
                               >
                                 <Edit3 className="w-4 h-4" />
                               </button>
@@ -1516,7 +1536,7 @@ export default function AdminPortalPage() {
                               <button
                                 onClick={() => handleDeleteArticle(art.id, art.title)}
                                 title="ഡിലീറ്റ് ചെയ്യുക"
-                                className="p-1.5 rounded hover:bg-red-100 text-editorial-crimson transition"
+                                className="p-1.5 rounded-lg hover:bg-red-100 text-editorial-crimson transition"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -1861,29 +1881,27 @@ export default function AdminPortalPage() {
         {activeTab === 'subscribers' && (
           <div className="space-y-4">
             {/* Top Info & Action Card */}
-            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 font-headline">
-                      വാർത്താ വരിക്കാർ (Newsletter Subscribers)
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      വെബ്‌സൈറ്റിന്റെ ഫൂട്ടർ ഫോമിലൂടെ രജിസ്റ്റർ ചെയ്ത വായനക്കാരുടെ ഇമെയിൽ ലിസ്റ്റ്.
-                    </p>
-                  </div>
+            <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 font-headline">
+                    വാർത്താ വരിക്കാർ (Newsletter Subscribers)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    വെബ്‌സൈറ്റിന്റെ ഫൂട്ടർ ഫോമിലൂടെ രജിസ്റ്റർ ചെയ്ത വായനക്കാരുടെ ഇമെയിൽ ലിസ്റ്റ്.
+                  </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+              <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
                 <button
                   type="button"
                   onClick={loadSubscribersData}
                   disabled={refreshingSubscribers}
-                  className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-300"
+                  className="h-10 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-300 shadow-2xs"
                   title="ലിസ്റ്റ് റീഫ്രഷ് ചെയ്യുക"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${refreshingSubscribers ? 'animate-spin text-blue-600' : ''}`} />
@@ -1894,16 +1912,16 @@ export default function AdminPortalPage() {
                   type="button"
                   onClick={handleCopyAllEmails}
                   disabled={!subscribersList.length}
-                  className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-sm"
+                  className="h-10 flex-1 sm:flex-none px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition disabled:opacity-50 shadow-sm"
                 >
                   {copiedSubscribers ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-300" />
+                      <Check className="w-4 h-4 text-emerald-300" />
                       <span>കോപ്പി ചെയ്തു!</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-3.5 h-3.5" />
+                      <Copy className="w-4 h-4" />
                       <span>എല്ലാ ഇമെയിലുകളും കോപ്പി ചെയ്യുക</span>
                     </>
                   )}
@@ -1914,30 +1932,34 @@ export default function AdminPortalPage() {
             {/* List & Search Container */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               {/* Search Header */}
-              <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="p-3.5 sm:p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <div className="relative flex-1 max-w-md">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
                     value={subscribersSearch}
                     onChange={(e) => setSubscribersSearch(e.target.value)}
                     placeholder="ഇമെയിൽ വിലാസം തിരയുക..."
-                    className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-9 pr-8 h-10 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
                   />
                   {subscribersSearch && (
                     <button
                       onClick={() => setSubscribersSearch('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
 
-                <div className="text-xs font-semibold text-slate-600 flex items-center justify-between sm:justify-end gap-2">
-                  <span>ആകെ വരിക്കാർ: <strong className="text-slate-900">{subscribersList.length}</strong></span>
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 self-end sm:self-center">
+                  <span className="h-10 px-3.5 rounded-xl bg-white border border-slate-200 text-xs shadow-2xs flex items-center gap-1.5">
+                    ആകെ വരിക്കാർ: <strong className="text-slate-900 font-bold font-mono text-sm">{subscribersList.length}</strong>
+                  </span>
                   {subscribersSearch && (
-                    <span className="text-slate-400">| ഫലം: <strong className="text-blue-600">{filteredSubscribers.length}</strong></span>
+                    <span className="h-10 px-3 rounded-xl bg-blue-50 border border-blue-200 text-xs text-blue-800 font-semibold flex items-center gap-1">
+                      ഫലം: <strong className="font-bold">{filteredSubscribers.length}</strong>
+                    </span>
                   )}
                 </div>
               </div>
@@ -2018,14 +2040,14 @@ export default function AdminPortalPage() {
 
                   {/* Desktop Full Table */}
                   <div className="hidden sm:block overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-100 text-slate-600 uppercase text-[10px] font-bold tracking-wider border-b border-slate-200">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-50 text-slate-600 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
                         <tr>
-                          <th className="py-3 px-4 w-12 text-center">#</th>
-                          <th className="py-3 px-4">ഇമെയിൽ വിലാസം</th>
-                          <th className="py-3 px-4 hidden sm:table-cell">രജിസ്റ്റർ ചെയ്ത തീയതി</th>
-                          <th className="py-3 px-4 text-center">അവസ്ഥ</th>
-                          <th className="py-3 px-4 text-right">നടപടി</th>
+                          <th className="py-3 px-4 w-16 text-center">#</th>
+                          <th className="py-3 px-4 text-left">ഇമെയിൽ വിലാസം</th>
+                          <th className="py-3 px-4 text-left w-56">രജിസ്റ്റർ ചെയ്ത തീയതി</th>
+                          <th className="py-3 px-4 text-center w-36">അവസ്ഥ</th>
+                          <th className="py-3 px-4 text-center w-28">നടപടി</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-sans">
@@ -2039,28 +2061,28 @@ export default function AdminPortalPage() {
                             : 'ലഭ്യമല്ല';
 
                           return (
-                            <tr key={sub._id} className="hover:bg-slate-50/80 transition">
-                              <td className="py-3 px-4 text-center text-slate-400 font-mono text-[11px]">
+                            <tr key={sub._id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-3.5 px-4 text-center text-slate-400 font-mono text-xs align-middle">
                                 {idx + 1}
                               </td>
-                              <td className="py-3 px-4">
-                                <span className="font-semibold text-slate-900 select-all font-mono text-xs">
+                              <td className="py-3.5 px-4 text-left align-middle">
+                                <span className="font-bold text-slate-900 select-all font-mono text-xs">
                                   {sub.email}
                                 </span>
                               </td>
-                              <td className="py-3 px-4 hidden sm:table-cell text-slate-500 text-[11px]">
+                              <td className="py-3.5 px-4 text-left text-slate-600 text-xs align-middle font-medium">
                                 {dateStr}
                               </td>
-                              <td className="py-3 px-4 text-center">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              <td className="py-3.5 px-4 text-center align-middle">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                                   സജീവം (Active)
                                 </span>
                               </td>
-                              <td className="py-3 px-4 text-right">
-                                <div className="inline-flex items-center gap-1.5 justify-end">
+                              <td className="py-3.5 px-4 text-center align-middle">
+                                <div className="inline-flex items-center justify-center gap-1.5">
                                   <a
                                     href={`mailto:${sub.email}`}
-                                    className="p-1.5 rounded-md text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition"
+                                    className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition"
                                     title="ഇമെയിൽ അയക്കുക"
                                   >
                                     <Send className="w-3.5 h-3.5" />
@@ -2069,7 +2091,7 @@ export default function AdminPortalPage() {
                                     type="button"
                                     onClick={() => handleDeleteSubscriber(sub._id, sub.email)}
                                     disabled={deletingSubscriberId === sub._id}
-                                    className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition disabled:opacity-50"
                                     title="ലിസ്റ്റിൽ നിന്ന് നീക്കം ചെയ്യുക"
                                   >
                                     {deletingSubscriberId === sub._id ? (
