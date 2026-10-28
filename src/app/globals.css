@@ -194,7 +194,7 @@
   display: flex;
   width: max-content;
   flex-shrink: 0;
-  animation: breaking-scroll 45s linear infinite;
+  animation: breaking-scroll 60s linear infinite;
   will-change: transform;
 }
 
