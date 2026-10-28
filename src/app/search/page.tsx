@@ -17,7 +17,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Article } from '@/data/newsData';
-import { getRealArticles } from '@/lib/api';
+import { getRealArticles, deduplicateArticles } from '@/lib/api';
 import { useFont } from '@/components/FontContext';
 
 function SearchContent() {
@@ -70,13 +70,17 @@ function SearchContent() {
   }, [query]);
 
   const results = useMemo(() => {
-    if (selectedCategory === 'ALL') return articles;
-    const catObj = categories.find((c) => c.label === selectedCategory);
-    if (!catObj || !catObj.filter) return articles;
-    return articles.filter((item) =>
-      item.category.toLowerCase().includes(catObj.filter.toLowerCase()) ||
-      item.tags?.some((t) => t.toLowerCase().includes(selectedCategory.toLowerCase()))
-    );
+    let list = articles;
+    if (selectedCategory !== 'ALL') {
+      const catObj = categories.find((c) => c.label === selectedCategory);
+      if (catObj && catObj.filter) {
+        list = articles.filter((item) =>
+          item.category.toLowerCase().includes(catObj.filter.toLowerCase()) ||
+          item.tags?.some((t) => t.toLowerCase().includes(selectedCategory.toLowerCase()))
+        );
+      }
+    }
+    return deduplicateArticles(list);
   }, [articles, selectedCategory]);
 
   const totalPages = Math.max(1, Math.ceil(results.length / ITEMS_PER_PAGE));

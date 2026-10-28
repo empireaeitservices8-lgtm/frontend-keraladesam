@@ -15,7 +15,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Article, VideoItem } from '@/data/newsData';
-import { getRealArticles, getRealVideos } from '@/lib/api';
+import { getRealArticles, getRealVideos, deduplicateArticles } from '@/lib/api';
 import { useFont } from '@/components/FontContext';
 import VideoPlayerModal from '@/components/VideoPlayerModal';
 
@@ -68,7 +68,7 @@ export default function HomePage() {
         ]);
         if (isMounted) {
           if (articlesData && articlesData.length > 0) {
-            setArticles(articlesData);
+            setArticles(deduplicateArticles(articlesData));
           }
           if (videosData && videosData.length > 0) {
             setVideos(videosData);
@@ -88,16 +88,22 @@ export default function HomePage() {
 
   // Pinned headline article takes hero spot; otherwise newest article
   const heroArticle = articles.find((a) => a.isHeadline) || articles[0] || null;
-  const remainingArticles = useMemo(
-    () => (heroArticle ? articles.filter((a) => a.id !== heroArticle.id) : articles.slice(1)),
-    [articles, heroArticle]
-  );
+  const remainingArticles = useMemo(() => {
+    if (!heroArticle) return articles.slice(1);
+    const heroTitleNorm = (heroArticle.title || '').trim().toLowerCase();
+    const heroId = heroArticle.id || heroArticle._id;
+    return articles.filter((a) => {
+      if (heroId && (a.id === heroId || a._id === heroId)) return false;
+      if (heroTitleNorm && (a.title || '').trim().toLowerCase() === heroTitleNorm) return false;
+      return true;
+    });
+  }, [articles, heroArticle]);
 
   // Filter remaining articles by selected category (matches navbar sections)
   const filteredRemaining = useMemo(() => {
-    if (selectedCategory === 'ALL' || selectedCategory === 'all') return remainingArticles;
+    if (selectedCategory === 'ALL' || selectedCategory === 'all') return deduplicateArticles(remainingArticles);
 
-    return remainingArticles.filter((a) => {
+    const filtered = remainingArticles.filter((a) => {
       const cat = (a.category || '').toLowerCase();
       const dist = (a.district || '').toLowerCase();
 
@@ -160,6 +166,8 @@ export default function HomePage() {
       }
       return true;
     });
+
+    return deduplicateArticles(filtered);
   }, [remainingArticles, selectedCategory]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRemaining.length / ITEMS_PER_PAGE));

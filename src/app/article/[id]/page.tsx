@@ -40,10 +40,41 @@ export default function ArticleDetailPage() {
         const data = await getRealArticleById(articleId);
         if (isMounted && data) {
           setArticle(data);
-          // Load related
-          const rel = await getRealArticles({ limit: 4 });
+          // Load related without any duplicates or current article repeating
+          const rel = await getRealArticles({ limit: 15 });
           if (isMounted) {
-            setRelatedArticles(rel.filter((r) => r.id !== data.id).slice(0, 3));
+            const currentTitleNorm = (data.title || '')
+              .trim()
+              .toLowerCase()
+              .replace(/[\s\u200B-\u200D\uFEFF]+/g, ' ')
+              .replace(/[.;:!?।"'`’‘“”]+$/, '');
+
+            const currentIds = new Set<string>();
+            if (data.id) currentIds.add(String(data.id));
+            if (data._id) currentIds.add(String(data._id));
+            if (data.customId) currentIds.add(String(data.customId));
+
+            const seenTitles = new Set<string>();
+            if (currentTitleNorm) seenTitles.add(currentTitleNorm);
+
+            const uniqueRel: Article[] = [];
+            for (const r of rel) {
+              const rId = String(r.id || r._id || r.customId || '').trim();
+              const rTitleNorm = (r.title || '')
+                .trim()
+                .toLowerCase()
+                .replace(/[\s\u200B-\u200D\uFEFF]+/g, ' ')
+                .replace(/[.;:!?।"'`’‘“”]+$/, '');
+
+              if (rId && currentIds.has(rId)) continue;
+              if (rTitleNorm && seenTitles.has(rTitleNorm)) continue;
+
+              if (rId) currentIds.add(rId);
+              if (rTitleNorm) seenTitles.add(rTitleNorm);
+              uniqueRel.push(r);
+              if (uniqueRel.length >= 3) break;
+            }
+            setRelatedArticles(uniqueRel);
           }
         }
       } catch (err) {

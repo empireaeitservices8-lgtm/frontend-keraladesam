@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
   MapPin,
@@ -14,7 +14,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { Article, KERALA_DISTRICTS } from '@/data/newsData';
-import { getRealArticles } from '@/lib/api';
+import { getRealArticles, deduplicateArticles } from '@/lib/api';
 import { useFont } from '@/components/FontContext';
 
 export default function KeralaPage() {
@@ -90,9 +90,18 @@ export default function KeralaPage() {
     }
   };
 
-  const filteredArticles = articles;
+  const filteredArticles = useMemo(() => deduplicateArticles(articles), [articles]);
   const heroArticle = filteredArticles.length > 0 ? filteredArticles[0] : null;
-  const gridArticles = filteredArticles.length > 1 ? filteredArticles.slice(1) : [];
+  const gridArticles = useMemo(() => {
+    if (!heroArticle) return filteredArticles.slice(1);
+    const heroTitleNorm = (heroArticle.title || '').trim().toLowerCase();
+    const heroId = heroArticle.id || heroArticle._id;
+    return filteredArticles.filter((a) => {
+      if (heroId && (a.id === heroId || a._id === heroId)) return false;
+      if (heroTitleNorm && (a.title || '').trim().toLowerCase() === heroTitleNorm) return false;
+      return true;
+    });
+  }, [filteredArticles, heroArticle]);
 
   const totalPages = Math.max(1, Math.ceil(gridArticles.length / ITEMS_PER_PAGE));
   const paginatedGridArticles = gridArticles.slice(

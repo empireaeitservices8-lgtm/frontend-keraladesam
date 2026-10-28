@@ -26,7 +26,7 @@ import {
   Check,
 } from 'lucide-react';
 import { CATEGORY_CONFIGS, Article } from '@/data/newsData';
-import { getRealArticles } from '@/lib/api';
+import { getRealArticles, deduplicateArticles } from '@/lib/api';
 import { useFont } from '@/components/FontContext';
 
 export default function CategoryPage() {
@@ -195,11 +195,20 @@ export default function CategoryPage() {
       });
     }
 
-    return list;
+    return deduplicateArticles(list);
   }, [displayedArticlesList, selectedTag, searchFilter, sortBy]);
 
   const heroArticle = filteredArticles.length > 0 ? filteredArticles[0] : null;
-  const gridArticles = filteredArticles.length > 1 ? filteredArticles.slice(1) : [];
+  const gridArticles = useMemo(() => {
+    if (!heroArticle) return filteredArticles.slice(1);
+    const heroTitleNorm = (heroArticle.title || '').trim().toLowerCase();
+    const heroId = heroArticle.id || heroArticle._id;
+    return filteredArticles.filter((a) => {
+      if (heroId && (a.id === heroId || a._id === heroId)) return false;
+      if (heroTitleNorm && (a.title || '').trim().toLowerCase() === heroTitleNorm) return false;
+      return true;
+    });
+  }, [filteredArticles, heroArticle]);
 
   const totalPages = Math.max(1, Math.ceil(gridArticles.length / ITEMS_PER_PAGE));
   const paginatedGridArticles = gridArticles.slice(

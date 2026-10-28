@@ -37,6 +37,32 @@ export function formatUploadDateTime(rawDate?: string | Date): string {
   return `${day} ${monthName} ${year} | ${timeStr}`;
 }
 
+export function deduplicateArticles(list: Article[]): Article[] {
+  if (!Array.isArray(list)) return [];
+  const seenIds = new Set<string>();
+  const seenTitles = new Set<string>();
+  const result: Article[] = [];
+
+  for (const item of list) {
+    if (!item) continue;
+    const idKey = (item.id || item._id || item.customId || '').trim();
+    const titleKey = (item.title || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[\s\u200B-\u200D\uFEFF]+/g, ' ')
+      .replace(/[.;:!?।"'`’‘“”]+$/, '');
+
+    if (idKey && seenIds.has(idKey)) continue;
+    if (titleKey && seenTitles.has(titleKey)) continue;
+
+    if (idKey) seenIds.add(idKey);
+    if (titleKey) seenTitles.add(titleKey);
+    result.push(item);
+  }
+
+  return result;
+}
+
 export function normalizeArticle(raw: any): Article {
   const uploadFormatted = formatUploadDateTime(raw.createdAt || raw.publishedAt);
   const realId = raw._id ? String(raw._id) : (raw.customId || 'article');
@@ -110,7 +136,8 @@ export async function getArticles(params?: ArticleQueryParams): Promise<Article[
     const res = await fetch(url.toString(), { cache: 'no-store' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    return Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
+    const rawArticles = Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
+    return deduplicateArticles(rawArticles);
   } catch (error) {
     console.error('Failed to fetch articles from database API:', error);
     return [];
@@ -139,7 +166,15 @@ export async function getBreakingNews(): Promise<string[]> {
     if (res.ok) {
       const data = await res.json();
       const headlines = Array.isArray(data.headlines) ? data.headlines.map((h: any) => h.headline) : [];
-      return headlines;
+      const seen = new Set<string>();
+      const uniqueHeadlines: string[] = [];
+      for (const h of headlines) {
+        const text = String(h || '').trim();
+        if (!text || seen.has(text)) continue;
+        seen.add(text);
+        uniqueHeadlines.push(text);
+      }
+      return uniqueHeadlines;
     }
     return [];
   } catch (error) {
