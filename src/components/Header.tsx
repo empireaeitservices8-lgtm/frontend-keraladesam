@@ -14,10 +14,6 @@ import {
   Menu,
   X,
   Radio,
-  ExternalLink,
-  ChevronDown,
-  CheckCircle2,
-  ShieldCheck
 } from 'lucide-react';
 import { useFont } from './FontContext';
 import { Article } from '@/data/newsData';
@@ -268,6 +264,14 @@ export default function Header() {
                 <span className="text-surface-pure font-bold">
                   KOCHI
                 </span>
+                <span>|</span>
+                <span>AUSTRALIA</span>
+                <span>|</span>
+                <span>CANADA</span>
+                <span>|</span>
+                <span>UK</span>
+                <span>|</span>
+                <span>USA</span><span></span><span></span>
               </div>
             </div>
 
