@@ -48,16 +48,99 @@ import {
   adminDeleteVideo,
 } from '@/lib/api';
 
-const CATEGORY_OPTIONS = [
-  { name: 'INTERNATIONAL', color: '#C8102E' },
-  { name: 'KERALA', color: '#C8102E' },
-  { name: 'POLITICS', color: '#006b9a' },
-  { name: 'SPECIAL REPORTS', color: '#991b1b' },
-  { name: 'BUSSINESS', color: '#005277' },
-  { name: 'CINEMA', color: '#B45309' },
-  { name: 'വികസനം & അടിസ്ഥാനസൗകര്യം', color: '#006b9a' },
-  { name: 'ഭരണം & നിയമസഭ', color: '#C8102E' },
-  { name: 'കാലാവസ്ഥ & പ്രകൃതി', color: '#006b9a' },
+interface CategoryGroup {
+  id: string;
+  name: string;
+  color: string;
+  subcategories: string[];
+}
+
+const ADMIN_CATEGORIES: CategoryGroup[] = [
+  {
+    id: 'kerala',
+    name: 'KERALA',
+    color: '#C8102E',
+    subcategories: [
+      'പൊതുവായത് (General)',
+      'വികസനം & അടിസ്ഥാനസൗകര്യം',
+      'ഭരണം & സെക്രട്ടേറിയറ്റ്',
+      'ക്രമസമാധാനം & പോലീസ്',
+      'വിദ്യാഭ്യാസം & തൊഴിൽ',
+      'കാലാവസ്ഥ & ദുരന്തനിവാരണം',
+      'ആരോഗ്യം',
+      'കൃഷി & പരിസ്ഥിതി',
+    ],
+  },
+  {
+    id: 'international',
+    name: 'INTERNATIONAL',
+    color: '#C8102E',
+    subcategories: [
+      'ഗൾഫ് / പ്രവാസം',
+      'ആഗോള രാഷ്ട്രീയം',
+      'അമേരിക്ക & യൂറോപ്പ്',
+      'പശ്ചിമേഷ്യ',
+      'ഏഷ്യൻ വാർത്തകൾ',
+    ],
+  },
+  {
+    id: 'politics',
+    name: 'POLITICS',
+    color: '#006b9a',
+    subcategories: [
+      'ഭരണം & നിയമസഭ',
+      'തെരഞ്ഞെടുപ്പ് വിശേഷങ്ങൾ',
+      'മുന്നണി രാഷ്ട്രീയം',
+      'ദേശീയ രാഷ്ട്രീയം',
+      'പാർലമെന്റ് വാർത്തകൾ',
+    ],
+  },
+  {
+    id: 'special',
+    name: 'SPECIAL REPORTS',
+    color: '#991b1b',
+    subcategories: [
+      'അന്വേഷണാത്മക റിപ്പോർട്ട്',
+      'പ്രത്യേക ഫീച്ചർ',
+      'സമഗ്ര വിശകലനം',
+      'മുഖാമുഖം / അഭിമുഖം',
+    ],
+  },
+  {
+    id: 'business',
+    name: 'BUSINESS',
+    color: '#005277',
+    subcategories: [
+      'സ്വർണ്ണവില & വിപണി',
+      'ബാങ്കിംഗ് & ധനകാര്യം',
+      'വ്യവസായം & വാണിജ്യം',
+      'സ്റ്റാർട്ടപ്പ് & ഐ.ടി',
+      'സമ്പദ്‌വ്യവസ്ഥ',
+    ],
+  },
+  {
+    id: 'cinema',
+    name: 'CINEMA',
+    color: '#B45309',
+    subcategories: [
+      'പുതിയ റിലീസുകൾ & റിവ്യൂ',
+      'ബോക്സ് ഓഫീസ് റിപ്പോർട്ട്',
+      'സിനിമാ വാർത്തകൾ & ഗോസിപ്പ്',
+      'ഒ.ടി.ടി & വിനോദം',
+      'താര അഭിമുഖങ്ങൾ',
+    ],
+  },
+  {
+    id: 'sports',
+    name: 'SPORTS',
+    color: '#059669',
+    subcategories: [
+      'ക്രിക്കറ്റ്',
+      'ഫുട്ബോൾ',
+      'അത്‌ലറ്റിക്സ്',
+      'പ്രാദേശിക കായികമേളകൾ',
+    ],
+  },
 ];
 
 type TabType = 'upload' | 'articles' | 'breaking' | 'videos';
@@ -85,10 +168,11 @@ export default function AdminPortalPage() {
   // Success Feedback Card for newly published article
   const [lastPublished, setLastPublished] = useState<Article | null>(null);
 
-  // Clean Article Form State - Zero Predefined Clutter
+  // Hierarchical Article Category State - Main Category -> Corresponding Subcategory only
   const [formTitle, setFormTitle] = useState('');
-  const [formCategory, setFormCategory] = useState(CATEGORY_OPTIONS[0].name);
-  const [formCategoryColor, setFormCategoryColor] = useState(CATEGORY_OPTIONS[0].color);
+  const [formMainCategory, setFormMainCategory] = useState(ADMIN_CATEGORIES[0].name);
+  const [formSubCategory, setFormSubCategory] = useState(ADMIN_CATEGORIES[0].subcategories[0]);
+  const [formCategoryColor, setFormCategoryColor] = useState(ADMIN_CATEGORIES[0].color);
   const [formDistrict, setFormDistrict] = useState('');
   const [formContent, setFormContent] = useState('');
   const [formCustomLead, setFormCustomLead] = useState('');
@@ -159,12 +243,19 @@ export default function AdminPortalPage() {
     }
   }, [isAuthenticated]);
 
+  // Active subcategories based strictly on the selected Main Category
+  const activeSubcategories = useMemo(() => {
+    const group = ADMIN_CATEGORIES.find((c) => c.name === formMainCategory);
+    return group ? group.subcategories : [];
+  }, [formMainCategory]);
+
   // Reset Form for Creating New Article - completely clean
   const handleResetForm = () => {
     setEditingArticleId(null);
     setFormTitle('');
-    setFormCategory(CATEGORY_OPTIONS[0].name);
-    setFormCategoryColor(CATEGORY_OPTIONS[0].color);
+    setFormMainCategory(ADMIN_CATEGORIES[0].name);
+    setFormSubCategory(ADMIN_CATEGORIES[0].subcategories[0]);
+    setFormCategoryColor(ADMIN_CATEGORIES[0].color);
     setFormDistrict('');
     setFormContent('');
     setFormCustomLead('');
@@ -184,9 +275,30 @@ export default function AdminPortalPage() {
   const handleOpenEdit = (art: Article) => {
     setEditingArticleId(art._id || art.id);
     setFormTitle(art.title);
-    setFormCategory(art.category);
-    const matchedCat = CATEGORY_OPTIONS.find((c) => c.name === art.category);
-    setFormCategoryColor(art.categoryColor || matchedCat?.color || '#C8102E');
+
+    let foundGroup = ADMIN_CATEGORIES.find((g) => g.name.toLowerCase() === (art.category || '').toLowerCase());
+    let foundSub = ADMIN_CATEGORIES[0].subcategories[0];
+    if (foundGroup) {
+      foundSub = foundGroup.subcategories[0];
+    } else {
+      for (const g of ADMIN_CATEGORIES) {
+        const subMatch = g.subcategories.find((s) =>
+          (art.category || '').toLowerCase().includes(s.toLowerCase().replace(/\s*\(.*?\)/, ''))
+        );
+        if (subMatch) {
+          foundGroup = g;
+          foundSub = subMatch;
+          break;
+        }
+      }
+    }
+    if (!foundGroup) {
+      foundGroup = ADMIN_CATEGORIES[0];
+    }
+    setFormMainCategory(foundGroup.name);
+    setFormSubCategory(foundSub);
+    setFormCategoryColor(art.categoryColor || foundGroup.color);
+
     setFormDistrict(art.district || '');
     setFormContent(art.paragraphs?.join('\n\n') || art.lead || '');
     setFormCustomLead(art.lead || '');
@@ -281,12 +393,16 @@ export default function AdminPortalPage() {
     const readTimeMinutes = Math.max(1, Math.ceil(totalWords / 90));
     const readTime = `${readTimeMinutes} മിനിറ്റ് വായന`;
 
+    const subCategoryName = formSubCategory.replace(/\s*\(.*?\)/, '').trim();
+    const categoryToSave = formSubCategory.startsWith('പൊതുവായത്') ? formMainCategory : subCategoryName;
+
     const payload: Partial<Article> = {
       title: formTitle.trim(),
       lead,
-      category: formCategory,
+      category: categoryToSave,
       categoryColor: formCategoryColor,
       district: formDistrict.trim() || undefined,
+      tags: [formMainCategory, subCategoryName].filter(Boolean),
       imageUrl: formImageUrl.trim() || '',
       imageCaption: formImageCaption.trim(),
       readTime,
@@ -556,7 +672,9 @@ export default function AdminPortalPage() {
         (art.district && art.district.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchCategory =
-        selectedCategoryFilter === 'all' || art.category === selectedCategoryFilter;
+        selectedCategoryFilter === 'all' ||
+        art.category.toLowerCase().includes(selectedCategoryFilter.toLowerCase()) ||
+        Boolean(art.tags?.some((t) => t.toLowerCase().includes(selectedCategoryFilter.toLowerCase())));
 
       return matchSearch && matchCategory;
     });
@@ -766,24 +884,45 @@ export default function AdminPortalPage() {
                   />
                 </div>
 
-                {/* 2. Category & District in 1 compact row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* 2. Category, Subcategory & District */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                      വിഭാഗം (Category) *
+                      പ്രധാന വിഭാഗം (Category) *
                     </label>
                     <select
-                      value={formCategory}
+                      value={formMainCategory}
                       onChange={(e) => {
-                        const sel = CATEGORY_OPTIONS.find((c) => c.name === e.target.value);
-                        setFormCategory(e.target.value);
-                        if (sel) setFormCategoryColor(sel.color);
+                        const sel = e.target.value;
+                        setFormMainCategory(sel);
+                        const group = ADMIN_CATEGORIES.find((c) => c.name === sel);
+                        if (group) {
+                          setFormCategoryColor(group.color);
+                          setFormSubCategory(group.subcategories[0]);
+                        }
                       }}
                       className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
                     >
-                      {CATEGORY_OPTIONS.map((cat) => (
+                      {ADMIN_CATEGORIES.map((cat) => (
                         <option key={cat.name} value={cat.name}>
                           {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                      ഉപവിഭാഗം (Sub Category) *
+                    </label>
+                    <select
+                      value={formSubCategory}
+                      onChange={(e) => setFormSubCategory(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
+                    >
+                      {activeSubcategories.map((sub) => (
+                        <option key={sub} value={sub}>
+                          {sub}
                         </option>
                       ))}
                     </select>
@@ -1048,8 +1187,8 @@ export default function AdminPortalPage() {
                   onChange={(e) => setSelectedCategoryFilter(e.target.value)}
                   className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-1.5 text-slate-700 focus:outline-none"
                 >
-                  <option value="all">എല്ലാം</option>
-                  {CATEGORY_OPTIONS.map((c) => (
+                  <option value="all">എല്ലാ വിഭാഗങ്ങളും</option>
+                  {ADMIN_CATEGORIES.map((c) => (
                     <option key={c.name} value={c.name}>
                       {c.name}
                     </option>
@@ -1576,23 +1715,44 @@ export default function AdminPortalPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1">
-                    വിഭാഗം *
+                    പ്രധാന വിഭാഗം *
                   </label>
                   <select
-                    value={formCategory}
+                    value={formMainCategory}
                     onChange={(e) => {
-                      const sel = CATEGORY_OPTIONS.find((c) => c.name === e.target.value);
-                      setFormCategory(e.target.value);
-                      if (sel) setFormCategoryColor(sel.color);
+                      const sel = e.target.value;
+                      setFormMainCategory(sel);
+                      const group = ADMIN_CATEGORIES.find((c) => c.name === sel);
+                      if (group) {
+                        setFormCategoryColor(group.color);
+                        setFormSubCategory(group.subcategories[0]);
+                      }
                     }}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800 font-semibold"
                   >
-                    {CATEGORY_OPTIONS.map((cat) => (
+                    {ADMIN_CATEGORIES.map((cat) => (
                       <option key={cat.name} value={cat.name}>
                         {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                    ഉപവിഭാഗം *
+                  </label>
+                  <select
+                    value={formSubCategory}
+                    onChange={(e) => setFormSubCategory(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
+                  >
+                    {activeSubcategories.map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
                       </option>
                     ))}
                   </select>
@@ -1614,6 +1774,8 @@ export default function AdminPortalPage() {
                       </option>
                     ))}
                     <option value="പ്രവാസം / ഗൾഫ്">പ്രവാസം / ഗൾഫ്</option>
+                    <option value="ദേശീയം">ദേശീയം</option>
+                    <option value="അന്തർദേശീയം">അന്തർദേശീയം</option>
                   </select>
                 </div>
               </div>

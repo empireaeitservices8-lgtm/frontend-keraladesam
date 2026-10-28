@@ -32,6 +32,7 @@ export default function HomePage() {
 
   const videosSliderRef = useRef<HTMLDivElement>(null);
   const photoSliderRef = useRef<HTMLDivElement>(null);
+  const categoriesStripRef = useRef<HTMLDivElement>(null);
 
   const ITEMS_PER_PAGE = 8;
 
@@ -301,10 +302,22 @@ export default function HomePage() {
             </article>
           )}
 
-          {/* Sliding Effect 1: Smooth Horizontal Sliding Category Strip */}
-          <div className="w-full overflow-x-auto no-scrollbar scroll-smooth py-1 border-y border-slate-200/80">
-            <div className="flex items-center gap-2 min-w-max px-0.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-secondary mr-1 flex items-center gap-1">
+          {/* Sliding Effect 1: Smooth Horizontal Sliding Category Strip with Interactive Controls */}
+          <div className="w-full flex items-center gap-1.5 py-1 border-y border-slate-200/80 relative">
+            <button
+              onClick={() => slideLeft(categoriesStripRef)}
+              className="w-7 h-7 rounded-full bg-slate-100 hover:bg-editorial-crimson hover:text-white border border-slate-200 flex items-center justify-center transition-colors text-slate-700 shadow-xs shrink-0"
+              title="ഇടത്തേക്ക് നീക്കുക"
+              aria-label="Scroll Left"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            <div
+              ref={categoriesStripRef}
+              className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth flex-1 py-1"
+            >
+              <span className="text-[11px] font-bold uppercase tracking-wider text-secondary mr-1 flex items-center gap-1 shrink-0">
                 <Sparkles className="w-3.5 h-3.5 text-editorial-crimson" />
                 SECTIONS:
               </span>
@@ -312,7 +325,7 @@ export default function HomePage() {
                 <button
                   key={cat.filter}
                   onClick={() => handleCategorySelect(cat.filter)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${selectedCategory === cat.filter
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${selectedCategory === cat.filter
                       ? 'bg-primary text-white shadow-xs font-bold scale-105'
                       : 'bg-surface-pure hover:bg-surface-container-high text-on-surface border border-slate-200/80'
                     }`}
@@ -321,6 +334,15 @@ export default function HomePage() {
                 </button>
               ))}
             </div>
+
+            <button
+              onClick={() => slideRight(categoriesStripRef)}
+              className="w-7 h-7 rounded-full bg-slate-100 hover:bg-editorial-crimson hover:text-white border border-slate-200 flex items-center justify-center transition-colors text-slate-700 shadow-xs shrink-0"
+              title="വലത്തേക്ക് നീക്കുക"
+              aria-label="Scroll Right"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Section Header for Latest News with Pagination */}
@@ -493,12 +515,34 @@ export default function HomePage() {
           {/* Sliding Effect 3: Visual Journalism / Photo Feature Gallery with swipeable mobile slide */}
           <div className="bg-ink-midnight text-surface-pure rounded-xl p-4 sm:p-7 relative overflow-hidden shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[11px] bg-opinion-ochre text-white px-2.5 py-1 rounded font-bold uppercase tracking-wider">
-                PHOTO STORY
-              </span>
-              <span className="text-xs text-secondary-fixed-dim uppercase tracking-wider font-semibold">
-                KERALA IN FRAMES
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] bg-opinion-ochre text-white px-2.5 py-1 rounded font-bold uppercase tracking-wider">
+                  PHOTO STORY
+                </span>
+                <span className="text-xs text-secondary-fixed-dim uppercase tracking-wider font-semibold">
+                  KERALA IN FRAMES
+                </span>
+              </div>
+
+              {/* Slider Controls */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => slideLeft(photoSliderRef)}
+                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
+                  title="മുമ്പത്തെ ഫോട്ടോ"
+                  aria-label="Previous Photo"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => slideRight(photoSliderRef)}
+                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
+                  title="അടുത്ത ഫോട്ടോ"
+                  aria-label="Next Photo"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
             <h3 className="font-headline text-xl sm:text-2xl font-bold mb-2 text-surface-pure">
               കുട്ടനാടൻ കായൽ ജീവിതം: വേനൽമഴയുടെ വരവറിയിച്ച് ഓളങ്ങൾ
@@ -510,7 +554,7 @@ export default function HomePage() {
             {/* Mobile swipeable slider, desktop 3-col grid */}
             <div
               ref={photoSliderRef}
-              className="flex sm:grid sm:grid-cols-3 gap-3 overflow-x-auto sm:overflow-visible no-scrollbar snap-x snap-mandatory pb-2 sm:pb-0"
+              className="flex sm:grid sm:grid-cols-3 gap-3 overflow-x-auto sm:overflow-visible no-scrollbar scroll-smooth snap-x snap-mandatory pb-2 sm:pb-0"
             >
               <div className="w-[260px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-lg group">
                 <img

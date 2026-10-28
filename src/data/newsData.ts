@@ -48,21 +48,6 @@ export interface VideoItem {
   createdAt?: string;
 }
 
-export interface DamLevel {
-  name: string;
-  capacity: string;
-  percentage: number;
-  status: 'normal' | 'warning' | 'alert';
-  color: string;
-}
-
-export interface CurrencyRate {
-  code: string;
-  name: string;
-  inrRate: number;
-  change: 'up' | 'down' | 'same';
-  flag: string;
-}
 
 export interface CategoryConfig {
   slug: string;
@@ -132,18 +117,7 @@ export const CATEGORY_CONFIGS: Record<string, CategoryConfig> = {
   }
 };
 
-export const BREAKING_NEWS: string[] = [];
 
-export const DAM_LEVELS: DamLevel[] = [
-  { name: "ഇടുക്കി ഡാം", capacity: "2345.5 അടി (42%)", percentage: 42, status: "normal", color: "#006b9a" },
-  { name: "മുല്ലപ്പെരിയാർ", capacity: "128.2 അടി (58%)", percentage: 58, status: "warning", color: "#B45309" },
-  { name: "ഇടമലയാർ", capacity: "148.6 മീറ്റർ (36%)", percentage: 36, status: "normal", color: "#006b9a" },
-  { name: "ബാണാസുര സാഗർ", capacity: "762.4 മീറ്റർ (49%)", percentage: 49, status: "normal", color: "#006b9a" },
-  { name: "തെന്മല (പരപ്പാർ)", capacity: "103.8 മീറ്റർ (62%)", percentage: 62, status: "warning", color: "#B45309" },
-];
-
-// Live rates are now fetched 100% dynamically from real-time market APIs
-export const CURRENCY_RATES: CurrencyRate[] = [];
 
 export const KERALA_DISTRICTS: string[] = [
   "എല്ലാം",
@@ -162,18 +136,3 @@ export const KERALA_DISTRICTS: string[] = [
   "കണ്ണൂർ",
   "കാസർഗോഡ്",
 ];
-
-export const PRAVASI_COUNTRIES = [
-  { id: "all", name: "All Countries", flag: "🌐" },
-  { id: "uae", name: "UAE", flag: "🇦🇪" },
-  { id: "saudi", name: "Saudi Arabia", flag: "🇸🇦" },
-  { id: "qatar", name: "Qatar", flag: "🇶🇦" },
-  { id: "kuwait", name: "Kuwait", flag: "🇰🇼" },
-  { id: "oman", name: "Oman", flag: "🇴🇲" },
-  { id: "bahrain", name: "Bahrain", flag: "🇧🇭" },
-  { id: "uk", name: "UK & Europe", flag: "🇬🇧" },
-  { id: "usa", name: "USA & Canada", flag: "🇺🇸" },
-  { id: "australia", name: "Australia", flag: "🇦🇺" },
-];
-
-export const MAIN_ARTICLES: Article[] = [];

@@ -60,25 +60,31 @@ export default function ArticleDetailPage() {
 
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Comments state
-  const [comments, setComments] = useState([
-    {
-      id: 1,
-      author: 'മുഹമ്മദ് റാഫി, കോഴിക്കോട്',
-      text: 'താമരശ്ശേരി ചുരത്തിലെ ഗതാഗതക്കുരുക്കിന് ഇത് വലിയൊരു ആശ്വാസമാകും. പദ്ധതി സമയബന്ധിതമായി പൂർത്തിയാക്കണം.',
-      time: '1 മണിക്കൂർ മുൻപ്',
-      likes: 24,
-    },
-    {
-      id: 2,
-      author: 'ഡോ. സുരേഷ് ബാബു, സുൽത്താൻ ബത്തേരി',
-      text: 'വയനാട്ടിലെ ജനങ്ങൾക്ക് ചികിത്സാ ആവശ്യങ്ങൾക്ക് കോഴിക്കോട് മെഡിക്കൽ കോളേജിലേക്ക് പെട്ടെന്ന് എത്താൻ ഈ തുരങ്കപാത ഉപകരിക്കും.',
-      time: '45 മിനിറ്റ് മുൻപ്',
-      likes: 18,
-    },
-  ]);
-  const [newComment, setNewComment] = useState('');
+  interface CommentItem {
+    id: string;
+    author: string;
+    text: string;
+    time: string;
+    likes: number;
+  }
+
+  const [comments, setComments] = useState<CommentItem[]>([]);
   const [commentAuthor, setCommentAuthor] = useState('');
+  const [newComment, setNewComment] = useState('');
+
+  const handleAddComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    const item: CommentItem = {
+      id: Date.now().toString(),
+      author: commentAuthor.trim() || 'വായനക്കാരൻ',
+      text: newComment.trim(),
+      time: 'ഇപ്പോൾ',
+      likes: 0,
+    };
+    setComments([item, ...comments]);
+    setNewComment('');
+  };
 
   const handleCopyLink = () => {
     if (typeof window !== 'undefined') {
@@ -92,24 +98,6 @@ export default function ArticleDetailPage() {
     if (!article) return;
     const text = encodeURIComponent(`${article.title}\n${window.location.href}`);
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-  };
-
-  const handleAddComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newComment.trim()) {
-      setComments([
-        {
-          id: Date.now(),
-          author: commentAuthor.trim() || 'വായനക്കാരൻ',
-          text: newComment.trim(),
-          time: 'ഇപ്പോൾ',
-          likes: 0,
-        },
-        ...comments,
-      ]);
-      setNewComment('');
-      setCommentAuthor('');
-    }
   };
 
   if (loading) {
@@ -374,29 +362,35 @@ export default function ArticleDetailPage() {
 
               {/* Comments Feed */}
               <div className="space-y-4 divide-y divide-slate-border">
-                {comments.map((c) => (
-                  <div key={c.id} className="pt-3 first:pt-0">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-bold text-ink-midnight">{c.author}</span>
-                      <span className="text-secondary text-[11px]">{c.time}</span>
-                    </div>
-                    <p className="text-xs text-on-surface leading-relaxed mb-2">
-                      {c.text}
-                    </p>
-                    <button
-                      onClick={() =>
-                        setComments(
-                          comments.map((item) =>
-                            item.id === c.id ? { ...item, likes: item.likes + 1 } : item
+                {comments.length === 0 ? (
+                  <p className="text-xs text-secondary italic py-2">
+                    ഇതുവരെ പ്രതികരണങ്ങൾ രേഖപ്പെടുത്തിയിട്ടില്ല. ആദ്യമായി നിങ്ങളുടെ അഭിപ്രായം പങ്കുവെക്കൂ!
+                  </p>
+                ) : (
+                  comments.map((c) => (
+                    <div key={c.id} className="pt-3 first:pt-0">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="font-bold text-ink-midnight">{c.author}</span>
+                        <span className="text-secondary text-[11px]">{c.time}</span>
+                      </div>
+                      <p className="text-xs text-on-surface leading-relaxed mb-2">
+                        {c.text}
+                      </p>
+                      <button
+                        onClick={() =>
+                          setComments(
+                            comments.map((item) =>
+                              item.id === c.id ? { ...item, likes: item.likes + 1 } : item
+                            )
                           )
-                        )
-                      }
-                      className="flex items-center gap-1 text-[11px] text-secondary hover:text-primary transition-colors font-medium"
-                    >
-                      <ThumbsUp className="w-3 h-3" /> ഇഷ്ടപ്പെട്ടു ({c.likes})
-                    </button>
-                  </div>
-                ))}
+                        }
+                        className="flex items-center gap-1 text-[11px] text-secondary hover:text-primary transition-colors font-medium"
+                      >
+                        <ThumbsUp className="w-3 h-3" /> ഇഷ്ടപ്പെട്ടു ({c.likes})
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </section>
           </main>

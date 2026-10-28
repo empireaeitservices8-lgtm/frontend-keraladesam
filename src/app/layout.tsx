@@ -14,7 +14,6 @@ export const metadata: Metadata = {
     'Malayalam News Portal',
     'Kerala Desam',
     'കേരളദേശം',
-    'Pravasi News',
     'Gulf Malayalam News',
     'Wayanad Tunnel',
   ],
