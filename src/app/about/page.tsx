@@ -212,7 +212,7 @@ export default function AboutPage() {
                 <div>
                   <span className="text-secondary block font-semibold text-[11px] uppercase tracking-wider">Headquarters:</span>
                   <span className="font-semibold text-ink-midnight">
-                    Kochi & Thiruvananthapuram, Kerala, India
+                    Kochi, Kerala, India
                   </span>
                 </div>
               </div>
@@ -239,7 +239,8 @@ export default function AboutPage() {
               <div className="space-y-3 text-xs">
                 <div className="flex items-center gap-2.5 text-ink-midnight font-medium">
                   <Mail className="w-4 h-4 text-primary shrink-0" />
-                  <span>news@keraladesam.in</span>
+                  <span>office@keraladesam.in</span>
+                  <span>editor@keraladesam.in</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-ink-midnight font-medium">
                   <Phone className="w-4 h-4 text-primary shrink-0" />

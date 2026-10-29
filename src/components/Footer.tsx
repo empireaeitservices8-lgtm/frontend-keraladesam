@@ -64,15 +64,51 @@ export default function Footer() {
               കേരളദേശം (Kerala Desam) മലയാളം: ലോകമെമ്പാടും നടക്കുന്ന പ്രധാന വാർത്തകളും, ഭാരതത്തിലെ സമകാലിക വിഷയങ്ങളും, പ്രത്യേകിച്ച് കേരളത്തിന്റെ ഓരോ രാഷ്ട്രീയ, സാമൂഹിക, സാംസ്കാരിക, വികസന സ്പന്ദനങ്ങളും വിരൽത്തുമ്പിലെത്തിക്കുന്ന ആധുനിക മലയാള വാർത്താ വെബ് പോർട്ടലും,ഡിജിറ്റൽ ചാനലും.
             </p>
 
-            <div className="mt-4 flex items-center gap-4 text-xs text-secondary-fixed-dim">
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 text-xs text-secondary-fixed-dim">
+              {/* Location */}
               <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-opinion-ochre" />  കൊച്ചി
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-opinion-ochre" />
+                കൊച്ചി
               </span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                <Phone className="w-3.5 h-3.5 text-opinion-ochre" /> +91 9387478887
-                <Phone className="w-3.5 h-3.5 text-opinion-ochre" /> +91 9847053700
-              </span>
+
+              <span className="hidden sm:inline">•</span>
+
+              {/* Phone numbers */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <a
+                  href="tel:+919387478887"
+                  className="flex items-center gap-1 transition-colors hover:text-opinion-ochre"
+                >
+                  <Phone className="h-3.5 w-3.5 shrink-0 text-opinion-ochre" />
+                  +91 9387478887
+                </a>
+
+                <a
+                  href="tel:+919847053700"
+                  className="flex items-center gap-1 transition-colors hover:text-opinion-ochre"
+                >
+                  <Phone className="h-3.5 w-3.5 shrink-0 text-opinion-ochre" />
+                  +91 9847053700
+                </a>
+              </div>
+
+
+              {/* Email addresses */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <a
+                  href="mailto:office@keraladesam.in"
+                  className="transition-colors hover:text-opinion-ochre"
+                >
+                  office@keraladesam.in
+                </a>
+
+                <a
+                  href="mailto:editor@keraladesam.in"
+                  className="transition-colors hover:text-opinion-ochre"
+                >
+                  editor@keraladesam.in
+                </a>
+              </div>
             </div>
           </div>
 
@@ -143,6 +179,9 @@ export default function Footer() {
             <p className="text-secondary-fixed-dim text-[11px] leading-relaxed mb-3">
               Kerala Desam Publications Ltd.
               <br />
+              #8-PBC-Amrutha Towers,Combara - Near Central Police Station
+              <br />
+              Ernakulam-682018-Kerala-India
               Editor & Publisher:
               <br />
               <span className="text-surface-pure font-bold">K.O. Johnny (കെ.ഒ. ജോണി)</span>
