@@ -29,6 +29,12 @@ function SearchContent() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Sync state if searchParams in URL change
+  React.useEffect(() => {
+    const currentQ = searchParams.get('q') || '';
+    setQuery(currentQ);
+  }, [searchParams]);
+
   // Pagination state
   const ITEMS_PER_PAGE = 9;
   const [currentPage, setCurrentPage] = useState(1);

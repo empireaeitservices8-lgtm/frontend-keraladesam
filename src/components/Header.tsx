@@ -115,7 +115,7 @@ export default function Header() {
       try {
         const [headlines, latest] = await Promise.all([
           getRealBreakingNews(),
-          getRealArticles({ limit: 8 }),
+          getRealArticles({ limit: 50 }),
         ]);
 
         if (isMounted) {
@@ -213,33 +213,93 @@ export default function Header() {
     url: string;
   }
 
+  function findArticleForHeadline(headline: string, articlesList: Article[]): Article | undefined {
+    if (!headline || !articlesList || articlesList.length === 0) return undefined;
+
+    const clean = (s: string) =>
+      (s || '')
+        .toLowerCase()
+        .replace(/[\s\u200B-\u200D\uFEFF'"`’‘“”.;:!?।,-]+/g, ' ')
+        .trim();
+
+    const hClean = clean(headline);
+    const hTokens = hClean.split(' ').filter((w) => w.length >= 3);
+
+    // 1. Direct substring match
+    const directMatch = articlesList.find((a) => {
+      const aClean = clean(a.title);
+      return aClean.includes(hClean.slice(0, 15)) || hClean.includes(aClean.slice(0, 15));
+    });
+    if (directMatch) return directMatch;
+
+    // 2. Token overlap match
+    let bestArticle: Article | undefined;
+    let maxOverlap = 0;
+
+    for (const art of articlesList) {
+      const artWords = clean(art.title).split(' ').filter((w) => w.length >= 3);
+      let overlap = 0;
+      for (const w of hTokens) {
+        if (artWords.some((aw) => aw.includes(w) || w.includes(aw))) {
+          overlap++;
+        }
+      }
+      if (overlap > maxOverlap) {
+        maxOverlap = overlap;
+        bestArticle = art;
+      }
+    }
+
+    if (maxOverlap >= 2 && bestArticle) {
+      return bestArticle;
+    }
+
+    return undefined;
+  }
+
   const notificationsList: NotificationItem[] = useMemo(() => {
     const list: NotificationItem[] = [];
+    const seenArticleIds = new Set<string>();
 
-    // 1. Breaking news alerts
+    // 1. Breaking news alerts - directly link to matched article
     breakingNews.forEach((b) => {
+      const matched = findArticleForHeadline(b, notificationArticles);
+      const articleId = matched?._id || matched?.id || matched?.customId;
+      if (articleId) {
+        seenArticleIds.add(String(articleId));
+      }
+
       list.push({
         id: `breaking-${b.trim()}`,
         type: 'breaking',
         title: b,
-        category: 'ബ്രേക്കിംഗ് ന്യൂസ്',
+        category: matched?.category || 'ബ്രേക്കിംഗ് ന്യൂസ്',
         categoryColor: '#dc2626',
-        timeAgo: 'തത്സമയം',
-        url: `/search?q=${encodeURIComponent(b)}`,
+        timeAgo: matched?.timeAgo || 'തത്സമയം',
+        imageUrl: matched?.imageUrl,
+        url: articleId
+          ? `/article/${articleId}`
+          : notificationArticles[0]
+          ? `/article/${notificationArticles[0]._id || notificationArticles[0].id}`
+          : '/',
       });
     });
 
-    // 2. Latest published stories
+    // 2. Latest published stories (avoiding exact duplicates of breaking stories)
     notificationArticles.forEach((art) => {
+      const artId = String(art._id || art.id || art.customId || '');
+      if (artId && seenArticleIds.has(artId)) return;
+      if (artId) seenArticleIds.add(artId);
+
       list.push({
-        id: `art-${art.id || art._id}`,
+        id: `art-${artId}`,
         type: 'article',
         title: art.title,
         category: art.category || 'വാർത്ത',
         categoryColor: art.categoryColor || '#C8102E',
         timeAgo: art.timeAgo || art.publishedAt || 'ഇന്ന്',
         imageUrl: art.imageUrl,
-        url: `/article/${art._id || art.id || art.customId}`,
+        url: `/article/${artId}`,
       });
     });
 
@@ -267,6 +327,9 @@ export default function Header() {
       } catch {}
     }
     setShowAlertsDropdown(false);
+    if (item.url) {
+      router.push(item.url);
+    }
   };
 
   const requestBrowserNotification = async () => {
@@ -933,17 +996,26 @@ export default function Header() {
                     className="flex shrink-0 items-center"
                     aria-hidden={copy !== 0}
                   >
-                    {breakingNews.map((item, idx) => (
-                      <Link
-                        key={`${copy}-${idx}-${item}`}
-                        href={`/search?q=${encodeURIComponent(item)}`}
-                        tabIndex={copy !== 0 ? -1 : undefined}
-                        className="shrink-0 whitespace-nowrap px-3 sm:px-5 md:px-7 text-xs sm:text-sm md:text-base font-bold text-white hover:text-red-100 flex items-center transition-colors"
-                      >
-                        <span className="inline-block w-2 h-2 rounded-full bg-red-300 mr-2 md:mr-3 shrink-0" />
-                        {item}
-                      </Link>
-                    ))}
+                    {breakingNews.map((item, idx) => {
+                      const matched = findArticleForHeadline(item, notificationArticles);
+                      const targetUrl = matched
+                        ? `/article/${matched._id || matched.id || matched.customId}`
+                        : notificationArticles[0]
+                        ? `/article/${notificationArticles[0]._id || notificationArticles[0].id}`
+                        : `/search?q=${encodeURIComponent(item)}`;
+
+                      return (
+                        <Link
+                          key={`${copy}-${idx}-${item}`}
+                          href={targetUrl}
+                          tabIndex={copy !== 0 ? -1 : undefined}
+                          className="shrink-0 whitespace-nowrap px-3 sm:px-5 md:px-7 text-xs sm:text-sm md:text-base font-bold text-white hover:text-red-100 flex items-center transition-colors"
+                        >
+                          <span className="inline-block w-2 h-2 rounded-full bg-red-300 mr-2 md:mr-3 shrink-0" />
+                          {item}
+                        </Link>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
