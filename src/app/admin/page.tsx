@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   Flame,
+  Plus,
   Radio,
   FileText,
   Clock,
@@ -182,6 +183,14 @@ export default function AdminPortalPage() {
   const [lastPublished, setLastPublished] = useState<Article | null>(null);
 
   // Hierarchical Article Category State - Main Category -> Corresponding Subcategory only
+  const [customCategories, setCustomCategories] = useState<CategoryGroup[]>([]);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatColor, setNewCatColor] = useState('#C8102E');
+  const [newCatSubcategories, setNewCatSubcategories] = useState('');
+  const [isCustomSubcategory, setIsCustomSubcategory] = useState(false);
+  const [customSubcategoryText, setCustomSubcategoryText] = useState('');
+
   const [formTitle, setFormTitle] = useState('');
   const [formMainCategory, setFormMainCategory] = useState(ADMIN_CATEGORIES[0].name);
   const [formSubCategory, setFormSubCategory] = useState(ADMIN_CATEGORIES[0].subcategories[0]);
@@ -286,11 +295,79 @@ export default function AdminPortalPage() {
     }
   }, [activeTab]);
 
+  // Load custom categories from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('keraladesam_custom_categories');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          setCustomCategories(parsed);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Combined categories list (System default + Admin custom created)
+  const allCategories = useMemo(() => {
+    return [...ADMIN_CATEGORIES, ...customCategories];
+  }, [customCategories]);
+
   // Active subcategories based strictly on the selected Main Category
   const activeSubcategories = useMemo(() => {
-    const group = ADMIN_CATEGORIES.find((c) => c.name === formMainCategory);
-    return group ? group.subcategories : [];
-  }, [formMainCategory]);
+    const group = allCategories.find((c) => c.name === formMainCategory);
+    return group && group.subcategories && group.subcategories.length > 0
+      ? group.subcategories
+      : ['പൊതുവായത് (General)'];
+  }, [allCategories, formMainCategory]);
+
+  const handleCreateCustomCategory = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = newCatName.trim();
+    if (!trimmed) {
+      alert('ദയവായി പുതിയ കാറ്റഗറിയുടെ പേര് നൽകുക.');
+      return;
+    }
+
+    const exists = allCategories.some((c) => c.name.toLowerCase() === trimmed.toLowerCase());
+    if (exists) {
+      showToast('ഈ കാറ്റഗറി ഇതിനകം ലഭ്യമാണ്!', 'warning');
+      setFormMainCategory(trimmed);
+      setShowAddCategoryModal(false);
+      return;
+    }
+
+    const subList = newCatSubcategories.trim()
+      ? newCatSubcategories.split(',').map((s) => s.trim()).filter(Boolean)
+      : ['പൊതുവായത് (General)'];
+
+    if (!subList.includes('പൊതുവായത് (General)')) {
+      subList.unshift('പൊതുവായത് (General)');
+    }
+
+    const newGroup: CategoryGroup = {
+      id: `custom-${Date.now()}`,
+      name: trimmed,
+      color: newCatColor || '#C8102E',
+      subcategories: subList,
+    };
+
+    const updated = [...customCategories, newGroup];
+    setCustomCategories(updated);
+    try {
+      localStorage.setItem('keraladesyam_custom_categories', JSON.stringify(updated));
+    } catch {}
+
+    setFormMainCategory(newGroup.name);
+    setFormCategoryColor(newGroup.color);
+    setFormSubCategory(newGroup.subcategories[0]);
+    setIsCustomSubcategory(false);
+    setCustomSubcategoryText('');
+    setNewCatName('');
+    setNewCatSubcategories('');
+    setShowAddCategoryModal(false);
+    showToast(`പുതിയ കാറ്റഗറി '${trimmed}' വിജയകരമായി ചേർത്തു!`, 'success');
+  };
 
   // Reset Form for Creating New Article - completely clean
   const handleResetForm = () => {
@@ -299,6 +376,9 @@ export default function AdminPortalPage() {
     setFormMainCategory(ADMIN_CATEGORIES[0].name);
     setFormSubCategory(ADMIN_CATEGORIES[0].subcategories[0]);
     setFormCategoryColor(ADMIN_CATEGORIES[0].color);
+    setIsCustomSubcategory(false);
+    setCustomSubcategoryText('');
+    setShowAddCategoryModal(false);
     setFormDistrict('');
     setFormContent('');
     setFormCustomLead('');
@@ -319,12 +399,12 @@ export default function AdminPortalPage() {
     setEditingArticleId(art._id || art.id);
     setFormTitle(art.title);
 
-    let foundGroup = ADMIN_CATEGORIES.find((g) => g.name.toLowerCase() === (art.category || '').toLowerCase());
-    let foundSub = ADMIN_CATEGORIES[0].subcategories[0];
+    let foundGroup = allCategories.find((g) => g.name.toLowerCase() === (art.category || '').toLowerCase());
+    let foundSub = 'പൊതുവായത് (General)';
     if (foundGroup) {
-      foundSub = foundGroup.subcategories[0];
+      foundSub = foundGroup.subcategories[0] || 'പൊതുവായത് (General)';
     } else {
-      for (const g of ADMIN_CATEGORIES) {
+      for (const g of allCategories) {
         const subMatch = g.subcategories.find((s) =>
           (art.category || '').toLowerCase().includes(s.toLowerCase().replace(/\s*\(.*?\)/, ''))
         );
@@ -336,11 +416,21 @@ export default function AdminPortalPage() {
       }
     }
     if (!foundGroup) {
-      foundGroup = ADMIN_CATEGORIES[0];
+      const customName = art.category || 'KERALA';
+      foundGroup = {
+        id: `auto-${Date.now()}`,
+        name: customName,
+        color: art.categoryColor || '#C8102E',
+        subcategories: ['പൊതുവായത് (General)'],
+      };
+      foundSub = 'പൊതുവായത് (General)';
     }
     setFormMainCategory(foundGroup.name);
     setFormSubCategory(foundSub);
     setFormCategoryColor(art.categoryColor || foundGroup.color);
+    setIsCustomSubcategory(false);
+    setCustomSubcategoryText('');
+    setShowAddCategoryModal(false);
 
     setFormDistrict(art.district || '');
     setFormContent(art.paragraphs?.join('\n\n') || art.lead || '');
@@ -436,8 +526,10 @@ export default function AdminPortalPage() {
     const readTimeMinutes = Math.max(1, Math.ceil(totalWords / 90));
     const readTime = `${readTimeMinutes} മിനിറ്റ് വായന`;
 
-    const subCategoryName = formSubCategory.replace(/\s*\(.*?\)/, '').trim();
-    const categoryToSave = formSubCategory.startsWith('പൊതുവായത്') ? formMainCategory : subCategoryName;
+    const subCategoryName = isCustomSubcategory && customSubcategoryText.trim()
+      ? customSubcategoryText.trim()
+      : formSubCategory.replace(/\s*\(.*?\)/, '').trim();
+    const categoryToSave = formSubCategory.startsWith('പൊതുവായത്') || !subCategoryName ? formMainCategory : subCategoryName;
 
     const payload: Partial<Article> = {
       title: formTitle.trim(),
@@ -1026,48 +1118,145 @@ export default function AdminPortalPage() {
 
                 {/* 2. Category, Subcategory & District */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Category */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                      പ്രധാന വിഭാഗം (Category) *
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-bold text-slate-800">
+                        പ്രധാന വിഭാഗം (Category) *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddCategoryModal(!showAddCategoryModal)}
+                        className="text-[11px] font-bold text-editorial-crimson hover:underline flex items-center gap-1 transition"
+                        title="പുതിയ കസ്റ്റം കാറ്റഗറി ചേർക്കുക"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>+ പുതിയത്</span>
+                      </button>
+                    </div>
                     <select
                       value={formMainCategory}
                       onChange={(e) => {
                         const sel = e.target.value;
+                        if (sel === '__ADD_NEW__') {
+                          setShowAddCategoryModal(true);
+                          return;
+                        }
                         setFormMainCategory(sel);
-                        const group = ADMIN_CATEGORIES.find((c) => c.name === sel);
+                        const group = allCategories.find((c) => c.name === sel);
                         if (group) {
                           setFormCategoryColor(group.color);
                           setFormSubCategory(group.subcategories[0]);
+                          setIsCustomSubcategory(false);
+                          setCustomSubcategoryText('');
                         }
                       }}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson transition"
                     >
-                      {ADMIN_CATEGORIES.map((cat) => (
-                        <option key={cat.name} value={cat.name}>
-                          {cat.name}
-                        </option>
-                      ))}
+                      <optgroup label="നിലവിലെ വിഭാഗങ്ങൾ (Default)">
+                        {ADMIN_CATEGORIES.map((cat) => (
+                          <option key={cat.name} value={cat.name}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </optgroup>
+
+                      {customCategories.length > 0 && (
+                        <optgroup label="കസ്റ്റം വിഭാഗങ്ങൾ (Custom Created)">
+                          {customCategories.map((cat) => (
+                            <option key={cat.id} value={cat.name}>
+                              ★ {cat.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+
+                      <option value="__ADD_NEW__" className="text-editorial-crimson font-bold">
+                        + പുതിയ കാറ്റഗറി ഉണ്ടാക്കുക...
+                      </option>
                     </select>
                   </div>
 
+                  {/* Subcategory */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                      ഉപവിഭാഗം (Sub Category) *
-                    </label>
-                    <select
-                      value={formSubCategory}
-                      onChange={(e) => setFormSubCategory(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
-                    >
-                      {activeSubcategories.map((sub) => (
-                        <option key={sub} value={sub}>
-                          {sub}
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs font-bold text-slate-800">
+                        ഉപവിഭാഗം (Sub Category) *
+                      </label>
+                      {isCustomSubcategory ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomSubcategory(false);
+                            setCustomSubcategoryText('');
+                          }}
+                          className="text-[11px] font-bold text-slate-500 hover:text-slate-800 underline"
+                        >
+                          ഡ്രോപ്ഡൗൺ
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomSubcategory(true);
+                            setCustomSubcategoryText('');
+                          }}
+                          className="text-[11px] font-bold text-editorial-crimson hover:underline"
+                        >
+                          + ടൈപ്പ് ചെയ്യുക
+                        </button>
+                      )}
+                    </div>
+
+                    {isCustomSubcategory ? (
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          value={customSubcategoryText}
+                          onChange={(e) => setCustomSubcategoryText(e.target.value)}
+                          placeholder="കസ്റ്റം ഉപവിഭാഗം ടൈപ്പ് ചെയ്യുക..."
+                          className="flex-1 bg-white border-2 border-editorial-crimson rounded-xl p-2 text-xs text-slate-900 font-medium focus:outline-none"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCustomSubcategory(false);
+                            setCustomSubcategoryText('');
+                          }}
+                          className="px-2.5 py-2 text-xs text-slate-500 hover:text-slate-800 rounded-lg bg-slate-100 font-bold"
+                          title="ഡ്രോപ്ഡൗണിലേക്ക് മടങ്ങുക"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <select
+                        value={formSubCategory}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '__CUSTOM_SUB__') {
+                            setIsCustomSubcategory(true);
+                            setCustomSubcategoryText('');
+                          } else {
+                            setFormSubCategory(val);
+                          }
+                        }}
+                        className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson transition"
+                      >
+                        {activeSubcategories.map((sub) => (
+                          <option key={sub} value={sub}>
+                            {sub}
+                          </option>
+                        ))}
+                        <option value="__CUSTOM_SUB__" className="text-editorial-crimson font-bold">
+                          + പുതിയ ഉപവിഭാഗം ടൈപ്പ് ചെയ്യുക...
                         </option>
-                      ))}
-                    </select>
+                      </select>
+                    )}
                   </div>
 
+                  {/* District */}
                   <div>
                     <label className="block text-xs font-bold text-slate-800 mb-1.5">
                       ജില്ല / പ്രദേശം (District - ഓപ്ഷണൽ)
@@ -1089,6 +1278,73 @@ export default function AdminPortalPage() {
                     </select>
                   </div>
                 </div>
+
+                {/* Inline Quick Card for Creating New Custom Category */}
+                {showAddCategoryModal && (
+                  <div className="p-4 bg-gradient-to-r from-red-50/90 via-slate-50 to-red-50/60 rounded-xl border-2 border-dashed border-red-300 animate-in fade-in">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-xs font-bold text-ink-midnight flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-editorial-crimson" />
+                        പുതിയ കസ്റ്റം കാറ്റഗറി സൃഷ്ടിക്കുക (Add Custom Category)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddCategoryModal(false)}
+                        className="text-slate-400 hover:text-slate-700 text-xs font-bold p-1"
+                        title="ക്ലോസ് ചെയ്യുക"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                      <div className="sm:col-span-5">
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                          കാറ്റഗറിയുടെ പേര് *
+                        </label>
+                        <input
+                          type="text"
+                          value={newCatName}
+                          onChange={(e) => setNewCatName(e.target.value)}
+                          placeholder="e.g. ടെക്നോളജി, പരിസ്ഥിതി, ആരോഗ്യം..."
+                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-editorial-crimson font-medium"
+                          autoFocus
+                        />
+                      </div>
+
+                      <div className="sm:col-span-4">
+                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                          ഉപവിഭാഗങ്ങൾ (ഓപ്ഷണൽ - കോമ ഇട്ട് നൽകാം)
+                        </label>
+                        <input
+                          type="text"
+                          value={newCatSubcategories}
+                          onChange={(e) => setNewCatSubcategories(e.target.value)}
+                          placeholder="e.g. മൊബൈൽ, എ.ഐ, ഗാഡ്‌ജെറ്റ്"
+                          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-3 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleCreateCustomCategory()}
+                          className="flex-1 px-4 py-2 bg-editorial-crimson hover:bg-red-700 text-white font-bold text-xs rounded-lg transition shadow-xs flex items-center justify-center gap-1"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>ചേർക്കുക</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowAddCategoryModal(false)}
+                          className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium text-xs rounded-lg transition"
+                        >
+                          റദ്ദാക്കുക
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* 3. Featured Photo (Optional - Clean Upload or URL) */}
                 <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-200 space-y-3">
@@ -2195,45 +2451,135 @@ export default function AdminPortalPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    പ്രധാന വിഭാഗം *
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-800">
+                      പ്രധാന വിഭാഗം *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddCategoryModal(!showAddCategoryModal)}
+                      className="text-[11px] font-bold text-editorial-crimson hover:underline flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>+ പുതിയത്</span>
+                    </button>
+                  </div>
                   <select
                     value={formMainCategory}
                     onChange={(e) => {
                       const sel = e.target.value;
+                      if (sel === '__ADD_NEW__') {
+                        setShowAddCategoryModal(true);
+                        return;
+                      }
                       setFormMainCategory(sel);
-                      const group = ADMIN_CATEGORIES.find((c) => c.name === sel);
+                      const group = allCategories.find((c) => c.name === sel);
                       if (group) {
                         setFormCategoryColor(group.color);
                         setFormSubCategory(group.subcategories[0]);
+                        setIsCustomSubcategory(false);
                       }
                     }}
                     className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800 font-semibold"
                   >
-                    {ADMIN_CATEGORIES.map((cat) => (
-                      <option key={cat.name} value={cat.name}>
-                        {cat.name}
-                      </option>
-                    ))}
+                    <optgroup label="നിലവിലെ വിഭാഗങ്ങൾ (Default)">
+                      {ADMIN_CATEGORIES.map((cat) => (
+                        <option key={cat.name} value={cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </optgroup>
+
+                    {customCategories.length > 0 && (
+                      <optgroup label="കസ്റ്റം വിഭാഗങ്ങൾ (Custom Created)">
+                        {customCategories.map((cat) => (
+                          <option key={cat.id} value={cat.name}>
+                            ★ {cat.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+
+                    <option value="__ADD_NEW__" className="text-editorial-crimson font-bold">
+                      + പുതിയ കാറ്റഗറി ഉണ്ടാക്കുക...
+                    </option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    ഉപവിഭാഗം *
-                  </label>
-                  <select
-                    value={formSubCategory}
-                    onChange={(e) => setFormSubCategory(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
-                  >
-                    {activeSubcategories.map((sub) => (
-                      <option key={sub} value={sub}>
-                        {sub}
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-800">
+                      ഉപവിഭാഗം *
+                    </label>
+                    {isCustomSubcategory ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomSubcategory(false);
+                          setCustomSubcategoryText('');
+                        }}
+                        className="text-[11px] font-bold text-slate-500 hover:text-slate-800 underline"
+                      >
+                        ഡ്രോപ്ഡൗൺ
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomSubcategory(true);
+                          setCustomSubcategoryText('');
+                        }}
+                        className="text-[11px] font-bold text-editorial-crimson hover:underline"
+                      >
+                        + ടൈപ്പ് ചെയ്യുക
+                      </button>
+                    )}
+                  </div>
+                  {isCustomSubcategory ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        value={customSubcategoryText}
+                        onChange={(e) => setCustomSubcategoryText(e.target.value)}
+                        placeholder="കസ്റ്റം ഉപവിഭാഗം..."
+                        className="flex-1 bg-white border-2 border-editorial-crimson rounded-lg p-1.5 text-xs text-slate-900 font-medium focus:outline-none"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsCustomSubcategory(false);
+                          setCustomSubcategoryText('');
+                        }}
+                        className="px-2 py-1.5 text-xs text-slate-500 hover:text-slate-800 rounded bg-slate-100 font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <select
+                      value={formSubCategory}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '__CUSTOM_SUB__') {
+                          setIsCustomSubcategory(true);
+                          setCustomSubcategoryText('');
+                        } else {
+                          setFormSubCategory(val);
+                        }
+                      }}
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
+                    >
+                      {activeSubcategories.map((sub) => (
+                        <option key={sub} value={sub}>
+                          {sub}
+                        </option>
+                      ))}
+                      <option value="__CUSTOM_SUB__" className="text-editorial-crimson font-bold">
+                        + പുതിയ ഉപവിഭാഗം ടൈപ്പ് ചെയ്യുക...
                       </option>
-                    ))}
-                  </select>
+                    </select>
+                  )}
                 </div>
 
                 <div>
