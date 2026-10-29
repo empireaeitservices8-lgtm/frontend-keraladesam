@@ -32,6 +32,12 @@ export default function ArticleDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [articleId]);
+
+  useEffect(() => {
     let isMounted = true;
     async function loadData() {
       if (!articleId) return;

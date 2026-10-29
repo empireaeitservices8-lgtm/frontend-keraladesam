@@ -52,6 +52,7 @@ import {
   adminGetSubscribers,
   adminDeleteSubscriber,
   SubscriberItem,
+  clearApiCache,
 } from '@/lib/api';
 
 interface CategoryGroup {
@@ -467,6 +468,7 @@ export default function AdminPortalPage() {
         if (formBreaking) {
           try {
             await adminCreateBreaking(formTitle.trim(), token);
+            clearApiCache();
             window.dispatchEvent(new CustomEvent('keraladesyam_breaking_updated'));
             try {
               localStorage.setItem('keraladesyam_breaking_last_updated', Date.now().toString());
@@ -476,6 +478,7 @@ export default function AdminPortalPage() {
           }
         }
 
+        clearApiCache();
         if (editingArticleId) {
           setArticles((prev) =>
             prev.map((a) => (a.id === editingArticleId || a._id === editingArticleId ? result.article! : a))
@@ -514,6 +517,7 @@ export default function AdminPortalPage() {
     try {
       const res = await adminDeleteArticle(id, token);
       if (res.success) {
+        clearApiCache();
         showToast('വാർത്ത ഡാറ്റാബേസിൽ നിന്ന് നീക്കം ചെയ്തു.');
         setArticles((prev) => prev.filter((a) => a.id !== id && a._id !== id));
         window.dispatchEvent(new CustomEvent('keraladesyam_articles_updated'));
@@ -534,6 +538,7 @@ export default function AdminPortalPage() {
     const targetStatus = !art.isHeadline;
     const res = await adminToggleHeadline(art.id, token);
     if (res.success) {
+      clearApiCache();
       showToast(
         targetStatus
           ? 'പ്രധാന വാർത്തയായി (Main Headline) പിൻ ചെയ്തു!'
@@ -565,6 +570,7 @@ export default function AdminPortalPage() {
     setSubmittingBreaking(false);
 
     if (res.success) {
+      clearApiCache();
       showToast('ബ്രേക്കിംഗ് ന്യൂസ് ടിക്കറിൽ ചേർത്തു!');
       setNewBreakingText('');
       const updated = await adminGetRawBreaking();
@@ -584,6 +590,7 @@ export default function AdminPortalPage() {
     try {
       const res = await adminDeleteBreaking(id, token);
       if (res.success) {
+        clearApiCache();
         showToast('ബ്രേക്കിംഗ് ന്യൂസ് നീക്കം ചെയ്തു.');
         setBreakingList((prev) => prev.filter((b) => b._id !== id));
         window.dispatchEvent(new CustomEvent('keraladesyam_breaking_updated'));

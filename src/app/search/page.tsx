@@ -22,18 +22,17 @@ import { useFont } from '@/components/FontContext';
 
 function SearchContent() {
   const searchParams = useSearchParams();
-  const initialQuery = searchParams.get('q') || '';
-  const [query, setQuery] = useState(initialQuery);
+  const qParam = searchParams.get('q') || '';
+  const [query, setQuery] = useState(qParam);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Sync state if searchParams in URL change
+  // Sync state immediately if searchParams 'q' in URL change
   React.useEffect(() => {
-    const currentQ = searchParams.get('q') || '';
-    setQuery(currentQ);
-  }, [searchParams]);
+    setQuery(qParam);
+  }, [qParam]);
 
   // Pagination state
   const ITEMS_PER_PAGE = 9;
@@ -57,7 +56,26 @@ function SearchContent() {
     async function doSearch() {
       try {
         setLoading(true);
-        const data = await getRealArticles({ search: query.trim() || undefined });
+        const trimmed = query.trim();
+        let data = await getRealArticles({ search: trimmed || undefined });
+
+        // Fallback: If full sentence/quote search returned 0 from database regex, search using keywords across recent articles
+        if (data.length === 0 && trimmed.length >= 3) {
+          const allRecent = await getRealArticles({ limit: 50 });
+          const searchTokens = trimmed
+            .toLowerCase()
+            .replace(/['"`’‘“”.,;:!?।\-_/\\()]+/g, ' ')
+            .split(/\s+/)
+            .filter((w) => w.length >= 3);
+
+          if (searchTokens.length > 0) {
+            data = allRecent.filter((art) => {
+              const text = `${art.title} ${art.lead || ''} ${art.category || ''}`.toLowerCase();
+              return searchTokens.some((token) => text.includes(token));
+            });
+          }
+        }
+
         if (isMounted) {
           setArticles(data);
           setCurrentPage(1);
@@ -68,7 +86,7 @@ function SearchContent() {
         if (isMounted) setLoading(false);
       }
     }
-    const timer = setTimeout(doSearch, 250);
+    const timer = setTimeout(doSearch, 150);
     return () => {
       isMounted = false;
       clearTimeout(timer);

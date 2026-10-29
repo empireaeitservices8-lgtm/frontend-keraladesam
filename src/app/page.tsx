@@ -15,17 +15,32 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Article, VideoItem } from '@/data/newsData';
-import { getRealArticles, getRealVideos, deduplicateArticles } from '@/lib/api';
+import { getRealArticles, getRealVideos, deduplicateArticles, getCachedData } from '@/lib/api';
 import { useFont } from '@/components/FontContext';
 import VideoPlayerModal from '@/components/VideoPlayerModal';
 
 export default function HomePage() {
   const { toggleBookmark, isBookmarked } = useFont();
 
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [videos, setVideos] = useState<VideoItem[]>([]);
+  // Instant SWR state initialization from memory/session cache
+  const [articles, setArticles] = useState<Article[]>(() => {
+    if (typeof window !== 'undefined') {
+      return (
+        getCachedData<Article[]>('articles_all___def_f') ||
+        getCachedData<Article[]>('articles_all___50_f') ||
+        []
+      );
+    }
+    return [];
+  });
+  const [videos, setVideos] = useState<VideoItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      return getCachedData<VideoItem[]>('videos_all_20') || [];
+    }
+    return [];
+  });
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => articles.length === 0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('ALL');

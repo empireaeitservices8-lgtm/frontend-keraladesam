@@ -158,10 +158,15 @@ export default function Header() {
     // Initial fetch
     fetchNotificationsData();
 
-    // Auto-polling interval: check for new breaking news every 8 seconds
-    const intervalTimer = setInterval(() => {
-      fetchNotificationsData();
-    }, 8000);
+    // Light polling interval: only poll breaking headlines every 20 seconds without hammering bandwidth
+    const intervalTimer = setInterval(async () => {
+      try {
+        const headlines = await getRealBreakingNews();
+        if (isMounted && Array.isArray(headlines)) {
+          setBreakingNews(headlines);
+        }
+      } catch {}
+    }, 20000);
 
     // Instant update on tab focus & visibility change
     const handleFocus = () => {
@@ -228,7 +233,12 @@ export default function Header() {
     // 1. Direct substring match
     const directMatch = articlesList.find((a) => {
       const aClean = clean(a.title);
-      return aClean.includes(hClean.slice(0, 15)) || hClean.includes(aClean.slice(0, 15));
+      return (
+        aClean.includes(hClean.slice(0, 15)) ||
+        hClean.includes(aClean.slice(0, 15)) ||
+        (hClean.length >= 8 && aClean.includes(hClean.slice(0, 8))) ||
+        (aClean.length >= 8 && hClean.includes(aClean.slice(0, 8)))
+      );
     });
     if (directMatch) return directMatch;
 
@@ -250,7 +260,7 @@ export default function Header() {
       }
     }
 
-    if (maxOverlap >= 2 && bestArticle) {
+    if (maxOverlap >= 1 && bestArticle) {
       return bestArticle;
     }
 
@@ -279,9 +289,7 @@ export default function Header() {
         imageUrl: matched?.imageUrl,
         url: articleId
           ? `/article/${articleId}`
-          : notificationArticles[0]
-          ? `/article/${notificationArticles[0]._id || notificationArticles[0].id}`
-          : '/',
+          : `/search?q=${encodeURIComponent(b.trim())}`,
       });
     });
 
@@ -327,9 +335,6 @@ export default function Header() {
       } catch {}
     }
     setShowAlertsDropdown(false);
-    if (item.url) {
-      router.push(item.url);
-    }
   };
 
   const requestBrowserNotification = async () => {
@@ -1000,9 +1005,7 @@ export default function Header() {
                       const matched = findArticleForHeadline(item, notificationArticles);
                       const targetUrl = matched
                         ? `/article/${matched._id || matched.id || matched.customId}`
-                        : notificationArticles[0]
-                        ? `/article/${notificationArticles[0]._id || notificationArticles[0].id}`
-                        : `/search?q=${encodeURIComponent(item)}`;
+                        : `/search?q=${encodeURIComponent(item.trim())}`;
 
                       return (
                         <Link

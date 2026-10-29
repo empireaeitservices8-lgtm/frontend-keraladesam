@@ -104,6 +104,51 @@ export function normalizeArticle(raw: any): Article {
   };
 }
 
+// In-Memory & Session Storage Cache for 0ms Instant Loading (SWR)
+const memoryCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL_MS = 25000; // 25 seconds freshness
+
+export function getCachedData<T>(key: string): T | null {
+  const entry = memoryCache.get(key);
+  if (entry && Date.now() - entry.timestamp < CACHE_TTL_MS) {
+    return entry.data as T;
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = sessionStorage.getItem(`kd_${key}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
+          memoryCache.set(key, parsed);
+          return parsed.data as T;
+        }
+      }
+    } catch {}
+  }
+  return null;
+}
+
+export function setCachedData(key: string, data: any) {
+  const entry = { data, timestamp: Date.now() };
+  memoryCache.set(key, entry);
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem(`kd_${key}`, JSON.stringify(entry));
+    } catch {}
+  }
+}
+
+export function clearApiCache() {
+  memoryCache.clear();
+  if (typeof window !== 'undefined') {
+    try {
+      Object.keys(sessionStorage).forEach((k) => {
+        if (k.startsWith('kd_')) sessionStorage.removeItem(k);
+      });
+    } catch {}
+  }
+}
+
 export interface ArticleQueryParams {
   category?: string;
   search?: string;
@@ -113,74 +158,128 @@ export interface ArticleQueryParams {
 }
 
 export async function getArticles(params?: ArticleQueryParams): Promise<Article[]> {
-  try {
-    const baseUrl = getApiBaseUrl();
-    const url = new URL(`${baseUrl}/articles`);
-    if (params?.category && params.category !== 'all' && params.category !== 'എല്ലാം') {
-      url.searchParams.set('category', params.category);
-    }
-    if (params?.search) {
-      url.searchParams.set('search', params.search);
-    }
-    if (params?.trending) {
-      url.searchParams.set('trending', 'true');
-    }
-    if (params?.district && params.district !== 'all' && params.district !== 'എല്ലാം') {
-      url.searchParams.set('district', params.district);
-    }
-    if (params?.limit) {
-      url.searchParams.set('limit', params.limit.toString());
-    }
-    url.searchParams.set('_t', Date.now().toString());
+  const cacheKey = `articles_${params?.category || 'all'}_${params?.search || ''}_${params?.district || ''}_${params?.limit || 'def'}_${params?.trending || 'f'}`;
+  const cached = getCachedData<Article[]>(cacheKey);
 
-    const res = await fetch(url.toString(), { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const rawArticles = Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
-    return deduplicateArticles(rawArticles);
-  } catch (error) {
-    console.error('Failed to fetch articles from database API:', error);
-    return [];
+  // Async network fetch from Edge CDN / API
+  const fetchTask = async () => {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const url = new URL(`${baseUrl}/articles`);
+      if (params?.category && params.category !== 'all' && params.category !== 'എല്ലാം') {
+        url.searchParams.set('category', params.category);
+      }
+      if (params?.search) {
+        url.searchParams.set('search', params.search);
+      }
+      if (params?.trending) {
+        url.searchParams.set('trending', 'true');
+      }
+      if (params?.district && params.district !== 'all' && params.district !== 'എല്ലാം') {
+        url.searchParams.set('district', params.district);
+      }
+      if (params?.limit) {
+        url.searchParams.set('limit', params.limit.toString());
+      }
+
+      const res = await fetch(url.toString(), {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const rawArticles = Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
+      const deduplicated = deduplicateArticles(rawArticles);
+      if (deduplicated.length > 0) {
+        setCachedData(cacheKey, deduplicated);
+      }
+      return deduplicated;
+    } catch (error) {
+      console.error('Failed to fetch articles from database API:', error);
+      return cached || [];
+    }
+  };
+
+  // If cached data exists, return immediately in 0ms! (Stale-While-Revalidate: re-fetch in background)
+  if (cached && cached.length > 0) {
+    fetchTask();
+    return cached;
   }
+
+  return await fetchTask();
 }
 
 export async function getArticleById(id: string): Promise<Article | null> {
-  try {
-    const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/articles/${id}?_t=${Date.now()}`, { cache: 'no-store' });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.article) return normalizeArticle(data.article);
+  const cacheKey = `article_${id}`;
+  const cached = getCachedData<Article>(cacheKey);
+
+  const fetchTask = async () => {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/articles/${id}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.article) {
+          const normalized = normalizeArticle(data.article);
+          setCachedData(cacheKey, normalized);
+          return normalized;
+        }
+      }
+      return cached || null;
+    } catch (error) {
+      console.error(`Failed to fetch article ${id} from database API:`, error);
+      return cached || null;
     }
-    return null;
-  } catch (error) {
-    console.error(`Failed to fetch article ${id} from database API:`, error);
-    return null;
+  };
+
+  if (cached) {
+    fetchTask();
+    return cached;
   }
+
+  return await fetchTask();
 }
 
 export async function getBreakingNews(): Promise<string[]> {
-  try {
-    const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/breaking?_t=${Date.now()}`, { cache: 'no-store' });
-    if (res.ok) {
-      const data = await res.json();
-      const headlines = Array.isArray(data.headlines) ? data.headlines.map((h: any) => h.headline) : [];
-      const seen = new Set<string>();
-      const uniqueHeadlines: string[] = [];
-      for (const h of headlines) {
-        const text = String(h || '').trim();
-        if (!text || seen.has(text)) continue;
-        seen.add(text);
-        uniqueHeadlines.push(text);
+  const cacheKey = 'breaking_headlines';
+  const cached = getCachedData<string[]>(cacheKey);
+
+  const fetchTask = async () => {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await fetch(`${baseUrl}/breaking`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const headlines = Array.isArray(data.headlines) ? data.headlines.map((h: any) => h.headline) : [];
+        const seen = new Set<string>();
+        const uniqueHeadlines: string[] = [];
+        for (const h of headlines) {
+          const text = String(h || '').trim();
+          if (!text || seen.has(text)) continue;
+          seen.add(text);
+          uniqueHeadlines.push(text);
+        }
+        if (uniqueHeadlines.length > 0) {
+          setCachedData(cacheKey, uniqueHeadlines);
+        }
+        return uniqueHeadlines;
       }
-      return uniqueHeadlines;
+      return cached || [];
+    } catch (error) {
+      console.error('Failed to fetch breaking news from database API:', error);
+      return cached || [];
     }
-    return [];
-  } catch (error) {
-    console.error('Failed to fetch breaking news from database API:', error);
-    return [];
+  };
+
+  if (cached && cached.length > 0) {
+    fetchTask();
+    return cached;
   }
+
+  return await fetchTask();
 }
 
 export interface AdminUser {
@@ -477,28 +576,45 @@ export function normalizeVideo(raw: any): VideoItem {
 }
 
 export async function getVideos(params?: { category?: string; limit?: number; page?: number }): Promise<VideoItem[]> {
-  try {
-    const baseUrl = getApiBaseUrl();
-    const url = new URL(`${baseUrl}/videos`);
-    if (params?.category && params.category !== 'all' && params.category !== 'എല്ലാം') {
-      url.searchParams.set('category', params.category);
-    }
-    if (params?.limit) {
-      url.searchParams.set('limit', params.limit.toString());
-    }
-    if (params?.page) {
-      url.searchParams.set('page', params.page.toString());
-    }
-    url.searchParams.set('_t', Date.now().toString());
+  const cacheKey = `videos_${params?.category || 'all'}_${params?.limit || 20}`;
+  const cached = getCachedData<VideoItem[]>(cacheKey);
 
-    const res = await fetch(url.toString(), { cache: 'no-store' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    return Array.isArray(data.videos) ? data.videos.map(normalizeVideo) : [];
-  } catch (error) {
-    console.error('Failed to fetch videos from API:', error);
-    return [];
+  const fetchTask = async () => {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const url = new URL(`${baseUrl}/videos`);
+      if (params?.category && params.category !== 'all' && params.category !== 'എല്ലാം') {
+        url.searchParams.set('category', params.category);
+      }
+      if (params?.limit) {
+        url.searchParams.set('limit', params.limit.toString());
+      }
+      if (params?.page) {
+        url.searchParams.set('page', params.page.toString());
+      }
+
+      const res = await fetch(url.toString(), {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const list = Array.isArray(data.videos) ? data.videos.map(normalizeVideo) : [];
+      if (list.length > 0) {
+        setCachedData(cacheKey, list);
+      }
+      return list;
+    } catch (error) {
+      console.error('Failed to fetch videos from API:', error);
+      return cached || [];
+    }
+  };
+
+  if (cached && cached.length > 0) {
+    fetchTask();
+    return cached;
   }
+
+  return await fetchTask();
 }
 
 export async function getVideoById(id: string): Promise<VideoItem | null> {
