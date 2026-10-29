@@ -57,7 +57,7 @@ export default function KeralaPage() {
     async function loadArticles() {
       try {
         setLoading(true);
-        const params: any = {};
+        const params: any = { limit: 100 };
         if (selectedDistrict !== 'All' && selectedDistrict !== 'എല്ലാം') params.district = selectedDistrict;
         if (selectedCategory !== 'ALL') {
           const match = categories.find((c) => c.label === selectedCategory);
@@ -90,7 +90,56 @@ export default function KeralaPage() {
     }
   };
 
-  const filteredArticles = useMemo(() => deduplicateArticles(articles), [articles]);
+  const isKeralaArticle = (art: Article) => {
+    const d = (art.district || '').trim();
+    const c = (art.category || '').trim().toLowerCase();
+
+    // Explicitly exclude non-Kerala districts and international/national categories
+    if (
+      d === 'അന്തർദേശീയം' ||
+      d === 'ദേശീയം' ||
+      d.includes('പ്രവാസം') ||
+      d.includes('ഗൾഫ്')
+    ) {
+      return false;
+    }
+
+    if (
+      c === 'ലോകം' ||
+      c === 'പശ്ചിമേഷ്യ' ||
+      c === 'അന്തർദേശീയം' ||
+      c === 'പ്രവാസം' ||
+      c === 'world' ||
+      c === 'international'
+    ) {
+      return false;
+    }
+
+    // Include if district is in Kerala or category is Kerala
+    const keralaDistrictsList = [
+      'തിരുവനന്തപുരം', 'കൊല്ലം', 'പത്തനംതിട്ട', 'ആലപ്പുഴ', 'കോട്ടയം',
+      'ഇടുക്കി', 'എറണാകുളം', 'തൃശ്ശൂർ', 'പാലക്കാട്', 'മലപ്പുറം',
+      'കോഴിക്കോട്', 'വയനാട്', 'കണ്ണൂർ', 'കാസർഗോഡ്', 'കേരളം'
+    ];
+
+    if (keralaDistrictsList.some((kd) => d.includes(kd))) return true;
+    if (c === 'kerala' || c === 'കേരളം' || c === 'കേരള വാർത്തകൾ') return true;
+
+    // If district is not specified or empty, but tags or lead mention Kerala
+    if (!d && (art.tags?.some((t) => t.toLowerCase().includes('kerala')) || (art.lead || '').includes('കേരള'))) {
+      return true;
+    }
+
+    return false;
+  };
+
+  const filteredArticles = useMemo(() => {
+    const deduped = deduplicateArticles(articles);
+    if (selectedDistrict !== 'All' && selectedDistrict !== 'എല്ലാം') {
+      return deduped.filter((a) => (a.district || '').includes(selectedDistrict));
+    }
+    return deduped.filter(isKeralaArticle);
+  }, [articles, selectedDistrict]);
   const heroArticle = filteredArticles.length > 0 ? filteredArticles[0] : null;
   const gridArticles = useMemo(() => {
     if (!heroArticle) return filteredArticles.slice(1);
