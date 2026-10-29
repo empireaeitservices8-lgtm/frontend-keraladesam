@@ -262,7 +262,7 @@ export default function KeralaPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-center">
                   <Link
                     href={`/article/${heroArticle.id}`}
-                    className="lg:col-span-7 overflow-hidden rounded-lg relative block aspect-[16/10] sm:aspect-[16/9]"
+                    className="lg:col-span-7 overflow-hidden rounded-lg block aspect-[16/10] sm:aspect-[16/9]"
                   >
                     {heroArticle.imageUrl ? (
                       <img
@@ -277,14 +277,6 @@ export default function KeralaPage() {
                         </span>
                       </div>
                     )}
-                    {heroArticle.readTime && (
-                      <span className="absolute bottom-3 left-3 bg-black/75 backdrop-blur-xs text-white text-xs px-2.5 py-1 rounded">
-                        {heroArticle.readTime}
-                      </span>
-                    )}
-                    <span className="absolute top-3 left-3 bg-editorial-crimson text-white text-[11px] font-bold px-2.5 py-0.5 rounded shadow-xs uppercase tracking-wider">
-                      പ്രധാന വാർത്ത
-                    </span>
                   </Link>
 
                   <div className="lg:col-span-5 flex flex-col justify-between h-full">
@@ -409,11 +401,6 @@ export default function KeralaPage() {
                                 കേരളദേശം
                               </span>
                             </div>
-                          )}
-                          {article.readTime && (
-                            <span className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 bg-black/75 backdrop-blur-xs text-white text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded font-medium">
-                              {article.readTime}
-                            </span>
                           )}
                         </Link>
 

@@ -439,7 +439,7 @@ export default function CategoryPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
               <Link
                 href={`/article/${heroArticle.id}`}
-                className="lg:col-span-7 overflow-hidden rounded-lg relative block"
+                className="lg:col-span-7 overflow-hidden rounded-lg block"
               >
                 {heroArticle.imageUrl ? (
                   <img
@@ -454,9 +454,6 @@ export default function CategoryPage() {
                     </span>
                   </div>
                 )}
-                <span className="absolute bottom-3 left-3 bg-black/75 backdrop-blur text-white text-xs px-2.5 py-1 rounded">
-                  {heroArticle.readTime}
-                </span>
               </Link>
 
               <div className="lg:col-span-5 flex flex-col justify-between h-full">
