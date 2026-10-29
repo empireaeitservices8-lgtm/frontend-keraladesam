@@ -182,6 +182,7 @@ export default function Footer() {
               #8-PBC-Amrutha Towers,Combara - Near Central Police Station
               <br />
               Ernakulam-682018-Kerala-India
+              <br />
               Editor & Publisher:
               <br />
               <span className="text-surface-pure font-bold">K.O. Johnny (കെ.ഒ. ജോണി)</span>
