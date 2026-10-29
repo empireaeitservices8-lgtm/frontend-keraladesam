@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -10,10 +10,14 @@ import {
   Newspaper,
   Search,
   Bell,
+  BellRing,
   Bookmark,
   Menu,
   X,
   Radio,
+  CheckCheck,
+  Clock,
+  Flame,
 } from 'lucide-react';
 import { useFont } from './FontContext';
 import { Article } from '@/data/newsData';
@@ -35,6 +39,12 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Article[]>([]);
   const [breakingNews, setBreakingNews] = useState<string[]>([]);
+  const [notificationArticles, setNotificationArticles] = useState<Article[]>([]);
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
+  const [notificationTab, setNotificationTab] = useState<'all' | 'breaking' | 'articles'>('all');
+  const [browserPushAllowed, setBrowserPushAllowed] = useState(false);
+  const lastPushTitleRef = useRef<string>('');
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [showAlertsDropdown, setShowAlertsDropdown] = useState(false);
@@ -85,37 +95,81 @@ export default function Header() {
     { label: 'ABOUT US', href: '/about' },
   ];
 
-  // Real-time breaking news sync with live polling and cross-tab events
+  // Load saved read notifications and browser push permissions
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('keraladesyam_read_notifications');
+      if (stored) {
+        setReadNotificationIds(JSON.parse(stored));
+      }
+    } catch {}
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setBrowserPushAllowed(Notification.permission === 'granted');
+    }
+  }, []);
+
+  // Real-time breaking news & notification stories sync
   useEffect(() => {
     let isMounted = true;
-    async function fetchBreaking() {
+    async function fetchNotificationsData() {
       try {
-        const headlines = await getRealBreakingNews();
+        const [headlines, latest] = await Promise.all([
+          getRealBreakingNews(),
+          getRealArticles({ limit: 8 }),
+        ]);
+
         if (isMounted) {
-          if (Array.isArray(headlines) && headlines.length > 0) {
+          if (Array.isArray(headlines)) {
             setBreakingNews(headlines);
+
+            // Native browser push notification if new breaking alert arrived in background
+            if (
+              typeof window !== 'undefined' &&
+              'Notification' in window &&
+              Notification.permission === 'granted' &&
+              headlines.length > 0
+            ) {
+              const latestItem = headlines[0];
+              if (
+                latestItem &&
+                latestItem !== lastPushTitleRef.current &&
+                document.visibilityState !== 'visible'
+              ) {
+                lastPushTitleRef.current = latestItem;
+                try {
+                  new Notification('കേരളദേശം ബ്രേക്കിംഗ് ന്യൂസ്', {
+                    body: latestItem,
+                    icon: '/logo.png',
+                  });
+                } catch {}
+              }
+            }
+          }
+
+          if (Array.isArray(latest)) {
+            setNotificationArticles(latest);
           }
         }
       } catch (err) {
-        console.error('Error fetching breaking news:', err);
+        console.error('Error fetching real-time notifications:', err);
       }
     }
 
     // Initial fetch
-    fetchBreaking();
+    fetchNotificationsData();
 
     // Auto-polling interval: check for new breaking news every 8 seconds
     const intervalTimer = setInterval(() => {
-      fetchBreaking();
+      fetchNotificationsData();
     }, 8000);
 
     // Instant update on tab focus & visibility change
     const handleFocus = () => {
-      fetchBreaking();
+      fetchNotificationsData();
     };
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        fetchBreaking();
+        fetchNotificationsData();
       }
     };
     window.addEventListener('focus', handleFocus);
@@ -123,14 +177,18 @@ export default function Header() {
 
     // Real-time cross-tab and local event listeners
     const handleCustomUpdate = () => {
-      fetchBreaking();
+      fetchNotificationsData();
     };
     const handleStorageUpdate = (e: StorageEvent) => {
-      if (e.key === 'keraladesyam_breaking_last_updated') {
-        fetchBreaking();
+      if (
+        e.key === 'keraladesyam_breaking_last_updated' ||
+        e.key === 'keraladesyam_articles_last_updated'
+      ) {
+        fetchNotificationsData();
       }
     };
     window.addEventListener('keraladesyam_breaking_updated', handleCustomUpdate);
+    window.addEventListener('keraladesyam_articles_updated', handleCustomUpdate);
     window.addEventListener('storage', handleStorageUpdate);
 
     return () => {
@@ -139,9 +197,104 @@ export default function Header() {
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('keraladesyam_breaking_updated', handleCustomUpdate);
+      window.removeEventListener('keraladesyam_articles_updated', handleCustomUpdate);
       window.removeEventListener('storage', handleStorageUpdate);
     };
   }, [pathname]);
+
+  interface NotificationItem {
+    id: string;
+    type: 'breaking' | 'article';
+    title: string;
+    category: string;
+    categoryColor: string;
+    timeAgo: string;
+    imageUrl?: string;
+    url: string;
+  }
+
+  const notificationsList: NotificationItem[] = useMemo(() => {
+    const list: NotificationItem[] = [];
+
+    // 1. Breaking news alerts
+    breakingNews.forEach((b) => {
+      list.push({
+        id: `breaking-${b.trim()}`,
+        type: 'breaking',
+        title: b,
+        category: 'ബ്രേക്കിംഗ് ന്യൂസ്',
+        categoryColor: '#dc2626',
+        timeAgo: 'തത്സമയം',
+        url: `/search?q=${encodeURIComponent(b)}`,
+      });
+    });
+
+    // 2. Latest published stories
+    notificationArticles.forEach((art) => {
+      list.push({
+        id: `art-${art.id || art._id}`,
+        type: 'article',
+        title: art.title,
+        category: art.category || 'വാർത്ത',
+        categoryColor: art.categoryColor || '#C8102E',
+        timeAgo: art.timeAgo || art.publishedAt || 'ഇന്ന്',
+        imageUrl: art.imageUrl,
+        url: `/article/${art._id || art.id || art.customId}`,
+      });
+    });
+
+    return list;
+  }, [breakingNews, notificationArticles]);
+
+  const unreadCount = useMemo(() => {
+    return notificationsList.filter((item) => !readNotificationIds.includes(item.id)).length;
+  }, [notificationsList, readNotificationIds]);
+
+  const markAllAsRead = () => {
+    const allIds = notificationsList.map((item) => item.id);
+    setReadNotificationIds(allIds);
+    try {
+      localStorage.setItem('keraladesyam_read_notifications', JSON.stringify(allIds));
+    } catch {}
+  };
+
+  const handleNotificationClick = (item: NotificationItem) => {
+    if (!readNotificationIds.includes(item.id)) {
+      const updated = [...readNotificationIds, item.id];
+      setReadNotificationIds(updated);
+      try {
+        localStorage.setItem('keraladesyam_read_notifications', JSON.stringify(updated));
+      } catch {}
+    }
+    setShowAlertsDropdown(false);
+  };
+
+  const requestBrowserNotification = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        const perm = await Notification.requestPermission();
+        setBrowserPushAllowed(perm === 'granted');
+        if (perm === 'granted') {
+          new Notification('കേരളദേശം വാർത്തകൾ', {
+            body: 'തത്സമയ ബ്രേക്കിംഗ് അറിയിപ്പുകൾ സജീവമാക്കി!',
+            icon: '/logo.png',
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  const filteredNotifications = useMemo(() => {
+    if (notificationTab === 'breaking') {
+      return notificationsList.filter((n) => n.type === 'breaking');
+    }
+    if (notificationTab === 'articles') {
+      return notificationsList.filter((n) => n.type === 'article');
+    }
+    return notificationsList;
+  }, [notificationsList, notificationTab]);
   useEffect(() => {
     setCurrentDate(
       new Date().toLocaleDateString('ml-IN', {
@@ -357,12 +510,20 @@ export default function Header() {
               </button>
               <button
                 onClick={() => setShowAlertsDropdown(!showAlertsDropdown)}
-                className="p-2 text-secondary hover:text-primary transition-colors relative rounded-full hover:bg-surface-container"
+                className={`p-2 transition-colors relative rounded-full hover:bg-surface-container ${
+                  showAlertsDropdown ? 'text-primary bg-surface-container' : 'text-secondary hover:text-primary'
+                }`}
                 title="Notifications"
                 aria-label="Notifications"
               >
                 <Bell className="w-6 h-6" />
-                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-live-alert animate-pulse" />
+                {unreadCount > 0 ? (
+                  <span className="absolute -top-0.5 -right-0.5 bg-editorial-crimson text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center animate-pulse shadow-xs">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                ) : (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-slate-300" />
+                )}
               </button>
               <button
                 onClick={() => setMobileMenuOpen(true)}
@@ -567,45 +728,156 @@ export default function Header() {
                     aria-label="Notifications"
                   >
                     <Bell className="w-[22px] h-[22px] lg:w-6 lg:h-6" />
-                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-live-alert animate-pulse" />
+                    {unreadCount > 0 ? (
+                      <span className="absolute -top-0.5 -right-0.5 bg-editorial-crimson text-white text-[10px] font-bold min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center animate-pulse shadow-xs">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    ) : (
+                      <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-slate-400" />
+                    )}
                   </button>
 
                   {showAlertsDropdown && (
-                    <div className="absolute right-0 top-full mt-2 w-80 bg-surface-pure rounded-xl shadow-2xl border border-slate-border p-3 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                      <div className="flex items-center justify-between pb-2 border-b border-slate-border">
-                        <span className="font-bold text-xs text-ink-midnight flex items-center gap-1.5 uppercase tracking-wide">
-                          <span className="w-2 h-2 rounded-full bg-editorial-crimson" />
-                          NOTIFICATIONS & ALERTS
-                        </span>
+                    <div className="hidden lg:block absolute right-0 top-full mt-2 w-96 bg-surface-pure rounded-xl shadow-2xl border border-slate-border z-50 animate-in fade-in slide-in-from-top-1 duration-150 overflow-hidden">
+                      {/* Dropdown Header */}
+                      <div className="flex items-center justify-between p-3.5 border-b border-slate-border bg-slate-50/60">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-editorial-crimson animate-pulse" />
+                          <span className="font-bold text-xs text-ink-midnight tracking-wider uppercase">
+                            അറിയിപ്പുകൾ & അലേർട്ടുകൾ
+                          </span>
+                          {unreadCount > 0 && (
+                            <span className="bg-editorial-crimson text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                              {unreadCount} പുതിയത്
+                            </span>
+                          )}
+                        </div>
                         <button
+                          type="button"
                           onClick={() => setShowAlertsDropdown(false)}
-                          className="text-xs text-secondary hover:text-on-surface p-1 rounded hover:bg-slate-100"
+                          className="text-slate-400 hover:text-slate-700 p-1 rounded hover:bg-slate-200/60 transition-colors"
                         >
                           <X className="w-4 h-4" />
                         </button>
                       </div>
 
-                      <div className="divide-y divide-slate-border mt-1">
-                        {breakingNews.length === 0 ? (
-                          <div className="py-4 text-center text-xs text-secondary">
-                            നിലവിൽ പുതിയ അറിയിപ്പുകൾ ലഭ്യമല്ല.
+                      {/* Filter Tabs */}
+                      <div className="flex items-center gap-1 p-2 bg-slate-100/80 text-xs font-semibold border-b border-slate-200/60">
+                        <button
+                          type="button"
+                          onClick={() => setNotificationTab('all')}
+                          className={`flex-1 py-1 rounded-md text-center transition-colors text-[11px] ${
+                            notificationTab === 'all'
+                              ? 'bg-white text-ink-midnight shadow-xs font-bold'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          എല്ലാം ({notificationsList.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNotificationTab('breaking')}
+                          className={`flex-1 py-1 rounded-md text-center transition-colors text-[11px] ${
+                            notificationTab === 'breaking'
+                              ? 'bg-white text-editorial-crimson shadow-xs font-bold'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          ബ്രേക്കിംഗ് ({breakingNews.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNotificationTab('articles')}
+                          className={`flex-1 py-1 rounded-md text-center transition-colors text-[11px] ${
+                            notificationTab === 'articles'
+                              ? 'bg-white text-primary shadow-xs font-bold'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          വാർത്തകൾ ({notificationArticles.length})
+                        </button>
+                      </div>
+
+                      {/* Notifications List */}
+                      <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-100 p-1.5">
+                        {filteredNotifications.length === 0 ? (
+                          <div className="py-10 text-center text-slate-500 text-xs flex flex-col items-center gap-2">
+                            <Bell className="w-8 h-8 text-slate-300" />
+                            <p>നിലവിൽ പുതിയ അറിയിപ്പുകൾ ലഭ്യമല്ല.</p>
                           </div>
                         ) : (
-                          breakingNews.slice(0, 4).map((item, idx) => (
+                          filteredNotifications.map((item: NotificationItem) => (
                             <Link
-                              key={idx}
-                              href={`/search?q=${encodeURIComponent(item)}`}
-                              onClick={() => setShowAlertsDropdown(false)}
-                              className="block py-2 text-xs hover:bg-surface-container-low transition-colors rounded px-1"
+                              key={item.id}
+                              href={item.url}
+                              onClick={() => handleNotificationClick(item)}
+                              className={`block p-2.5 transition-colors rounded-lg ${
+                                !readNotificationIds.includes(item.id)
+                                  ? 'bg-red-50/50 hover:bg-red-50'
+                                  : 'hover:bg-slate-50'
+                              }`}
                             >
-                              <p className="font-medium text-on-surface hover:text-primary line-clamp-2 leading-snug">
-                                {item}
-                              </p>
-                              <span className="text-[10px] text-secondary mt-1 block">
-                                Live Desk
-                              </span>
+                              <div className="flex items-start gap-2.5">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                                    {item.type === 'breaking' ? (
+                                      <span className="inline-flex items-center gap-1 bg-red-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-2xs uppercase tracking-wider">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                                        ബ്രേക്കിംഗ്
+                                      </span>
+                                    ) : (
+                                      <span
+                                        className="text-white font-bold text-[9px] px-1.5 py-0.5 rounded-2xs uppercase tracking-wider"
+                                        style={{ backgroundColor: item.categoryColor || '#C8102E' }}
+                                      >
+                                        {item.category}
+                                      </span>
+                                    )}
+                                    <span className="text-[10px] text-slate-500 flex items-center gap-0.5">
+                                      <Clock className="w-2.5 h-2.5" />
+                                      {item.timeAgo}
+                                    </span>
+                                    {!readNotificationIds.includes(item.id) && (
+                                      <span className="w-1.5 h-1.5 rounded-full bg-editorial-crimson ml-auto" />
+                                    )}
+                                  </div>
+                                  <h4 className="font-semibold text-xs text-ink-midnight line-clamp-2 leading-snug hover:text-primary transition-colors">
+                                    {item.title}
+                                  </h4>
+                                </div>
+                                {item.imageUrl && (
+                                  <img
+                                    src={item.imageUrl}
+                                    alt=""
+                                    className="w-11 h-11 object-cover rounded-md shrink-0 border border-slate-200"
+                                  />
+                                )}
+                              </div>
                             </Link>
                           ))
+                        )}
+                      </div>
+
+                      {/* Dropdown Footer */}
+                      <div className="p-2.5 border-t border-slate-border bg-slate-50/80 flex items-center justify-between gap-2 text-[11px]">
+                        <button
+                          type="button"
+                          onClick={requestBrowserNotification}
+                          className="flex items-center gap-1 text-slate-600 hover:text-primary transition-colors font-medium"
+                          title="ഡെസ്‌ക്ടോപ്പ് അറിയിപ്പുകൾ സജീവമാക്കുക"
+                        >
+                          <BellRing className="w-3.5 h-3.5 text-editorial-crimson" />
+                          <span>{browserPushAllowed ? 'അറിയിപ്പുകൾ സജീവം' : 'അറിയിപ്പുകൾ ഓൺ ചെയ്യുക'}</span>
+                        </button>
+                        {unreadCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={markAllAsRead}
+                            className="text-primary hover:underline font-semibold flex items-center gap-1 ml-auto"
+                          >
+                            <CheckCheck className="w-3.5 h-3.5" />
+                            <span>എല്ലാം വായിക്കുക</span>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -804,7 +1076,161 @@ export default function Header() {
     )
   }
 
-  {/* Bookmarks Drawer */ }
+  {/* Mobile Notifications Bottom Sheet Modal */}
+  {showAlertsDropdown && (
+    <div
+      className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={() => setShowAlertsDropdown(false)}
+    >
+      <div
+        className="bg-surface-pure rounded-t-2xl shadow-2xl border-t border-slate-border max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-border bg-slate-50/60">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-editorial-crimson animate-pulse" />
+            <span className="font-bold text-sm text-ink-midnight tracking-wider uppercase">
+              അറിയിപ്പുകൾ & അലേർട്ടുകൾ
+            </span>
+            {unreadCount > 0 && (
+              <span className="bg-editorial-crimson text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {unreadCount} പുതിയത്
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAlertsDropdown(false)}
+            className="text-slate-500 hover:text-slate-900 p-1.5 rounded-full hover:bg-slate-200/60 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex items-center gap-1.5 px-4 pt-3 pb-2 bg-slate-100/70 text-xs font-semibold border-b border-slate-200/60">
+          <button
+            type="button"
+            onClick={() => setNotificationTab('all')}
+            className={`flex-1 py-1.5 rounded-lg text-center transition-colors ${
+              notificationTab === 'all'
+                ? 'bg-white text-ink-midnight shadow-xs font-bold border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            എല്ലാം ({notificationsList.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setNotificationTab('breaking')}
+            className={`flex-1 py-1.5 rounded-lg text-center transition-colors ${
+              notificationTab === 'breaking'
+                ? 'bg-white text-editorial-crimson shadow-xs font-bold border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            ബ്രേക്കിംഗ് ({breakingNews.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setNotificationTab('articles')}
+            className={`flex-1 py-1.5 rounded-lg text-center transition-colors ${
+              notificationTab === 'articles'
+                ? 'bg-white text-primary shadow-xs font-bold border border-slate-200'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            വാർത്തകൾ ({notificationArticles.length})
+          </button>
+        </div>
+
+        {/* Notifications List */}
+        <div className="overflow-y-auto flex-1 divide-y divide-slate-100 p-2">
+          {filteredNotifications.length === 0 ? (
+            <div className="py-12 text-center text-slate-500 text-xs flex flex-col items-center gap-2">
+              <Bell className="w-8 h-8 text-slate-300" />
+              <p>നിലവിൽ പുതിയ അറിയിപ്പുകൾ ലഭ്യമല്ല.</p>
+            </div>
+          ) : (
+            filteredNotifications.map((item: NotificationItem) => (
+              <Link
+                key={item.id}
+                href={item.url}
+                onClick={() => handleNotificationClick(item)}
+                className={`block p-3 transition-colors rounded-xl ${
+                  !readNotificationIds.includes(item.id)
+                    ? 'bg-red-50/60 hover:bg-red-50'
+                    : 'hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                      {item.type === 'breaking' ? (
+                        <span className="inline-flex items-center gap-1 bg-red-600 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-2xs uppercase tracking-wider">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                          ബ്രേക്കിംഗ്
+                        </span>
+                      ) : (
+                        <span
+                          className="text-white font-bold text-[9px] px-1.5 py-0.5 rounded-2xs uppercase tracking-wider"
+                          style={{ backgroundColor: item.categoryColor || '#C8102E' }}
+                        >
+                          {item.category}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-slate-500 flex items-center gap-0.5">
+                        <Clock className="w-2.5 h-2.5" />
+                        {item.timeAgo}
+                      </span>
+                      {!readNotificationIds.includes(item.id) && (
+                        <span className="w-2 h-2 rounded-full bg-editorial-crimson ml-auto" />
+                      )}
+                    </div>
+                    <h4 className="font-semibold text-xs text-ink-midnight line-clamp-2 leading-snug hover:text-primary transition-colors">
+                      {item.title}
+                    </h4>
+                  </div>
+                  {item.imageUrl && (
+                    <img
+                      src={item.imageUrl}
+                      alt=""
+                      className="w-14 h-14 object-cover rounded-lg shrink-0 border border-slate-200"
+                    />
+                  )}
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
+
+        {/* Mobile Footer */}
+        <div className="p-3 border-t border-slate-border bg-slate-50 flex items-center justify-between gap-2 text-xs">
+          <button
+            type="button"
+            onClick={requestBrowserNotification}
+            className="flex items-center gap-1.5 text-slate-700 hover:text-primary font-medium"
+          >
+            <BellRing className="w-4 h-4 text-editorial-crimson" />
+            <span>{browserPushAllowed ? 'അറിയിപ്പുകൾ സജീവം' : 'നോട്ടിഫിക്കേഷൻ ഓൺ ചെയ്യുക'}</span>
+          </button>
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={markAllAsRead}
+              className="text-primary hover:underline font-semibold flex items-center gap-1 ml-auto"
+            >
+              <CheckCheck className="w-4 h-4" />
+              <span>എല്ലാം വായിക്കുക</span>
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* Bookmarks Drawer */}
   <BookmarksDrawer isOpen={bookmarksOpen} onClose={() => setBookmarksOpen(false)} />
 
   {/* E-Paper Modal */ }

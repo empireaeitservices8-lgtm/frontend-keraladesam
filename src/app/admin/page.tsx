@@ -484,6 +484,12 @@ export default function AdminPortalPage() {
           setArticles((prev) => [result.article!, ...prev]);
         }
 
+        // Real-time broadcast for notification & breaking updates across all open tabs
+        window.dispatchEvent(new CustomEvent('keraladesyam_articles_updated'));
+        try {
+          localStorage.setItem('keraladesyam_articles_last_updated', Date.now().toString());
+        } catch {}
+
         setLastPublished(result.article);
         setIsModalOpen(false);
         handleResetForm();
@@ -510,6 +516,10 @@ export default function AdminPortalPage() {
       if (res.success) {
         showToast('വാർത്ത ഡാറ്റാബേസിൽ നിന്ന് നീക്കം ചെയ്തു.');
         setArticles((prev) => prev.filter((a) => a.id !== id && a._id !== id));
+        window.dispatchEvent(new CustomEvent('keraladesyam_articles_updated'));
+        try {
+          localStorage.setItem('keraladesyam_articles_last_updated', Date.now().toString());
+        } catch {}
       } else {
         showToast(res.error || 'വാർത്ത നീക്കം ചെയ്യാൻ കഴിഞ്ഞില്ല.', 'error');
       }
@@ -535,6 +545,10 @@ export default function AdminPortalPage() {
           isHeadline: a.id === art.id ? targetStatus : false,
         }))
       );
+      window.dispatchEvent(new CustomEvent('keraladesyam_articles_updated'));
+      try {
+        localStorage.setItem('keraladesyam_articles_last_updated', Date.now().toString());
+      } catch {}
       await loadPortalData();
     } else {
       showToast(res.error || 'പ്രധാന വാർത്ത മാറ്റാൻ കഴിഞ്ഞില്ല.', 'error');
