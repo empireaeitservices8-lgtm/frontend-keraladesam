@@ -10,6 +10,7 @@ import {
   ExternalLink,
   LogOut,
   ShieldCheck,
+  ShieldAlert,
   Flame,
   Radio,
   FileText,
@@ -226,9 +227,14 @@ export default function AdminPortalPage() {
   // Auth Redirect guard
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push('/admin/login');
+      router.replace('/admin/login');
     }
   }, [authLoading, isAuthenticated, router]);
+
+  const handleLogout = () => {
+    logout();
+    router.replace('/admin/login');
+  };
 
   // Load articles, breaking news, videos, and subscribers
   const loadPortalData = async () => {
@@ -786,10 +792,15 @@ export default function AdminPortalPage() {
     return { parasCount: paras.length, words, chars };
   }, [formContent]);
 
-  if (authLoading) {
+  if (authLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
-        <Loader2 className="w-8 h-8 animate-spin text-editorial-crimson" />
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white gap-3 p-4">
+        <div className="p-4 rounded-2xl bg-editorial-crimson/15 border border-editorial-crimson/30 mb-2">
+          <ShieldAlert className="w-10 h-10 text-editorial-crimson animate-pulse" />
+        </div>
+        <h2 className="font-headline text-lg font-bold">അഡ്മിൻ പ്രവേശനം പരിശോധിക്കുന്നു...</h2>
+        <p className="text-xs text-slate-400">ലോഗിൻ ചെയ്യാതെ അഡ്മിൻ കൺസോൾ തുറക്കാൻ സാധിക്കില്ല.</p>
+        <Loader2 className="w-6 h-6 animate-spin text-editorial-crimson mt-2" />
       </div>
     );
   }
@@ -852,7 +863,7 @@ export default function AdminPortalPage() {
             </div>
 
             <button
-              onClick={logout}
+              onClick={handleLogout}
               title="ലോഗ് ഔട്ട്"
               className="p-1.5 rounded hover:bg-red-900/40 text-slate-400 hover:text-red-400 transition-colors"
             >
