@@ -119,9 +119,16 @@ export default function BookmarksDrawer({ isOpen, onClose }: BookmarksDrawerProp
                   )}
 
                   <div className="flex-1 min-w-0">
-                    <span className="text-[10px] font-bold uppercase text-editorial-crimson block mb-1">
-                      {item.category}
-                    </span>
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                      <span className="text-[10px] font-bold uppercase text-editorial-crimson block">
+                        {item.category}
+                      </span>
+                      {typeof window !== 'undefined' && localStorage.getItem(`kd_followed_${item.id}`) && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[9px] font-bold border border-emerald-200">
+                          🔔 ഫോളോ ചെയ്യുന്നു
+                        </span>
+                      )}
+                    </div>
 
                     <Link
                       href={`/article/${item.id}`}

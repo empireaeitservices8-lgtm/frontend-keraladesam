@@ -157,7 +157,10 @@ export default function ArticleDetailPage() {
     try {
       if (nextFollow) {
         localStorage.setItem(`kd_followed_${articleId}`, 'true');
-        showToast('വാർത്ത ഫോളോ ചെയ്തു! പുതിയ അപ്‌ഡേറ്റുകൾ ലഭിക്കും. 🔔');
+        if (!isBookmarked(articleId)) {
+          toggleBookmark(articleId);
+        }
+        showToast('വാർത്ത ഫോളോ ചെയ്തു! സേവ് ചെയ്ത വാർത്തകളിലും അപ്‌ഡേറ്റുകളിലും ലഭ്യമാകും. 🔔');
       } else {
         localStorage.removeItem(`kd_followed_${articleId}`);
         showToast('ഫോളോ ചെയ്യുന്നത് നിർത്തി');
