@@ -937,7 +937,7 @@ export default function AdminPortalPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-100/70 flex flex-col lg:flex-row font-sans text-slate-900">
+    <div className="h-screen w-full overflow-hidden bg-slate-100 flex flex-col lg:flex-row font-sans text-slate-900">
       {/* Toast alert */}
       {toastMessage && (
         <div
@@ -961,7 +961,7 @@ export default function AdminPortalPage() {
       )}
 
       {/* SIDEBAR NAVIGATION - DESKTOP (STICKY LEFT) */}
-      <aside className="hidden lg:flex flex-col w-64 xl:w-72 bg-[#0c141f] text-white border-r border-white/10 shrink-0 sticky top-0 h-screen select-none z-30">
+      <aside className="hidden lg:flex flex-col w-64 xl:w-72 bg-[#09101a] text-white border-r border-slate-800 shrink-0 h-full select-none z-30 shadow-xl">
         {/* Brand Header */}
         <div className="p-5 border-b border-white/10 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
@@ -980,7 +980,7 @@ export default function AdminPortalPage() {
         </div>
 
         {/* Navigation Menu Links */}
-        <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+        <nav className="flex-1 px-3.5 py-5 space-y-2 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
             const IconComponent = item.icon;
             const isActive = activeTab === item.id;
@@ -989,20 +989,22 @@ export default function AdminPortalPage() {
                 key={item.id}
                 type="button"
                 onClick={() => setActiveTab(item.id as TabType)}
-                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold transition-all ${
+                className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm sm:text-[15px] font-bold transition-all duration-150 ${
                   isActive
-                    ? 'bg-editorial-crimson text-white shadow-md ring-1 ring-editorial-crimson/50'
-                    : 'text-slate-300 hover:text-white hover:bg-white/10'
+                    ? 'bg-gradient-to-r from-editorial-crimson to-red-600 text-white shadow-md ring-1 ring-editorial-crimson/50 font-extrabold scale-[1.01]'
+                    : 'text-slate-200 hover:text-white hover:bg-white/10 font-bold'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <IconComponent className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                  <span className="text-left font-medium">{item.label}</span>
+                <div className="flex items-center gap-3.5">
+                  <IconComponent className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'text-slate-300'}`} />
+                  <span className="text-left leading-none tracking-tight">{item.label}</span>
                 </div>
                 {item.count !== undefined && (
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                      isActive ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-300'
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-black ${
+                      isActive
+                        ? 'bg-white/25 text-white'
+                        : 'bg-slate-800/90 text-slate-200 border border-slate-700/80'
                     }`}
                   >
                     {item.count}
@@ -1081,7 +1083,7 @@ export default function AdminPortalPage() {
             </div>
 
             {/* Nav list */}
-            <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+            <nav className="flex-1 px-4 py-5 space-y-2 overflow-y-auto">
               {NAV_ITEMS.map((item) => {
                 const IconComponent = item.icon;
                 const isActive = activeTab === item.id;
@@ -1093,20 +1095,20 @@ export default function AdminPortalPage() {
                       setActiveTab(item.id as TabType);
                       setSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm sm:text-[15px] font-bold transition-all ${
                       isActive
-                        ? 'bg-editorial-crimson text-white shadow-md ring-1 ring-editorial-crimson/50'
-                        : 'text-slate-300 hover:text-white hover:bg-white/10'
+                        ? 'bg-gradient-to-r from-editorial-crimson to-red-600 text-white shadow-md ring-1 ring-editorial-crimson/50 font-extrabold'
+                        : 'text-slate-200 hover:text-white hover:bg-white/10 font-bold'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <IconComponent className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                      <span className="text-left font-medium">{item.label}</span>
+                    <div className="flex items-center gap-3.5">
+                      <IconComponent className={`w-5 h-5 shrink-0 ${isActive ? 'text-white' : 'text-slate-300'}`} />
+                      <span className="text-left font-bold">{item.label}</span>
                     </div>
                     {item.count !== undefined && (
                       <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                          isActive ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-300'
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-black ${
+                          isActive ? 'bg-white/25 text-white' : 'bg-slate-800 text-slate-200 border border-slate-700'
                         }`}
                       >
                         {item.count}
@@ -1149,7 +1151,7 @@ export default function AdminPortalPage() {
       )}
 
       {/* MAIN RIGHT VIEW AREA */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
         {/* Mobile Top Header */}
         <header className="lg:hidden bg-ink-midnight text-white px-4 py-3 sticky top-0 z-30 flex items-center justify-between border-b border-white/10 shadow-sm">
           <div className="flex items-center gap-2.5">
@@ -1227,7 +1229,7 @@ export default function AdminPortalPage() {
         </div>
 
         {/* Main Content Body */}
-        <main className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col gap-6">
+        <main className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col gap-6">
 
         {/* TAB 1: WRITE & PUBLISH NEWS (Clean, distraction-free CMS) */}
         {activeTab === 'upload' && (
@@ -1294,7 +1296,7 @@ export default function AdminPortalPage() {
                 </div>
 
                 {/* 2. Category, Subcategory & District */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-800 mb-1.5">
                       പ്രധാന വിഭാഗം (Category) *
@@ -1310,7 +1312,7 @@ export default function AdminPortalPage() {
                           setFormSubCategory(group.subcategories[0]);
                         }
                       }}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
+                      className="w-full h-11 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson/20 focus:border-editorial-crimson transition-all"
                     >
                       {ADMIN_CATEGORIES.map((cat) => (
                         <option key={cat.name} value={cat.name}>
@@ -1327,7 +1329,7 @@ export default function AdminPortalPage() {
                     <select
                       value={formSubCategory}
                       onChange={(e) => setFormSubCategory(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
+                      className="w-full h-11 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson/20 focus:border-editorial-crimson transition-all"
                     >
                       {activeSubcategories.map((sub) => (
                         <option key={sub} value={sub}>
@@ -1344,7 +1346,7 @@ export default function AdminPortalPage() {
                     <select
                       value={formDistrict}
                       onChange={(e) => setFormDistrict(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
+                      className="w-full h-11 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson/20 focus:border-editorial-crimson transition-all"
                     >
                       <option value="">കേരളം (പൊതുവായത്)</option>
                       {KERALA_DISTRICTS.map((dist) => (
@@ -2483,7 +2485,7 @@ export default function AdminPortalPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-800 mb-1">
                     പ്രധാന വിഭാഗം *
