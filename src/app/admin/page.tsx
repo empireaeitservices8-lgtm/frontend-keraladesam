@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   AlertCircle,
   X,
+  Menu,
   Upload,
   Image as ImageIcon,
   Sparkles,
@@ -181,6 +182,7 @@ export default function AdminPortalPage() {
   const [updatingAdId, setUpdatingAdId] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabType>('upload');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Search & Filter in Manage tab
   const [searchQuery, setSearchQuery] = useState('');
@@ -895,8 +897,47 @@ export default function AdminPortalPage() {
     );
   }
 
+  
+  const NAV_ITEMS = [
+    {
+      id: 'upload',
+      label: 'പുതിയ വാർത്ത ചേർക്കുക',
+      icon: Sparkles,
+    },
+    {
+      id: 'articles',
+      label: 'വാർത്തകൾ',
+      icon: FileText,
+      count: articles.length,
+    },
+    {
+      id: 'breaking',
+      label: 'ബ്രേക്കിംഗ് ന്യൂസ്',
+      icon: Radio,
+      count: breakingList.length,
+    },
+    {
+      id: 'videos',
+      label: 'വീഡിയോകൾ',
+      icon: PlaySquare,
+      count: videosList.length,
+    },
+    {
+      id: 'subscribers',
+      label: 'ഇമെയിൽ വരിക്കാർ',
+      icon: Mail,
+      count: subscribersList.length,
+    },
+    {
+      id: 'ads',
+      label: 'പരസ്യങ്ങൾ',
+      icon: Megaphone,
+      count: adInquiriesList.length,
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 pb-20">
+    <div className="min-h-screen bg-slate-100/70 flex flex-col lg:flex-row font-sans text-slate-900">
       {/* Toast alert */}
       {toastMessage && (
         <div
@@ -919,153 +960,274 @@ export default function AdminPortalPage() {
         </div>
       )}
 
-      {/* Editorial Header */}
-      <header className="bg-ink-midnight text-white border-b border-white/10 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 shrink-0">
-            <Link href="/" className="font-headline text-lg sm:text-xl font-bold tracking-tight text-white hover:text-red-400 transition-colors">
-              കേരളദേശം
-            </Link>
-            <span className="h-4 w-[1px] bg-white/20" />
-            <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-editorial-crimson shrink-0" />
-              <span className="hidden sm:inline">വാർത്താ പാനൽ</span>
-              <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-slate-300 font-mono">CMS</span>
-            </span>
+      {/* SIDEBAR NAVIGATION - DESKTOP (STICKY LEFT) */}
+      <aside className="hidden lg:flex flex-col w-64 xl:w-72 bg-[#0c141f] text-white border-r border-white/10 shrink-0 sticky top-0 h-screen select-none z-30">
+        {/* Brand Header */}
+        <div className="p-5 border-b border-white/10 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 rounded-xl bg-editorial-crimson flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="font-headline text-lg font-bold tracking-tight text-white block leading-tight">
+                കേരളദേശം
+              </span>
+              <span className="text-[10px] text-slate-400 uppercase tracking-widest font-mono block">
+                EDITORIAL CMS
+              </span>
+            </div>
+          </Link>
+        </div>
+
+        {/* Navigation Menu Links */}
+        <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+          {NAV_ITEMS.map((item) => {
+            const IconComponent = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveTab(item.id as TabType)}
+                className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold transition-all ${
+                  isActive
+                    ? 'bg-editorial-crimson text-white shadow-md ring-1 ring-editorial-crimson/50'
+                    : 'text-slate-300 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <IconComponent className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                  <span className="text-left font-medium">{item.label}</span>
+                </div>
+                {item.count !== undefined && (
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-300'
+                    }`}
+                  >
+                    {item.count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* User Card & Shortcuts at Sidebar Bottom */}
+        <div className="p-4 border-t border-white/10 bg-[#090f17] flex flex-col gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-full bg-slate-800 text-editorial-crimson ring-1 ring-white/20 flex items-center justify-center font-bold text-xs shrink-0">
+              {user?.name ? user.name.slice(0, 2).toUpperCase() : 'KD'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="text-xs font-bold text-white block truncate leading-tight">
+                {user?.name || 'Chief Editor'}
+              </span>
+              <span className="text-[10px] text-slate-400 font-mono block truncate">
+                {user?.role === 'admin' ? 'ADMINISTRATOR' : 'EDITOR'}
+              </span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 text-xs">
+          <div className="flex items-center gap-2 pt-1 border-t border-white/5">
             <Link
               href="/"
               target="_blank"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 transition-colors font-medium text-xs"
-              title="വെബ്‌സൈറ്റ് കാണുക"
+              className="flex-1 py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-editorial-crimson shrink-0" />
-              <span className="hidden md:inline">വെബ്‌സൈറ്റ് കാണുക</span>
+              <ExternalLink className="w-3 h-3 text-editorial-crimson" />
+              <span>വെബ്‌സൈറ്റ്</span>
             </Link>
 
-            <div className="flex items-center gap-2 pl-2 border-l border-white/10 text-slate-300">
-              <span className="font-semibold text-white text-xs hidden sm:inline">{user?.name || 'Chief Editor'}</span>
-              <span className="text-[10px] bg-editorial-crimson/90 px-2 py-0.5 rounded text-white font-mono uppercase font-bold">
-                {user?.role === 'admin' ? 'ADMIN' : 'EDITOR'}
-              </span>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="py-1.5 px-3 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition"
+              title="ലോഗ് ഔട്ട് ചെയ്യുക"
+            >
+              <LogOut className="w-3 h-3" />
+              <span>ലോഗൗട്ട്</span>
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* MOBILE DRAWER OVERLAY & SIDEBAR */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop */}
+          <div
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity"
+          />
+
+          {/* Slide-over panel */}
+          <aside className="relative w-72 max-w-[85vw] bg-[#0c141f] text-white flex flex-col h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+            {/* Header with Close */}
+            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-editorial-crimson flex items-center justify-center text-white">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <span className="font-headline font-bold text-base text-white">കേരളദേശം CMS</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
+            {/* Nav list */}
+            <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
+              {NAV_ITEMS.map((item) => {
+                const IconComponent = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(item.id as TabType);
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-bold transition-all ${
+                      isActive
+                        ? 'bg-editorial-crimson text-white shadow-md ring-1 ring-editorial-crimson/50'
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <IconComponent className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                      <span className="text-left font-medium">{item.label}</span>
+                    </div>
+                    {item.count !== undefined && (
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                          isActive ? 'bg-white/20 text-white' : 'bg-white/10 text-slate-300'
+                        }`}
+                      >
+                        {item.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Mobile Sidebar Footer */}
+            <div className="p-4 border-t border-white/10 bg-[#090f17] flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-white truncate">{user?.name || 'Chief Editor'}</span>
+                <span className="text-[10px] bg-editorial-crimson px-2 py-0.5 rounded text-white font-mono uppercase">
+                  {user?.role === 'admin' ? 'ADMIN' : 'EDITOR'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                <Link
+                  href="/"
+                  target="_blank"
+                  className="flex-1 py-2 px-3 rounded-lg bg-white/10 text-white text-xs font-bold flex items-center justify-center gap-1.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-editorial-crimson" />
+                  <span>വെബ്‌സൈറ്റ്</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="py-2 px-3 rounded-lg bg-rose-900/60 text-white text-xs font-bold flex items-center justify-center gap-1.5"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>ലോഗൗട്ട്</span>
+                </button>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* MAIN RIGHT VIEW AREA */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Mobile Top Header */}
+        <header className="lg:hidden bg-ink-midnight text-white px-4 py-3 sticky top-0 z-30 flex items-center justify-between border-b border-white/10 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(true)}
+              className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition"
+              aria-label="മെനു തുറക്കുക"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <span className="font-headline font-bold text-base text-white">കേരളദേശം CMS</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/"
+              target="_blank"
+              className="p-1.5 rounded-lg bg-white/10 text-slate-300 hover:text-white"
+              title="വെബ്‌സൈറ്റ് കാണുക"
+            >
+              <ExternalLink className="w-4 h-4 text-editorial-crimson" />
+            </Link>
             <button
               onClick={handleLogout}
+              className="p-1.5 rounded-lg bg-white/10 text-slate-300 hover:text-rose-400"
               title="ലോഗ് ഔട്ട്"
-              className="p-1.5 rounded hover:bg-red-900/40 text-slate-400 hover:text-red-400 transition-colors"
             >
               <LogOut className="w-4 h-4" />
             </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Container */}
-      <main className="max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col gap-6">
-        {/* Modern Tabs - Full-width 5-column balanced grid */}
-        <div className="w-full">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5 w-full">
-            <button
-              onClick={() => setActiveTab('upload')}
-              className={`h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
-                activeTab === 'upload'
-                  ? 'bg-editorial-crimson text-white shadow-sm ring-1 ring-editorial-crimson'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 shrink-0" />
-              <span>പുതിയ വാർത്ത ചേർക്കുക</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('articles')}
-              className={`h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
-                activeTab === 'articles'
-                  ? 'bg-slate-900 text-white shadow-sm ring-1 ring-slate-900'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
-              }`}
-            >
-              <FileText className="w-4 h-4 shrink-0" />
-              <span>വാർത്തകൾ</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                activeTab === 'articles' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-              }`}>
-                {articles.length}
+        {/* Desktop Top Title Strip */}
+        <div className="hidden lg:flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200/80 sticky top-0 z-20 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-slate-100 text-editorial-crimson">
+              {activeTab === 'upload' && <Sparkles className="w-5 h-5" />}
+              {activeTab === 'articles' && <FileText className="w-5 h-5" />}
+              {activeTab === 'breaking' && <Radio className="w-5 h-5" />}
+              {activeTab === 'videos' && <PlaySquare className="w-5 h-5" />}
+              {activeTab === 'subscribers' && <Mail className="w-5 h-5" />}
+              {activeTab === 'ads' && <Megaphone className="w-5 h-5" />}
+            </div>
+            <div>
+              <h2 className="font-headline text-lg font-bold text-slate-900 leading-tight">
+                {activeTab === 'upload' && 'പുതിയ വാർത്ത തയ്യാറാക്കലും പ്രസിദ്ധീകരണവും'}
+                {activeTab === 'articles' && `പ്രസിദ്ധീകരിച്ച വാർത്തകൾ (${articles.length})`}
+                {activeTab === 'breaking' && `ബ്രേക്കിംഗ് ന്യൂസ് ടിക്കർ (${breakingList.length})`}
+                {activeTab === 'videos' && `വീഡിയോ മാനേജ്മെന്റ് (${videosList.length})`}
+                {activeTab === 'subscribers' && `ഇമെയിൽ വരിക്കാർ (${subscribersList.length})`}
+                {activeTab === 'ads' && `പരസ്യ അന്വേഷണങ്ങൾ & നിരക്കുകൾ (${adInquiriesList.length})`}
+              </h2>
+              <span className="text-xs text-slate-500 font-medium">
+                {activeTab === 'upload' && 'വാർത്താ വിവരങ്ങളും ചിത്രങ്ങളും നൽകി ഉടൻ പ്രസിദ്ധീകരിക്കാം'}
+                {activeTab === 'articles' && 'വാർത്തകൾ തിരയുക, തിരുത്തുക, അല്ലെങ്കിൽ നീക്കം ചെയ്യുക'}
+                {activeTab === 'breaking' && 'വെബ്‌സൈറ്റിൽ തത്സമയം മിന്നുന്ന വാർത്താ അറിയിപ്പുകൾ'}
+                {activeTab === 'videos' && 'യൂട്യൂബ് വീഡിയോകളും ഡിജിറ്റൽ ബുള്ളറ്റിനുകളും ചേർക്കുക'}
+                {activeTab === 'subscribers' && 'വാർത്താ മടക്കുകൾ സ്വീകരിക്കുന്ന സജീവ വരിക്കാരുടെ പട്ടിക'}
+                {activeTab === 'ads' && 'പരസ്യദാതാക്കളിൽ നിന്ന് ലഭിച്ച അപേക്ഷകളും അന്വേഷണങ്ങളും'}
               </span>
-            </button>
+            </div>
+          </div>
 
-            <button
-              onClick={() => setActiveTab('breaking')}
-              className={`h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
-                activeTab === 'breaking'
-                  ? 'bg-red-700 text-white shadow-sm ring-1 ring-red-700'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
-              }`}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              target="_blank"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition border border-slate-200"
             >
-              <Radio className="w-4 h-4 shrink-0" />
-              <span>ബ്രേക്കിംഗ് ന്യൂസ്</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                activeTab === 'breaking' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-              }`}>
-                {breakingList.length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('videos')}
-              className={`h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
-                activeTab === 'videos'
-                  ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-600'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
-              }`}
-            >
-              <PlaySquare className="w-4 h-4 shrink-0" />
-              <span>വീഡിയോകൾ</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                activeTab === 'videos' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-              }`}>
-                {videosList.length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('subscribers')}
-              className={`h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
-                activeTab === 'subscribers'
-                  ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-600'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
-              }`}
-            >
-              <Mail className="w-4 h-4 shrink-0" />
-              <span>ഇമെയിൽ വരിക്കാർ</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                activeTab === 'subscribers' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-              }`}>
-                {subscribersList.length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('ads')}
-              className={`col-span-2 sm:col-span-1 h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
-                activeTab === 'ads'
-                  ? 'bg-purple-700 text-white shadow-sm ring-1 ring-purple-700'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
-              }`}
-            >
-              <Megaphone className="w-4 h-4 shrink-0" />
-              <span>പരസ്യങ്ങൾ</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                activeTab === 'ads' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
-              }`}>
-                {adInquiriesList.length}
-              </span>
-            </button>
+              <ExternalLink className="w-3.5 h-3.5 text-editorial-crimson" />
+              <span>ലൈവ് സൈറ്റ് കാണുക</span>
+            </Link>
           </div>
         </div>
+
+        {/* Main Content Body */}
+        <main className="max-w-5xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col gap-6">
 
         {/* TAB 1: WRITE & PUBLISH NEWS (Clean, distraction-free CMS) */}
         {activeTab === 'upload' && (
@@ -2273,6 +2435,7 @@ export default function AdminPortalPage() {
           </div>
         )}
       </main>
+      </div>
 
       {/* EDIT ARTICLE MODAL */}
       {isModalOpen && (
