@@ -118,7 +118,7 @@ export default function Footer() {
     <footer className="bg-ink-midnight text-surface-pure pt-12 pb-8 border-t-4 border-editorial-crimson">
       <div className="max-w-[1360px] mx-auto px-4 md:px-margin-desktop">
         {/* Top Grid: Brand & Newsletter */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10 border-b border-surface-pure/10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10 border-b border-surface-pure/10 items-start">
           <div className="lg:col-span-5">
             <Link href="/" className="block mb-4 hover:opacity-95 transition-opacity" aria-label="കേരളദേശം">
               <div className="relative w-full max-w-[300px] h-[80px] sm:h-[100px] md:h-[140px]">
@@ -212,38 +212,38 @@ export default function Footer() {
           </div>
 
           {/* Newsletter Box */}
-          <div className="lg:col-span-7 flex flex-col justify-center bg-surface-pure/5 p-6 rounded-lg border border-surface-pure/10">
-            <h3 className="font-headline text-lg font-bold text-surface-pure mb-1">
-              വാർത്തകൾ ലഭിക്കുന്നതിനായി കേരളദേശം ഔദ്യോഗിക വെബ്‌സൈറ്റിൽ ബന്ധപ്പെടുക
+
+          {/* Newsletter Box */}
+          <div className="lg:col-span-7 w-full min-w-0 h-fit min-h-[280px] self-start rounded-md border border-white/10 bg-[#17283e] p-5 sm:p-7 md:p-8 flex flex-col justify-center">
+
+            <h3 className="text-lg sm:text-xl md:text-2xl font-bold leading-relaxed mb-5">
+              വാർത്തകൾ ലഭിക്കുന്നതിനായി കേരളദേശം ഔദ്യോഗിക
+              വെബ്സൈറ്റിൽ ബന്ധപ്പെടുക
             </h3>
+
             {subscribed ? (
               <div className="flex items-center gap-2 p-2.5 rounded bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs font-medium">
                 <Check className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span>{subMessage}</span>
               </div>
             ) : (
-              <form onSubmit={handleSubscribe} className="flex gap-2">
-                <div className="relative flex-1">
-                  <Mail className="w-4 h-4 absolute left-3 top-2.5 text-secondary-fixed-dim" />
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="നിങ്ങളുടെ ഇമെയിൽ വിലാസം..."
-                    className="w-full bg-surface-pure/10 text-surface-pure text-xs rounded pl-9 pr-3 py-2 border border-surface-pure/20 focus:outline-none focus:border-editorial-crimson"
-                  />
-                </div>
+              <form className="flex flex-col sm:flex-row gap-3 w-full">
+                <input
+                  type="email"
+                  placeholder="നിങ്ങളുടെ ഇമെയിൽ വിലാസം..."
+                  className="flex-1 min-w-0 w-full h-12 rounded border border-white/20 bg-white/10 px-4 text-sm text-white outline-none focus:border-red-500"
+                />
+
                 <button
                   type="submit"
-                  disabled={subLoading}
-                  className="px-5 py-2 rounded bg-editorial-crimson hover:bg-primary disabled:opacity-60 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow"
+                  className="shrink-0 h-12 px-6 rounded bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition-colors whitespace-nowrap"
                 >
-                  <Send className="w-3.5 h-3.5" /> {subLoading ? 'രജിസ്റ്റർ ചെയ്യുന്നു...' : 'സബ്സ്ക്രൈബ്'}
+                  സബ്സ്ക്രൈബ് ചെയ്യുക
                 </button>
               </form>
             )}
           </div>
+
         </div>
 
         {/* Links Navigation Grid */}
