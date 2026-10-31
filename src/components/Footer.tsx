@@ -121,7 +121,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10 border-b border-surface-pure/10">
           <div className="lg:col-span-5">
             <Link href="/" className="block mb-4 hover:opacity-95 transition-opacity" aria-label="കേരളദേശം">
-              <div className="relative w-full max-w-[440px] h-[90px] sm:h-[170px] md:h-[190px]">
+              <div className="relative w-full max-w-[300px] h-[80px] sm:h-[100px] md:h-[140px]">
                 <Image
                   src="/logo1.png"
                   alt="കേരളദേശം"
