@@ -174,9 +174,9 @@ export default function KeralaPage() {
       <section className="w-full bg-surface-pure shadow-sm border-b border-slate-border">
         <div className="max-w-[1360px] mx-auto px-4 md:px-margin-desktop py-4">
           {/* Breadcrumb & Live Stamp */}
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2 text-xs text-secondary">
-            <div className="flex items-center gap-1.5 uppercase font-medium">
-              <Link href="/" className="hover:text-primary transition-colors">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2 text-xs sm:text-sm text-secondary">
+            <div className="flex items-center gap-1.5 uppercase font-semibold">
+              <Link href="/" className="hover:text-primary transition-colors font-bold text-sm sm:text-base">
                 HOME
               </Link>
               <span>/</span>

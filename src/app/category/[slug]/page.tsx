@@ -260,8 +260,8 @@ export default function CategoryPage() {
       <section className="w-full bg-surface-pure border-b border-slate-border py-6 sm:py-8 px-4 md:px-margin-desktop shadow-xs">
         <div className="max-w-[1360px] mx-auto">
           {/* Breadcrumbs */}
-          <div className="flex items-center gap-2 text-xs text-secondary mb-3 uppercase tracking-wider font-medium">
-            <Link href="/" className="hover:text-primary transition-colors">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-secondary mb-3 uppercase tracking-wider font-semibold">
+            <Link href="/" className="hover:text-primary transition-colors font-bold text-sm sm:text-base">
               HOME
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />

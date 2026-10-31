@@ -31,6 +31,7 @@ import {
   PlaySquare,
   Video,
   Star,
+  Heart,
   Mail,
   Copy,
   RefreshCw,
@@ -1392,9 +1393,15 @@ export default function AdminPortalPage() {
                                 📍 {art.district}
                               </span>
                             )}
-                            <span className="text-[10px] text-slate-400">
-                              • {art.timeAgo || art.publishedAt || 'ഇപ്പോൾ'}
-                            </span>
+                            <span className="text-[10px] font-bold text-emerald-700 flex items-center gap-0.5">
+                                <Eye className="w-3 h-3 text-emerald-600" /> {art.views || '1'}
+                              </span>
+                              <span className="text-[10px] font-bold text-rose-600 flex items-center gap-0.5">
+                                <Heart className="w-3 h-3 fill-rose-500 text-rose-500" /> {art.likesCount || art.likes || 0}
+                              </span>
+                              <span className="text-[10px] text-slate-400">
+                                • {art.timeAgo || art.publishedAt || 'ഇപ്പോൾ'}
+                              </span>
                           </div>
                         </div>
                       </div>
@@ -1460,7 +1467,8 @@ export default function AdminPortalPage() {
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
                         <th className="py-3 px-4">വാർത്ത</th>
-                        <th className="py-3 px-4 w-40">വിഭാഗം</th>
+                        <th className="py-3 px-4 w-36">വിഭാഗം</th>
+                        <th className="py-3 px-4 w-36">വായന & ലൈക്ക്</th>
                         <th className="py-3 px-4 w-40">റിപ്പോർട്ടർ</th>
                         <th className="py-3 px-4 w-36">തീയതി</th>
                         <th className="py-3 px-4 text-center w-36">നടപടികൾ</th>
@@ -1518,6 +1526,19 @@ export default function AdminPortalPage() {
                                 📍 {art.district}
                               </span>
                             )}
+                          </td>
+
+                          <td className="py-3.5 px-4 whitespace-nowrap align-middle">
+                            <div className="flex flex-col gap-1">
+                              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                                <Eye className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>{art.views || '1'} വായന</span>
+                              </span>
+                              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-600">
+                                <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                                <span>{art.likesCount || art.likes || 0} ലൈക്ക്</span>
+                              </span>
+                            </div>
                           </td>
 
                           <td className="py-3.5 px-4 whitespace-nowrap align-middle">

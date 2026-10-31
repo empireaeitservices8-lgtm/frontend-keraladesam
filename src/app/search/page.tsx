@@ -138,8 +138,8 @@ function SearchContent() {
       {/* Search Header Banner */}
       <section className="w-full bg-ink-midnight text-white py-10 px-4 md:px-margin-desktop border-b border-slate-border">
         <div className="max-w-[1360px] mx-auto">
-          <div className="flex items-center gap-2 text-xs text-white/70 mb-3 uppercase tracking-wider font-medium">
-            <Link href="/" className="hover:underline">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-white/70 mb-3 uppercase tracking-wider font-semibold">
+            <Link href="/" className="hover:underline font-bold text-sm sm:text-base text-white">
               HOME
             </Link>
             <ChevronRight className="w-3.5 h-3.5" />

@@ -53,7 +53,7 @@ export default function Footer() {
             <Link href="/" className="inline-block mb-3 bg-white/5 p-2 rounded-lg border border-white/10" aria-label="കേരളദേശം">
               <div className="relative h-12 w-64">
                 <Image
-                  src="/logo.png"
+                  src="/logo1.png"
                   alt="കേരളദേശം"
                   fill
                   className="object-contain object-left"
@@ -107,6 +107,12 @@ export default function Footer() {
                   className="transition-colors hover:text-opinion-ochre"
                 >
                   editor@keraladesam.in
+                </a>
+                <a
+                  href="mailto:keraladesamoffice@gmail.com"
+                  className="transition-colors hover:text-opinion-ochre"
+                >
+                  keraladesamoffice@gmail.com
                 </a>
               </div>
             </div>

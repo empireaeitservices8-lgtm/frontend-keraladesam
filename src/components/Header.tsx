@@ -422,18 +422,12 @@ export default function Header() {
         const data = await res.json();
         if (isMounted && data?.current?.temperature_2m !== undefined) {
           const tempVal = Math.round(data.current.temperature_2m);
-          const code = data.current.weather_code;
-          let cond = 'തെളിഞ്ഞ വാനം';
-          if (code >= 51 && code <= 67) cond = 'മഴ';
-          else if (code >= 1 && code <= 3) cond = 'മേഘാവൃതം';
-          else if (code >= 95) cond = 'ഇടിമിന്നൽ';
-          else if (code >= 45) cond = 'മൂടൽമഞ്ഞ്';
+          
 
           setLiveWeather((prev) => ({
             ...prev,
             [city]: {
               temp: `${tempVal}°C`,
-              condition: cond,
               isLive: true,
             },
           }));
@@ -485,6 +479,10 @@ export default function Header() {
                 <span className="text-surface-pure font-bold">
                   KOCHI
                 </span>
+                <span>|</span>
+                <span>UAE</span>
+                <span>|</span>
+                <span>GCC</span>
                 <span>|</span>
                 <span>AUSTRALIA</span>
                 <span>|</span>

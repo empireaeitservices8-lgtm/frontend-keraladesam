@@ -20,6 +20,9 @@ export interface Article {
   district?: string;
   country?: string;
   views: string;
+  viewsCount?: number;
+  likes?: number;
+  likesCount?: number;
   imageUrl: string;
   imageCaption?: string;
   readTime: string;

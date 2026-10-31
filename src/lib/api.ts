@@ -91,6 +91,9 @@ export function normalizeArticle(raw: any): Article {
     district: raw.district || '',
     country: raw.country || '',
     views: raw.viewsCount ? String(raw.viewsCount) : (raw.views && raw.views !== '1.2k' ? String(raw.views) : '1'),
+    viewsCount: Number(raw.viewsCount !== undefined ? raw.viewsCount : (raw.views ? parseInt(raw.views) || 1 : 1)),
+    likes: Number(raw.likesCount !== undefined ? raw.likesCount : (raw.likes || 0)),
+    likesCount: Number(raw.likesCount !== undefined ? raw.likesCount : (raw.likes || 0)),
     imageUrl: raw.imageUrl || '',
     imageCaption: raw.imageCaption || '',
     readTime: raw.readTime || '3 മിനിറ്റ് വായന',
@@ -239,6 +242,36 @@ export async function getArticleById(id: string): Promise<Article | null> {
   }
 
   return await fetchTask();
+}
+
+export async function likeArticle(
+  id: string,
+  action: 'like' | 'unlike' = 'like'
+): Promise<{ success: boolean; likesCount?: number }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/articles/${id}/like`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ action }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    // Invalidate cached article so fresh like counts reflect
+    memoryCache.delete(`article_${id}`);
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem(`kd_article_${id}`);
+      } catch {}
+    }
+    return data;
+  } catch (error) {
+    console.error(`Failed to like article ${id}:`, error);
+    return { success: false };
+  }
 }
 
 export async function getBreakingNews(): Promise<string[]> {

@@ -11,15 +11,19 @@ import {
   Bookmark,
   MessageSquare,
   ThumbsUp,
+  Heart,
   Send,
   ArrowLeft,
   ArrowRight,
   Eye,
   Check,
+  Plus,
+  Bell,
+  Sparkles,
   Loader2
 } from 'lucide-react';
 import { Article } from '@/data/newsData';
-import { getRealArticleById, getRealArticles } from '@/lib/api';
+import { getRealArticleById, getRealArticles, likeArticle } from '@/lib/api';
 import { useFont } from '@/components/FontContext';
 
 export default function ArticleDetailPage() {
@@ -30,6 +34,18 @@ export default function ArticleDetailPage() {
   const [article, setArticle] = useState<Article | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Likes & Follow state
+  const [likesCount, setLikesCount] = useState<number>(0);
+  const [isLiked, setIsLiked] = useState<boolean>(false);
+  const [isFollowing, setIsFollowing] = useState<boolean>(false);
+  const [isFollowingAuthor, setIsFollowingAuthor] = useState<boolean>(false);
+  const [feedbackToast, setFeedbackToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setFeedbackToast(msg);
+    setTimeout(() => setFeedbackToast(null), 3000);
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -46,6 +62,7 @@ export default function ArticleDetailPage() {
         const data = await getRealArticleById(articleId);
         if (isMounted && data) {
           setArticle(data);
+          setLikesCount(data.likesCount ?? data.likes ?? 0);
           // Load related without any duplicates or current article repeating
           const rel = await getRealArticles({ limit: 15 });
           if (isMounted) {
@@ -94,6 +111,75 @@ export default function ArticleDetailPage() {
       isMounted = false;
     };
   }, [articleId]);
+
+  useEffect(() => {
+    if (!articleId || typeof window === 'undefined') return;
+    try {
+      const liked = localStorage.getItem(`kd_liked_${articleId}`);
+      setIsLiked(liked === 'true');
+      const followed = localStorage.getItem(`kd_followed_${articleId}`);
+      setIsFollowing(followed === 'true');
+      if (article?.author?.name) {
+        const followedAuthor = localStorage.getItem(`kd_followed_author_${article.author.name}`);
+        setIsFollowingAuthor(followedAuthor === 'true');
+      }
+    } catch {}
+  }, [articleId, article?.author?.name]);
+
+  const handleLikeToggle = async () => {
+    if (!articleId) return;
+    const nextLiked = !isLiked;
+    setIsLiked(nextLiked);
+    const newCount = nextLiked ? likesCount + 1 : Math.max(0, likesCount - 1);
+    setLikesCount(newCount);
+
+    try {
+      if (nextLiked) {
+        localStorage.setItem(`kd_liked_${articleId}`, 'true');
+        showToast('വാർത്ത ലൈക്ക് ചെയ്തു! ❤️');
+      } else {
+        localStorage.removeItem(`kd_liked_${articleId}`);
+        showToast('ലൈക്ക് പിൻവലിച്ചു');
+      }
+      const res = await likeArticle(articleId, nextLiked ? 'like' : 'unlike');
+      if (res && typeof res.likesCount === 'number') {
+        setLikesCount(res.likesCount);
+      }
+    } catch (err) {
+      console.error('Like toggle failed:', err);
+    }
+  };
+
+  const handleFollowToggle = () => {
+    if (!articleId) return;
+    const nextFollow = !isFollowing;
+    setIsFollowing(nextFollow);
+    try {
+      if (nextFollow) {
+        localStorage.setItem(`kd_followed_${articleId}`, 'true');
+        showToast('വാർത്ത ഫോളോ ചെയ്തു! പുതിയ അപ്‌ഡേറ്റുകൾ ലഭിക്കും. 🔔');
+      } else {
+        localStorage.removeItem(`kd_followed_${articleId}`);
+        showToast('ഫോളോ ചെയ്യുന്നത് നിർത്തി');
+      }
+    } catch {}
+  };
+
+  const handleFollowAuthorToggle = () => {
+    if (!article?.author?.name) return;
+    const authorKey = article.author.name;
+    const nextFollow = !isFollowingAuthor;
+    setIsFollowingAuthor(nextFollow);
+    try {
+      if (nextFollow) {
+        localStorage.setItem(`kd_followed_author_${authorKey}`, 'true');
+        showToast(`${authorKey} യുടെ വാർത്തകൾ ഫോളോ ചെയ്തു! ✓`);
+      } else {
+        localStorage.removeItem(`kd_followed_author_${authorKey}`);
+        showToast(`${authorKey} ഫോളോ ചെയ്യുന്നത് നിർത്തി`);
+      }
+    } catch {}
+  };
 
   const [copiedLink, setCopiedLink] = useState(false);
 
@@ -162,33 +248,50 @@ export default function ArticleDetailPage() {
     <div className="flex flex-col w-full pb-16">
       <div className="max-w-[1360px] mx-auto px-4 md:px-margin-desktop w-full">
         {/* Editorial Breadcrumb & Category Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 pb-2 border-b border-slate-border text-xs text-secondary">
-          <div className="flex items-center gap-2 uppercase tracking-wider font-medium">
-            <Link href="/" className="hover:text-primary transition-colors flex items-center gap-1">
-              <ArrowLeft className="w-3 h-3" /> HOME
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-5 pb-3 border-b border-slate-200">
+          <nav aria-label="Breadcrumbs" className="flex items-center gap-2.5 text-sm sm:text-base font-bold">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-ink-midnight hover:text-primary font-black uppercase tracking-wider text-sm sm:text-base transition-colors shadow-2xs group"
+              title="ഹോം പേജിലേക്ക് മടങ്ങുക"
+            >
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-editorial-crimson group-hover:-translate-x-1 transition-transform" />
+              <span className="font-headline font-extrabold text-sm sm:text-base">HOME</span>
             </Link>
-            <span className="text-slate-border">/</span>
-            <Link href="/kerala" className="text-editorial-crimson font-bold hover:underline">
+            <span className="text-slate-300 font-bold">/</span>
+            <Link href="/kerala" className="text-editorial-crimson font-bold hover:underline text-xs sm:text-sm uppercase">
               {article.district || 'KERALA'}
             </Link>
-            <span className="text-slate-border">/</span>
-            <span className="text-on-surface font-semibold">{article.category}</span>
-          </div>
+            <span className="text-slate-300 font-bold">/</span>
+            <span className="text-slate-800 font-semibold text-xs sm:text-sm">{article.category}</span>
+          </nav>
 
-          <div className="flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-secondary" />
-              Published: {article.publishedAt}
-            </span>
-            <span className="hidden md:inline text-slate-border">|</span>
-            <span className="flex items-center gap-1 text-slate-600">
-              <Eye className="w-3.5 h-3.5 text-secondary" />
-              {article.views || '1'} Reads
+          <div className="flex items-center gap-2.5 sm:gap-4 flex-wrap">
+            {/* Catchy, Prominent Total Reads Badge */}
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-100/70 border border-emerald-300/80 px-3.5 py-1.5 rounded-full shadow-xs">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
+              </span>
+              <Eye className="w-4 h-4 text-emerald-700 shrink-0" />
+              <span className="text-xs sm:text-sm text-slate-700 flex items-center gap-1 font-bold">
+                <strong className="text-base sm:text-lg font-black text-emerald-800 tracking-tight">
+                  {article.views || '1'}
+                </strong>
+                <span className="text-emerald-950 font-bold text-xs sm:text-sm">വായനക്കാർ</span>
+              </span>
+            </div>
+
+            <span className="hidden md:inline text-slate-300">|</span>
+
+            <span className="flex items-center gap-1 text-xs text-slate-500 font-medium">
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+              {article.publishedAt}
             </span>
             {article.updatedAt && (
               <>
-                <span className="hidden md:inline text-slate-border">|</span>
-                <span className="hidden md:flex items-center gap-1 text-editorial-crimson font-medium">
+                <span className="hidden md:inline text-slate-300">|</span>
+                <span className="hidden md:flex items-center gap-1 text-editorial-crimson font-semibold text-xs">
                   Updated: {article.updatedAt}
                 </span>
               </>
@@ -256,43 +359,84 @@ export default function ArticleDetailPage() {
             </div>
 
             {/* Article Action Buttons */}
-            <div className="flex items-center gap-2">
-                <button
-                  onClick={handleShareWhatsApp}
-                  className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors"
-                  title="വാട്സാപ്പിൽ പങ്കുവെക്കുക"
-                >
-                  വാട്സാപ്പ്
-                </button>
-
-                <button
-                  onClick={handleCopyLink}
-                  className="p-2 rounded bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold flex items-center gap-1 transition-colors"
-                  title="ലിങ്ക് കോപ്പി ചെയ്യുക"
-                >
-                  {copiedLink ? (
-                    <Check className="w-4 h-4 text-emerald-600" />
-                  ) : (
-                    <Share2 className="w-4 h-4" />
-                  )}
-                </button>
-
-                <button
-                  onClick={() => toggleBookmark(article.id)}
-                  className={`p-2 rounded bg-surface-container hover:bg-surface-container-high transition-colors ${
-                    isBookmarked(article.id)
-                      ? 'text-primary'
-                      : 'text-on-surface'
+            <div className="flex flex-wrap items-center gap-2">
+              {/* News Like Button */}
+              <button
+                onClick={handleLikeToggle}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs active:scale-95 ${
+                  isLiked
+                    ? 'bg-rose-50 text-rose-600 border border-rose-300 ring-2 ring-rose-200'
+                    : 'bg-surface-container hover:bg-surface-container-high text-slate-700 hover:text-rose-600 border border-slate-200'
+                }`}
+                title={isLiked ? 'ലൈക്ക് പിൻവലിക്കുക' : 'വാർത്ത ലൈക്ക് ചെയ്യുക'}
+              >
+                <Heart
+                  className={`w-4 h-4 transition-transform ${
+                    isLiked ? 'fill-rose-500 text-rose-500 scale-110' : 'text-slate-600'
                   }`}
-                  title="ബുക്ക്‌മാർക്ക് ചെയ്യുക"
-                >
-                  <Bookmark
-                    className={`w-4 h-4 ${
-                      isBookmarked(article.id) ? 'fill-primary' : ''
-                    }`}
-                  />
-                </button>
-              </div>
+                />
+                <span>{likesCount > 0 ? `${likesCount} ലൈക്ക്` : 'ലൈക്ക്'}</span>
+              </button>
+
+              {/* Follow News Button */}
+              <button
+                onClick={handleFollowToggle}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs active:scale-95 ${
+                  isFollowing
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : 'bg-ink-midnight hover:bg-primary text-white'
+                }`}
+                title={isFollowing ? 'ഫോളോ ചെയ്യുന്നത് നിർത്തുക' : 'ഈ വാർത്തയും അപ്‌ഡേറ്റുകളും ഫോളോ ചെയ്യുക'}
+              >
+                {isFollowing ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-white" />
+                    <span>Following</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3.5 h-3.5 text-white" />
+                    <span>Follow News</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleShareWhatsApp}
+                className="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 shadow-xs transition-colors"
+                title="വാട്സാപ്പിൽ പങ്കുവെക്കുക"
+              >
+                വാട്സാപ്പ്
+              </button>
+
+              <button
+                onClick={handleCopyLink}
+                className="p-2 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold flex items-center gap-1 transition-colors border border-slate-200"
+                title="ലിങ്ക് കോപ്പി ചെയ്യുക"
+              >
+                {copiedLink ? (
+                  <Check className="w-4 h-4 text-emerald-600" />
+                ) : (
+                  <Share2 className="w-4 h-4" />
+                )}
+              </button>
+
+              <button
+                onClick={() => toggleBookmark(article.id)}
+                className={`p-2 rounded-full bg-surface-container hover:bg-surface-container-high transition-colors border border-slate-200 ${
+                  isBookmarked(article.id)
+                    ? 'text-primary'
+                    : 'text-on-surface'
+                }`}
+                title="ബുക്ക്‌മാർക്ക് ചെയ്യുക"
+              >
+                <Bookmark
+                  className={`w-4 h-4 ${
+                    isBookmarked(article.id) ? 'fill-primary' : ''
+                  }`}
+                />
+              </button>
+            </div>
             </div>
         </header>
 
@@ -348,7 +492,6 @@ export default function ArticleDetailPage() {
             {/* Tags Strip */}
             {article.tags && (
               <div className="pt-4 border-t border-slate-border flex flex-wrap items-center gap-2">
-                <span className="text-xs text-secondary font-bold">ടാഗുകൾ:</span>
                 {article.tags.map((tag) => (
                   <span
                     key={tag}
@@ -360,76 +503,57 @@ export default function ArticleDetailPage() {
               </div>
             )}
 
-            {/* Comments & Reader Discussion Box */}
-            <section className="bg-surface-pure rounded p-6 shadow-sm border border-slate-border mt-8">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-border mb-4">
-                <h3 className="font-headline text-lg sm:text-xl font-bold text-ink-midnight flex items-center gap-2 uppercase tracking-wide">
-                  <MessageSquare className="w-5 h-5 text-editorial-crimson" />
-                  READER COMMENTS & REACTIONS ({comments.length})
-                </h3>
-                <span className="text-xs text-secondary">സൗജന്യമായി അഭിപ്രായം രേഖപ്പെടുത്താം</span>
+            {/* End-of-Article Reader Engagement Card (Like & Follow) */}
+            <div className="p-5 sm:p-6 bg-gradient-to-br from-slate-50 via-white to-red-50/40 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
+              <div>
+                <h4 className="font-headline text-base sm:text-lg font-bold text-ink-midnight flex items-center gap-2">
+                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
+                  <span>ഈ വാർത്ത ഇഷ്ടപ്പെട്ടോ?</span>
+                </h4>
+                <p className="text-xs text-slate-500 mt-1">
+                  നിങ്ങളുടെ അഭിപ്രായവും ലൈക്കും ഞങ്ങളുടെ എഡിറ്റോറിയൽ ടീമിന് വലിയ പ്രോത്സാഹനമാണ്.
+                </p>
               </div>
 
-              {/* Add Comment Form */}
-              <form onSubmit={handleAddComment} className="mb-6 space-y-3">
-                <input
-                  type="text"
-                  value={commentAuthor}
-                  onChange={(e) => setCommentAuthor(e.target.value)}
-                  placeholder="നിങ്ങളുടെ പേര്, സ്ഥലം..."
-                  className="w-full bg-parchment-base border border-slate-border rounded px-3 py-2 text-base md:text-xs text-ink-midnight focus:outline-none focus:border-primary"
-                />
-                <textarea
-                  rows={3}
-                  required
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="ഈ വാർത്തയെക്കുറിച്ചുള്ള നിങ്ങളുടെ അഭിപ്രായം ഇവിടെ രേഖപ്പെടുത്തുക..."
-                  className="w-full bg-parchment-base border border-slate-border rounded p-3 text-base md:text-xs text-ink-midnight focus:outline-none focus:border-primary"
-                />
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded bg-primary hover:bg-editorial-crimson text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
-                  >
-                    <Send className="w-3.5 h-3.5" /> പ്രതികരണം അയക്കുക
-                  </button>
-                </div>
-              </form>
+              <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={handleLikeToggle}
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 ${
+                    isLiked
+                      ? 'bg-rose-600 text-white shadow-rose-500/25 ring-2 ring-rose-400'
+                      : 'bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-300'
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 ${isLiked ? 'fill-white text-white' : ''}`} />
+                  <span>{isLiked ? 'ലൈക്ക് ചെയ്തു ✓' : 'ലൈക്ക് ചെയ്യുക'} ({likesCount})</span>
+                </button>
 
-              {/* Comments Feed */}
-              <div className="space-y-4 divide-y divide-slate-border">
-                {comments.length === 0 ? (
-                  <p className="text-xs text-secondary italic py-2">
-                    ഇതുവരെ പ്രതികരണങ്ങൾ രേഖപ്പെടുത്തിയിട്ടില്ല. ആദ്യമായി നിങ്ങളുടെ അഭിപ്രായം പങ്കുവെക്കൂ!
-                  </p>
-                ) : (
-                  comments.map((c) => (
-                    <div key={c.id} className="pt-3 first:pt-0">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="font-bold text-ink-midnight">{c.author}</span>
-                        <span className="text-secondary text-[11px]">{c.time}</span>
-                      </div>
-                      <p className="text-xs text-on-surface leading-relaxed mb-2">
-                        {c.text}
-                      </p>
-                      <button
-                        onClick={() =>
-                          setComments(
-                            comments.map((item) =>
-                              item.id === c.id ? { ...item, likes: item.likes + 1 } : item
-                            )
-                          )
-                        }
-                        className="flex items-center gap-1 text-[11px] text-secondary hover:text-primary transition-colors font-medium"
-                      >
-                        <ThumbsUp className="w-3 h-3" /> ഇഷ്ടപ്പെട്ടു ({c.likes})
-                      </button>
-                    </div>
-                  ))
-                )}
+                <button
+                  type="button"
+                  onClick={handleFollowToggle}
+                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 ${
+                    isFollowing
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-ink-midnight hover:bg-primary text-white'
+                  }`}
+                >
+                  {isFollowing ? (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Following</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      <span>Follow</span>
+                    </>
+                  )}
+                </button>
               </div>
-            </section>
+            </div>
+
+            
           </main>
 
           {/* Right Sidebar (4 cols): Related Stories, Editor Desk, Trending */}
@@ -506,15 +630,38 @@ export default function ArticleDetailPage() {
                 കേരളദേശം ഓൺലൈൻ എഡിറ്റോറിയൽ ടീം തയ്യാറാക്കിയ വിശദമായ വാർത്താ റിപ്പോർട്ട്.
               </p>
               <button
-                onClick={() => alert(`${article.author.name} യുടെ ലേഖനങ്ങൾ ഫോളോ ചെയ്തു!`)}
-                className="px-4 py-1.5 rounded-full bg-ink-midnight hover:bg-primary text-white text-xs font-bold transition-colors w-full uppercase tracking-wider"
+                type="button"
+                onClick={handleFollowAuthorToggle}
+                className={`px-4 py-2 rounded-full text-xs font-bold transition-all w-full uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs active:scale-95 ${
+                  isFollowingAuthor
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                    : 'bg-ink-midnight hover:bg-primary text-white'
+                }`}
               >
-                Follow Reporter
+                {isFollowingAuthor ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Following Reporter</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Follow Reporter</span>
+                  </>
+                )}
               </button>
             </div>
           </aside>
         </div>
       </div>
+
+      {/* Floating Action Feedback Toast */}
+      {feedbackToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white text-xs sm:text-sm font-bold px-4 py-3 rounded-xl shadow-2xl border border-slate-700 flex items-center gap-2.5 animate-in fade-in slide-in-from-bottom-3">
+          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>{feedbackToast}</span>
+        </div>
+      )}
     </div>
   );
 }
