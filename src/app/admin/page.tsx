@@ -35,6 +35,9 @@ import {
   Mail,
   Copy,
   RefreshCw,
+  Megaphone,
+  Phone,
+  MessageCircle,
 } from 'lucide-react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Article, VideoItem, KERALA_DISTRICTS } from '@/data/newsData';
@@ -54,6 +57,10 @@ import {
   adminGetSubscribers,
   adminDeleteSubscriber,
   SubscriberItem,
+  adminGetAdInquiries,
+  adminUpdateAdInquiryStatus,
+  adminDeleteAdInquiry,
+  AdInquiryItem,
   clearApiCache,
 } from '@/lib/api';
 
@@ -152,7 +159,7 @@ const ADMIN_CATEGORIES: CategoryGroup[] = [
   },
 ];
 
-type TabType = 'upload' | 'articles' | 'breaking' | 'videos' | 'subscribers';
+type TabType = 'upload' | 'articles' | 'breaking' | 'videos' | 'subscribers' | 'ads';
 
 export default function AdminPortalPage() {
   const router = useRouter();
@@ -166,6 +173,12 @@ export default function AdminPortalPage() {
   const [copiedSubscribers, setCopiedSubscribers] = useState(false);
   const [deletingSubscriberId, setDeletingSubscriberId] = useState<string | null>(null);
   const [refreshingSubscribers, setRefreshingSubscribers] = useState(false);
+  const [adInquiriesList, setAdInquiriesList] = useState<AdInquiryItem[]>([]);
+  const [adInquiriesSearch, setAdInquiriesSearch] = useState('');
+  const [adInquiriesStatusFilter, setAdInquiriesStatusFilter] = useState('all');
+  const [refreshingAds, setRefreshingAds] = useState(false);
+  const [deletingAdId, setDeletingAdId] = useState<string | null>(null);
+  const [updatingAdId, setUpdatingAdId] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabType>('upload');
 
@@ -241,17 +254,21 @@ export default function AdminPortalPage() {
   const loadPortalData = async () => {
     try {
       setLoadingData(true);
-      const [artList, brkList, vidList, subRes] = await Promise.all([
+      const [artList, brkList, vidList, subRes, adRes] = await Promise.all([
         getRealArticles({ limit: 100 }),
         adminGetRawBreaking(),
         getRealVideos({ limit: 100 }),
         adminGetSubscribers(token || undefined),
+        adminGetAdInquiries(token || undefined),
       ]);
       setArticles(artList);
       setBreakingList(brkList);
       setVideosList(vidList);
       if (subRes && subRes.success) {
         setSubscribersList(subRes.subscribers);
+      }
+      if (adRes && adRes.success) {
+        setAdInquiriesList(adRes.inquiries);
       }
     } catch (err) {
       console.error('Failed to load portal data:', err);
@@ -274,6 +291,55 @@ export default function AdminPortalPage() {
     }
   };
 
+  const loadAdInquiriesData = async () => {
+    try {
+      setRefreshingAds(true);
+      const res = await adminGetAdInquiries(token || undefined);
+      if (res && res.success) {
+        setAdInquiriesList(res.inquiries);
+      }
+    } catch (err) {
+      console.error('Failed to load ad inquiries:', err);
+    } finally {
+      setRefreshingAds(false);
+    }
+  };
+
+  const handleUpdateAdStatus = async (id: string, newStatus: string) => {
+    try {
+      setUpdatingAdId(id);
+      const res = await adminUpdateAdInquiryStatus(id, newStatus, token || undefined);
+      if (res.success) {
+        setAdInquiriesList((prev) =>
+          prev.map((item) => (item._id === id ? { ...item, status: newStatus as any } : item))
+        );
+      } else {
+        alert(res.error || 'സ്റ്റാറ്റസ് മാറ്റാൻ കഴിഞ്ഞില്ല');
+      }
+    } catch (err) {
+      console.error('Failed to update status:', err);
+    } finally {
+      setUpdatingAdId(null);
+    }
+  };
+
+  const handleDeleteAdInquiry = async (id: string, name: string) => {
+    if (!window.confirm(`"${name}" ന്റെ പരസ്യ അപേക്ഷ ലിസ്റ്റിൽ നിന്ന് നീക്കം ചെയ്യണോ?`)) return;
+    try {
+      setDeletingAdId(id);
+      const res = await adminDeleteAdInquiry(id, token || undefined);
+      if (res.success) {
+        setAdInquiriesList((prev) => prev.filter((item) => item._id !== id));
+      } else {
+        alert(res.error || 'അപേക്ഷ നീക്കം ചെയ്യാൻ കഴിഞ്ഞില്ല');
+      }
+    } catch (err) {
+      console.error('Failed to delete ad inquiry:', err);
+    } finally {
+      setDeletingAdId(null);
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       loadPortalData();
@@ -284,6 +350,9 @@ export default function AdminPortalPage() {
   useEffect(() => {
     if (activeTab === 'subscribers') {
       loadSubscribersData();
+    }
+    if (activeTab === 'ads') {
+      loadAdInquiriesData();
     }
   }, [activeTab]);
 
@@ -764,6 +833,26 @@ export default function AdminPortalPage() {
     return subscribersList.filter((s) => s.email.toLowerCase().includes(q));
   }, [subscribersList, subscribersSearch]);
 
+  // Filtered Ad Inquiries
+  const filteredAds = useMemo(() => {
+    return adInquiriesList.filter((ad) => {
+      const q = adInquiriesSearch.trim().toLowerCase();
+      const matchSearch =
+        !q ||
+        (ad.name && ad.name.toLowerCase().includes(q)) ||
+        (ad.companyName && ad.companyName.toLowerCase().includes(q)) ||
+        (ad.phone && ad.phone.toLowerCase().includes(q)) ||
+        (ad.adType && ad.adType.toLowerCase().includes(q)) ||
+        (ad.message && ad.message.toLowerCase().includes(q));
+
+      const matchStatus =
+        adInquiriesStatusFilter === 'all' || ad.status === adInquiriesStatusFilter;
+
+      return matchSearch && matchStatus;
+    });
+  }, [adInquiriesList, adInquiriesSearch, adInquiriesStatusFilter]);
+
+
   // Filtered articles in management table
   const filteredArticles = useMemo(() => {
     return articles.filter((art) => {
@@ -878,7 +967,7 @@ export default function AdminPortalPage() {
       <main className="max-w-6xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col gap-6">
         {/* Modern Tabs - Full-width 5-column balanced grid */}
         <div className="w-full">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2.5 w-full">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5 w-full">
             <button
               onClick={() => setActiveTab('upload')}
               className={`h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
@@ -944,7 +1033,7 @@ export default function AdminPortalPage() {
 
             <button
               onClick={() => setActiveTab('subscribers')}
-              className={`col-span-2 sm:col-span-1 h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
+              className={`h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
                 activeTab === 'subscribers'
                   ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-600'
                   : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
@@ -956,6 +1045,23 @@ export default function AdminPortalPage() {
                 activeTab === 'subscribers' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
               }`}>
                 {subscribersList.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('ads')}
+              className={`col-span-2 sm:col-span-1 h-11 sm:h-12 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 whitespace-nowrap shadow-xs ${
+                activeTab === 'ads'
+                  ? 'bg-purple-700 text-white shadow-sm ring-1 ring-purple-700'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
+              }`}
+            >
+              <Megaphone className="w-4 h-4 shrink-0" />
+              <span>പരസ്യങ്ങൾ</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                activeTab === 'ads' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-700'
+              }`}>
+                {adInquiriesList.length}
               </span>
             </button>
           </div>

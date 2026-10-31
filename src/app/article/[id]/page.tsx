@@ -506,55 +506,7 @@ export default function ArticleDetailPage() {
               </div>
             )}
 
-            {/* End-of-Article Reader Engagement Card (Like & Follow) */}
-            <div className="p-5 sm:p-6 bg-gradient-to-br from-slate-50 via-white to-red-50/40 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4 mt-8">
-              <div>
-                <h4 className="font-headline text-base sm:text-lg font-bold text-ink-midnight flex items-center gap-2">
-                  <Heart className={`w-5 h-5 ${isLiked ? 'fill-rose-500 text-rose-500' : 'text-slate-400'}`} />
-                  <span>ഈ വാർത്ത ഇഷ്ടപ്പെട്ടോ?</span>
-                </h4>
-                <p className="text-xs text-slate-500 mt-1">
-                  നിങ്ങളുടെ അഭിപ്രായവും ലൈക്കും ഞങ്ങളുടെ എഡിറ്റോറിയൽ ടീമിന് വലിയ പ്രോത്സാഹനമാണ്.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={handleLikeToggle}
-                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 ${
-                    isLiked
-                      ? 'bg-rose-600 text-white shadow-rose-500/25 ring-2 ring-rose-400'
-                      : 'bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-300'
-                  }`}
-                >
-                  <Heart className={`w-4 h-4 ${isLiked ? 'fill-white text-white' : ''}`} />
-                  <span>{isLiked ? 'ലൈക്ക് ചെയ്തു ✓' : 'ലൈക്ക് ചെയ്യുക'} ({likesCount})</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleFollowToggle}
-                  className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm active:scale-95 ${
-                    isFollowing
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-ink-midnight hover:bg-primary text-white'
-                  }`}
-                >
-                  {isFollowing ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Following</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4" />
-                      <span>Follow</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+            
 
             
           </main>

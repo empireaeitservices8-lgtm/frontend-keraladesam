@@ -826,5 +826,112 @@ export async function adminDeleteSubscriber(
   }
 }
 
+export interface AdInquiryItem {
+  _id: string;
+  name: string;
+  companyName?: string;
+  phone: string;
+  email?: string;
+  adType: string;
+  budget?: string;
+  message?: string;
+  status: 'New' | 'Contacted' | 'Confirmed' | 'Closed';
+  createdAt: string;
+}
+
+export async function submitAdInquiry(data: {
+  name: string;
+  companyName?: string;
+  phone: string;
+  email?: string;
+  adType: string;
+  budget?: string;
+  message?: string;
+}): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/ads/inquiry`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    const resData = await res.json();
+    if (!res.ok) {
+      return { success: false, error: resData.error || 'പരസ്യ അപേക്ഷ അയക്കാൻ കഴിഞ്ഞില്ല' };
+    }
+    return { success: true, message: resData.message };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'നെറ്റ്‌വർക്ക് പിശക്. വീണ്ടും ശ്രമിക്കുക.' };
+  }
+}
+
+export async function adminGetAdInquiries(
+  token?: string
+): Promise<{ success: boolean; inquiries: AdInquiryItem[]; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${baseUrl}/ads/inquiries?_t=${Date.now()}`, {
+      headers,
+      cache: 'no-store',
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, inquiries: [], error: data.error || 'Failed to fetch ad inquiries' };
+    }
+    return { success: true, inquiries: Array.isArray(data.inquiries) ? data.inquiries : [] };
+  } catch (err: any) {
+    return { success: false, inquiries: [], error: err.message };
+  }
+}
+
+export async function adminUpdateAdInquiryStatus(
+  id: string,
+  status: string,
+  token?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${baseUrl}/ads/inquiries/${id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Failed to update status' };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function adminDeleteAdInquiry(
+  id: string,
+  token?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${baseUrl}/ads/inquiries/${id}`, {
+      method: 'DELETE',
+      headers,
+    });
+    const data = await res.json();
+    if (!res.ok) return { success: false, error: data.error || 'Failed to delete inquiry' };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
 
 

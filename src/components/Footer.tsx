@@ -120,13 +120,13 @@ export default function Footer() {
         {/* Top Grid: Brand & Newsletter */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10 border-b border-surface-pure/10">
           <div className="lg:col-span-5">
-            <Link href="/" className="inline-block mb-3 hover:opacity-95 transition-opacity" aria-label="കേരളദേശം">
-              <div className="relative h-14 sm:h-16 md:h-20 w-72 sm:w-84 md:w-96 max-w-full">
+            <Link href="/" className="block mb-4 hover:opacity-95 transition-opacity" aria-label="കേരളദേശം">
+              <div className="relative w-full max-w-[440px] h-[90px] sm:h-[170px] md:h-[190px]">
                 <Image
                   src="/logo1.png"
                   alt="കേരളദേശം"
                   fill
-                  className="object-contain object-left brightness-125 contrast-105 filter drop-shadow-[0_2px_14px_rgba(255,255,255,0.18)]"
+                  className="object-contain object-left brightness-100 contrast-90"
                   priority
                 />
               </div>
@@ -262,9 +262,12 @@ export default function Footer() {
                 </span>
               </li>
               <li>
-                <span className="hover:text-surface-pure cursor-pointer transition-colors">
+                <Link
+                  href="/ad-rates"
+                  className="hover:text-surface-pure cursor-pointer transition-colors block"
+                >
                   പരസ്യ നിരക്കുകൾ (Ad Rates)
-                </span>
+                </Link>
               </li>
             </ul>
           </div>
