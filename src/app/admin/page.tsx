@@ -50,8 +50,6 @@ import {
   BarChart3,
   Layers,
   Globe,
-  Activity,
-  Database,
   ArrowRight,
 } from 'lucide-react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
@@ -1060,47 +1058,47 @@ export default function AdminPortalPage() {
   const NAV_ITEMS = [
     {
       id: 'dashboard',
-      label: 'ഡാഷ്‌ബോർഡ്',
+      label: 'Dashboard',
       icon: LayoutDashboard,
     },
     {
       id: 'upload',
-      label: 'പുതിയ വാർത്ത ചേർക്കുക',
+      label: 'Create Article',
       icon: Sparkles,
     },
     {
       id: 'articles',
-      label: 'വാർത്തകൾ',
+      label: 'Articles',
       icon: FileText,
       count: articles.length,
     },
     {
       id: 'breaking',
-      label: 'ബ്രേക്കിംഗ് ന്യൂസ്',
+      label: 'Breaking News',
       icon: Radio,
       count: breakingList.length,
     },
     {
       id: 'videos',
-      label: 'വീഡിയോകൾ',
+      label: 'Videos',
       icon: PlaySquare,
       count: videosList.length,
     },
     {
       id: 'subscribers',
-      label: 'ഇമെയിൽ വരിക്കാർ',
+      label: 'Subscribers',
       icon: Mail,
       count: subscribersList.length,
     },
     {
       id: 'ads',
-      label: 'പരസ്യങ്ങൾ',
+      label: 'Advertisements',
       icon: Megaphone,
       count: adInquiriesList.length,
     },
     {
       id: 'photoStory',
-      label: 'ഫോട്ടോ സ്റ്റോറി',
+      label: 'Photo Story',
       icon: Camera,
     },
   ];
@@ -1139,7 +1137,7 @@ export default function AdminPortalPage() {
             </div>
             <div>
               <span className="font-headline text-lg font-bold tracking-tight text-white block leading-tight">
-                കേരളദേശം
+                KERALA DESAM
               </span>
               <span className="text-[10px] text-slate-400 uppercase tracking-widest font-mono block">
                 EDITORIAL CMS
@@ -1207,17 +1205,17 @@ export default function AdminPortalPage() {
               className="flex-1 py-1.5 px-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition"
             >
               <ExternalLink className="w-3 h-3 text-editorial-crimson" />
-              <span>വെബ്‌സൈറ്റ്</span>
+              <span>Live Website</span>
             </Link>
 
             <button
               type="button"
               onClick={handleLogout}
               className="py-1.5 px-3 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition"
-              title="ലോഗ് ഔട്ട് ചെയ്യുക"
+              title="Logout"
             >
               <LogOut className="w-3 h-3" />
-              <span>ലോഗൗട്ട്</span>
+              <span>Logout</span>
             </button>
           </div>
         </div>
@@ -1240,7 +1238,7 @@ export default function AdminPortalPage() {
                 <div className="w-8 h-8 rounded-lg bg-editorial-crimson flex items-center justify-center text-white">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
-                <span className="font-headline font-bold text-base text-white">കേരളദേശം CMS</span>
+                <span className="font-headline font-bold text-base text-white">KERALA DESAM CMS</span>
               </div>
               <button
                 type="button"
@@ -1303,7 +1301,7 @@ export default function AdminPortalPage() {
                   className="flex-1 py-2 px-3 rounded-lg bg-white/10 text-white text-xs font-bold flex items-center justify-center gap-1.5"
                 >
                   <ExternalLink className="w-3.5 h-3.5 text-editorial-crimson" />
-                  <span>വെബ്‌സൈറ്റ്</span>
+                  <span>Live Website</span>
                 </Link>
                 <button
                   type="button"
@@ -1311,7 +1309,7 @@ export default function AdminPortalPage() {
                   className="py-2 px-3 rounded-lg bg-rose-900/60 text-white text-xs font-bold flex items-center justify-center gap-1.5"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>ലോഗൗട്ട്</span>
+                  <span>Logout</span>
                 </button>
               </div>
             </div>
@@ -1332,7 +1330,7 @@ export default function AdminPortalPage() {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <span className="font-headline font-bold text-base text-white">കേരളദേശം CMS</span>
+            <span className="font-headline font-bold text-base text-white">KERALA DESAM CMS</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -1340,14 +1338,14 @@ export default function AdminPortalPage() {
               href="/"
               target="_blank"
               className="p-1.5 rounded-lg bg-white/10 text-slate-300 hover:text-white"
-              title="വെബ്‌സൈറ്റ് കാണുക"
+              title="Live Website"
             >
               <ExternalLink className="w-4 h-4 text-editorial-crimson" />
             </Link>
             <button
               onClick={handleLogout}
               className="p-1.5 rounded-lg bg-white/10 text-slate-300 hover:text-rose-400"
-              title="ലോഗ് ഔട്ട്"
+              title="Logout"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -1792,70 +1790,10 @@ export default function AdminPortalPage() {
                 </div>
               </div>
             </div>
-
-            {/* 5. System Health & Environment Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
-                  <Database className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-slate-800">MySQL ഡാറ്റാബേസ്</div>
-                  <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">കണക്ഷൻ സജീവം (Port 3306)</div>
-                  <div className="text-[10px] text-slate-400">keraladesam_db ലൈവ് റീഡ്/റൈറ്റ്</div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between gap-3.5">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-11 h-11 rounded-xl bg-amber-50 text-opinion-ochre flex items-center justify-center shrink-0 border border-amber-100">
-                    <Camera className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-800">ഫോട്ടോ സ്റ്റോറി</div>
-                    <div className="text-[11px] text-slate-600 font-semibold truncate mt-0.5" title={photoStoryData.title}>
-                      {photoStoryData.title || 'കുട്ടനാടൻ കായൽ ജീവിതം'}
-                    </div>
-                    <div className="text-[10px] text-slate-400">{photoStoryData.images?.length || 0} ചിത്രങ്ങൾ സജീവം</div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('photoStory')}
-                  className="px-2.5 py-1 text-[11px] rounded-lg bg-amber-50 text-opinion-ochre hover:bg-amber-100 font-bold shrink-0 transition"
-                >
-                  എഡിറ്റ്
-                </button>
-              </div>
-
-              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between gap-3.5">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
-                    <Activity className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-slate-800">CMS വേർഷൻ</div>
-                    <div className="text-[11px] text-blue-700 font-semibold mt-0.5">കേരളദേശം CMS v2.4</div>
-                    <div className="text-[10px] text-slate-400">Next.js 14 & Node.js Express</div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    clearApiCache();
-                    showToast('ക്യാഷ് ക്ലിയർ ചെയ്തു.');
-                  }}
-                  className="px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold shrink-0 transition"
-                  title="തത്സമയ കാഷ് മെമ്മറി ക്ലിയർ ചെയ്യുക"
-                >
-                  Clear Cache
-                </button>
-              </div>
-            </div>
           </div>
         )}
 
-                {/* TAB 1: WRITE & PUBLISH NEWS (Clean, distraction-free CMS) */}
+        {/* TAB 1: WRITE & PUBLISH NEWS (Clean, distraction-free CMS) */}
         {activeTab === 'upload' && (
           <div className="space-y-4">
             {/* Published Success Banner */}
