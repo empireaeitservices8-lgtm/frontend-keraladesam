@@ -1367,7 +1367,7 @@ export default function AdminPortalPage() {
         </div>
 
         {/* Main Content Body */}
-        <main className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 flex-1 flex flex-col gap-6">
+        <main className={`mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col gap-6 ${activeTab === 'upload' ? 'max-w-4xl' : 'max-w-6xl xl:max-w-7xl'}`}>
 
         {/* TAB 1: WRITE & PUBLISH NEWS (Clean, distraction-free CMS) */}
         {activeTab === 'upload' && (
@@ -2729,33 +2729,33 @@ export default function AdminPortalPage() {
         {/* TAB 7: PHOTO STORY MANAGEMENT */}
         {activeTab === 'photoStory' && (
           <div className="space-y-6">
-            {/* Top Info & Action Card */}
-            <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-opinion-ochre border border-opinion-ochre/20 flex items-center justify-center shrink-0 shadow-inner">
-                  <Camera className="w-6 h-6" />
+            {/* Top Action Header Bar */}
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/10 text-opinion-ochre border border-opinion-ochre/20 flex items-center justify-center shrink-0 shadow-inner">
+                  <Camera className="w-5 h-5" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 font-headline">
-                      ഫോട്ടോ സ്റ്റോറി എഡിറ്റർ (Photo Story Editor)
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 font-headline whitespace-nowrap">
+                      ഫോട്ടോ സ്റ്റോറി എഡിറ്റർ
                     </h3>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-opinion-ochre/15 text-opinion-ochre border border-opinion-ochre/30">
-                      Kerala in Frames
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-opinion-ochre/15 text-opinion-ochre border border-opinion-ochre/30 whitespace-nowrap">
+                      KERALA IN FRAMES
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    ഹോംപേജിലെ ഫോട്ടോ സ്റ്റോറി വിഭാഗത്തിന്റെ ടാഗ്, ഉപവിഭാഗം, പ്രധാന തലക്കെട്ട്, വിവരണം, ചിത്രങ്ങൾ എന്നിവ മാറ്റാം.
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    ഹോംപേജിലെ ഫോട്ടോ സ്റ്റോറി വിഭാഗത്തിന്റെ തലക്കെട്ട്, വിവരണം, ചിത്രങ്ങൾ എന്നിവ ഇവിടെ മാറ്റാം.
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto shrink-0">
+              <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0 justify-end flex-wrap sm:flex-nowrap">
                 <button
                   type="button"
                   onClick={loadPhotoStoryData}
                   disabled={loadingPhotoStory}
-                  className="h-10 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-300 shadow-2xs"
+                  className="h-10 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-200 shadow-2xs whitespace-nowrap"
                   title="ഡാറ്റാബേസിൽ നിന്ന് വീണ്ടും ലഭ്യമാക്കുക"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loadingPhotoStory ? 'animate-spin text-opinion-ochre' : ''}`} />
@@ -2765,7 +2765,7 @@ export default function AdminPortalPage() {
                 <button
                   type="button"
                   onClick={handleResetPhotoStory}
-                  className="h-10 px-3.5 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-300"
+                  className="h-10 px-3.5 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-200 whitespace-nowrap"
                   title="ഡിഫോൾട്ട് കുട്ടനാട് ഫോട്ടോകളിലേക്ക് മാറ്റുക"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
@@ -2776,7 +2776,7 @@ export default function AdminPortalPage() {
                   type="button"
                   onClick={handleSavePhotoStory}
                   disabled={savingPhotoStory}
-                  className="h-10 flex-1 md:flex-none px-6 rounded-xl bg-gradient-to-r from-editorial-crimson to-red-600 hover:from-red-700 hover:to-red-800 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition shadow-md hover:shadow-lg disabled:opacity-50"
+                  className="h-10 flex-1 sm:flex-none px-6 rounded-xl bg-gradient-to-r from-editorial-crimson to-red-600 hover:from-red-700 hover:to-red-800 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition shadow-md hover:shadow-lg disabled:opacity-50 whitespace-nowrap"
                 >
                   {savingPhotoStory ? (
                     <>
@@ -2793,20 +2793,22 @@ export default function AdminPortalPage() {
               </div>
             </div>
 
-            {/* Main Form & Live Preview Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Column: Form Details & Image Management (7 cols) */}
-              <div className="lg:col-span-7 space-y-6">
-                {/* Meta Inputs Card */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 space-y-4">
-                  <h4 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-editorial-crimson" />
-                    <span>സ്റ്റോറി വിവരങ്ങളും തലക്കെട്ടും</span>
-                  </h4>
+            {/* Row 1: Story Details Card (Left 7 cols) & Live Preview (Right 5 cols) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+              {/* Left Column: Story Details Card */}
+              <div className="lg:col-span-7 flex flex-col">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 space-y-4 flex-1">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-editorial-crimson" />
+                      <span>സ്റ്റോറി വിവരങ്ങളും തലക്കെട്ടും</span>
+                    </h4>
+                    <span className="text-[11px] text-slate-500 font-medium">ഹോംപേജ് ടെക്സ്റ്റ് വിവരങ്ങൾ</span>
+                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
                         ബാഡ്ജ് ടാഗ് (Tag Label)
                       </label>
                       <input
@@ -2814,11 +2816,11 @@ export default function AdminPortalPage() {
                         value={photoStoryData.tagLabel}
                         onChange={(e) => setPhotoStoryData({ ...photoStoryData, tagLabel: e.target.value })}
                         placeholder="PHOTO STORY"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30 transition"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
                         ഉപവിഭാഗം (Subtitle / Feature Name)
                       </label>
                       <input
@@ -2826,13 +2828,13 @@ export default function AdminPortalPage() {
                         value={photoStoryData.subtitle}
                         onChange={(e) => setPhotoStoryData({ ...photoStoryData, subtitle: e.target.value })}
                         placeholder="KERALA IN FRAMES"
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30 transition"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
                       പ്രധാന തലക്കെട്ട് (Story Headline) <span className="text-red-500">*</span>
                     </label>
                     <input
@@ -2840,12 +2842,12 @@ export default function AdminPortalPage() {
                       value={photoStoryData.title}
                       onChange={(e) => setPhotoStoryData({ ...photoStoryData, title: e.target.value })}
                       placeholder="ഉദാഹരണം: കുട്ടനാടൻ കായൽ ജീവിതം: വേനൽമഴയുടെ വരവറിയിച്ച് ഓളങ്ങൾ"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30 transition"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
                       വിവരണം (Story Description)
                     </label>
                     <textarea
@@ -2853,240 +2855,257 @@ export default function AdminPortalPage() {
                       value={photoStoryData.description}
                       onChange={(e) => setPhotoStoryData({ ...photoStoryData, description: e.target.value })}
                       placeholder="Visual captures of life, landscapes, and backwaters across God's Own Country."
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs leading-relaxed font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs leading-relaxed font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30 transition"
                     />
                   </div>
                 </div>
+              </div>
 
-                {/* Images Manager Card */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4 text-editorial-crimson" />
-                      <span>സ്റ്റോറി ചിത്രങ്ങൾ ({photoStoryData.images?.length || 0})</span>
-                    </h4>
-                    <span className="text-[11px] text-slate-500 font-semibold">
-                      കുറഞ്ഞത് 3 ചിത്രങ്ങൾ ശുപാർശ ചെയ്യുന്നു
-                    </span>
-                  </div>
-
-                  {/* Existing Images List */}
-                  <div className="space-y-3">
-                    {photoStoryData.images && photoStoryData.images.length > 0 ? (
-                      photoStoryData.images.map((img, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition"
-                        >
-                          {/* Image preview */}
-                          <div className="w-20 h-16 sm:w-24 sm:h-20 rounded-lg overflow-hidden shrink-0 border border-slate-200 relative bg-slate-200">
-                            <img
-                              src={img.url}
-                              alt={img.caption || `Image ${idx + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                            <span className="absolute bottom-1 left-1 bg-black/70 text-white font-mono text-[9px] px-1.5 py-0.5 rounded">
-                              #{idx + 1}
-                            </span>
-                          </div>
-
-                          {/* Caption Input */}
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <input
-                              type="text"
-                              value={img.caption || ''}
-                              onChange={(e) => handleStoryImageCaptionChange(idx, e.target.value)}
-                              placeholder={`ചിത്രം ${idx + 1} അടിക്കുറിപ്പ് (Caption - ഓപ്ഷണൽ)`}
-                              className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-editorial-crimson"
-                            />
-                            <p className="text-[10px] text-slate-400 truncate select-all font-mono">
-                              {img.url}
-                            </p>
-                          </div>
-
-                          {/* Action Buttons: Move Up / Down / Delete */}
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleMoveStoryImage(idx, 'up')}
-                              disabled={idx === 0}
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 disabled:opacity-30 transition"
-                              title="മുകളിലേക്ക് മാറ്റുക"
-                            >
-                              <ArrowUp className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleMoveStoryImage(idx, 'down')}
-                              disabled={idx === photoStoryData.images.length - 1}
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 disabled:opacity-30 transition"
-                              title="താഴേക്ക് മാറ്റുക"
-                            >
-                              <ArrowDown className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveStoryImage(idx)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
-                              title="ചിത്രം ഒഴിവാക്കുക"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-8 text-center text-slate-400 border border-dashed border-slate-300 rounded-xl text-xs">
-                        നിലവിൽ ചിത്രങ്ങൾ ചേർത്തിട്ടില്ല. താഴെയുള്ള ബോക്സ് വഴി ചിത്രങ്ങൾ ചേർക്കാം.
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Add New Image Sub-Card */}
-                  <div className="p-4 rounded-xl border border-slate-300 bg-slate-50/90 space-y-3 mt-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                        <Plus className="w-3.5 h-3.5 text-editorial-crimson" />
-                        <span>പുതിയ ചിത്രം ചേർക്കുക</span>
+              {/* Right Column: Live Website Preview */}
+              <div className="lg:col-span-5 flex flex-col">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5 whitespace-nowrap">
+                        <Eye className="w-4 h-4 text-editorial-crimson" />
+                        <span>ലൈവ് സൈറ്റ് പ്രിവ്യൂ</span>
                       </span>
-
-                      {/* Mode Switch: Upload vs URL */}
-                      <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200 text-[11px] font-bold">
-                        <button
-                          type="button"
-                          onClick={() => setStoryImageMode('upload')}
-                          className={`px-2.5 py-1 rounded-md transition ${storyImageMode === 'upload' ? 'bg-editorial-crimson text-white' : 'text-slate-600 hover:text-slate-900'}`}
-                        >
-                          ഡിവൈസ് ഫയൽ
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setStoryImageMode('url')}
-                          className={`px-2.5 py-1 rounded-md transition ${storyImageMode === 'url' ? 'bg-editorial-crimson text-white' : 'text-slate-600 hover:text-slate-900'}`}
-                        >
-                          ഇമേജ് ലിങ്ക്
-                        </button>
-                      </div>
+                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 whitespace-nowrap">
+                        Live Preview
+                      </span>
                     </div>
 
-                    {storyImageMode === 'upload' ? (
-                      <div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleStoryImageFileChange}
-                          className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-editorial-crimson file:text-white hover:file:bg-red-700 cursor-pointer"
-                        />
+                    {/* Dark Photo Story Replica Box matching Homepage */}
+                    <div className="bg-[#09101d] text-white rounded-xl p-4 sm:p-5 shadow-lg border border-slate-800">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[10px] bg-opinion-ochre text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider whitespace-nowrap">
+                            {photoStoryData.tagLabel || 'PHOTO STORY'}
+                          </span>
+                          <span className="text-[11px] text-slate-300 uppercase tracking-wider font-semibold whitespace-nowrap">
+                            {photoStoryData.subtitle || 'KERALA IN FRAMES'}
+                          </span>
+                        </div>
                       </div>
+
+                      <h3 className="font-headline text-base sm:text-lg font-bold mb-1.5 text-white leading-snug line-clamp-2">
+                        {photoStoryData.title || 'തലക്കെട്ട് നൽകിയിട്ടില്ല'}
+                      </h3>
+                      <p className="text-[11px] text-slate-300/80 mb-3 line-clamp-2 leading-relaxed">
+                        {photoStoryData.description || 'വിവരണം നൽകിയിട്ടില്ല'}
+                      </p>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        {(photoStoryData.images && photoStoryData.images.length > 0
+                          ? photoStoryData.images.slice(0, 3)
+                          : DEFAULT_PHOTO_STORY.images
+                        ).map((img, idx) => (
+                          <div key={idx} className="rounded-lg overflow-hidden bg-slate-800 relative group h-20 sm:h-24">
+                            <img
+                              src={img.url}
+                              alt={img.caption || `Photo ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            {img.caption && (
+                              <div className="absolute inset-x-0 bottom-0 bg-black/80 p-1 text-[9px] text-white truncate text-center">
+                                {img.caption}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {photoStoryData.images && photoStoryData.images.length > 3 && (
+                        <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">
+                          + മറ്റു {photoStoryData.images.length - 3} ചിത്രങ്ങൾ കൂടിയുണ്ട്
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 mt-3 text-center">
+                    മാറ്റങ്ങൾ വരുത്തിയ ശേഷം മുകളിലെ <strong className="text-editorial-crimson">മാറ്റങ്ങൾ സേവ് ചെയ്യുക</strong> ബട്ടൺ ക്ലിക്ക് ചെയ്യുക.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Row 2: Gallery Images Management (Full Width Card) */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-editorial-crimson/10 text-editorial-crimson flex items-center justify-center">
+                    <ImageIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm sm:text-base font-bold text-slate-900 font-headline">
+                      സ്റ്റോറി ചിത്രങ്ങൾ ({photoStoryData.images?.length || 0})
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      ഹോംപേജ് സ്ലൈഡറിൽ പ്രദർശിപ്പിക്കുന്ന ഫോട്ടോകൾ ക്രമീകരിക്കുക
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold text-opinion-ochre bg-amber-50 px-3 py-1 rounded-full border border-opinion-ochre/20 whitespace-nowrap self-start sm:self-auto">
+                  ശുപാർശ: 3 അല്ലെങ്കിൽ കൂടുതൽ ചിത്രങ്ങൾ
+                </span>
+              </div>
+
+              {/* Existing Images Grid */}
+              {photoStoryData.images && photoStoryData.images.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {photoStoryData.images.map((img, idx) => (
+                    <div
+                      key={idx}
+                      className="group relative rounded-xl border border-slate-200 bg-slate-50/70 p-3 flex flex-col justify-between hover:shadow-md hover:border-slate-300 transition-all duration-200"
+                    >
+                      {/* Thumbnail Container */}
+                      <div className="relative rounded-lg overflow-hidden h-36 bg-slate-200 border border-slate-200/80 mb-2.5">
+                        <img
+                          src={img.url}
+                          alt={img.caption || `Image ${idx + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        {/* Number Badge */}
+                        <span className="absolute top-2 left-2 bg-black/75 text-white font-mono text-[10px] font-bold px-2 py-0.5 rounded-md backdrop-blur-xs shadow-xs">
+                          #{idx + 1}
+                        </span>
+
+                        {/* Top-Right Action Controls */}
+                        <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-xs p-1 rounded-lg opacity-90 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveStoryImage(idx, 'up')}
+                            disabled={idx === 0}
+                            className="p-1 rounded text-white/80 hover:text-white hover:bg-white/20 disabled:opacity-25 transition"
+                            title="മുമ്പോട്ട് മാറ്റുക"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveStoryImage(idx, 'down')}
+                            disabled={idx === photoStoryData.images.length - 1}
+                            className="p-1 rounded text-white/80 hover:text-white hover:bg-white/20 disabled:opacity-25 transition"
+                            title="പിന്നോട്ട് മാറ്റുക"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveStoryImage(idx)}
+                            className="p-1 rounded text-red-300 hover:text-red-100 hover:bg-red-600/80 transition"
+                            title="ചിത്രം ഒഴിവാക്കുക"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Caption & URL */}
+                      <div className="space-y-1.5">
+                        <input
+                          type="text"
+                          value={img.caption || ''}
+                          onChange={(e) => handleStoryImageCaptionChange(idx, e.target.value)}
+                          placeholder={`ചിത്രം ${idx + 1} അടിക്കുറിപ്പ് (Caption)`}
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                        />
+                        <p className="text-[10px] text-slate-400 font-mono truncate select-all px-0.5" title={img.url}>
+                          {img.url}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-slate-400 border border-dashed border-slate-300 rounded-xl text-xs bg-slate-50">
+                  നിലവിൽ ചിത്രങ്ങൾ ചേർത്തിട്ടില്ല. താഴെയുള്ള ഫോം വഴി ഫോട്ടോകൾ ചേർക്കാം.
+                </div>
+              )}
+
+              {/* Add New Image Sub-Card */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5 space-y-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <Plus className="w-4 h-4 text-editorial-crimson" />
+                    <span>പുതിയ ഫോട്ടോ ചേർക്കുക (Add Image)</span>
+                  </span>
+
+                  {/* Mode Tabs */}
+                  <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 text-xs font-bold self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => setStoryImageMode('upload')}
+                      className={`px-3 py-1 rounded-lg transition ${storyImageMode === 'upload' ? 'bg-editorial-crimson text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                    >
+                      ഡിവൈസിൽ നിന്ന് അപ്‌ലോഡ്
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStoryImageMode('url')}
+                      className={`px-3 py-1 rounded-lg transition ${storyImageMode === 'url' ? 'bg-editorial-crimson text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
+                    >
+                      ഇന്റർനെറ്റ് ലിങ്ക് (URL)
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-center">
+                  <div className="md:col-span-5">
+                    {storyImageMode === 'upload' ? (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleStoryImageFileChange}
+                        className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-editorial-crimson file:text-white hover:file:bg-red-700 cursor-pointer"
+                      />
                     ) : (
                       <input
                         type="url"
                         value={newStoryImageUrl}
                         onChange={(e) => setNewStoryImageUrl(e.target.value)}
-                        placeholder="https://example.com/image.jpg"
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-mono focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                        placeholder="https://images.unsplash.com/photo-..."
+                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 bg-white font-mono focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
                       />
                     )}
+                  </div>
 
-                    {newStoryImageUrl && (
-                      <div className="flex items-center gap-3 p-2 bg-white rounded-lg border border-slate-200">
-                        <img
-                          src={newStoryImageUrl}
-                          alt="Preview"
-                          className="w-12 h-10 object-cover rounded shrink-0 border border-slate-200"
-                        />
-                        <span className="text-[11px] text-slate-500 truncate flex-1">
-                          തിരഞ്ഞെടുത്ത ചിത്രം തയ്യാറാണ്
-                        </span>
-                      </div>
-                    )}
+                  <div className="md:col-span-5">
+                    <input
+                      type="text"
+                      value={newStoryImageCaption}
+                      onChange={(e) => setNewStoryImageCaption(e.target.value)}
+                      placeholder="ചിത്രത്തിന്റെ അടിക്കുറിപ്പ് (Caption - ഉദാ: കുട്ടനാട് 1)"
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                    />
+                  </div>
 
-                    <div className="flex flex-col sm:flex-row gap-2.5">
-                      <input
-                        type="text"
-                        value={newStoryImageCaption}
-                        onChange={(e) => setNewStoryImageCaption(e.target.value)}
-                        placeholder="അടിക്കുറിപ്പ് നൽകുക (ഓപ്ഷണൽ)"
-                        className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddStoryImage}
-                        disabled={!newStoryImageUrl.trim()}
-                        className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-40 shrink-0"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>ഗാലറിയിൽ ചേർക്കുക</span>
-                      </button>
-                    </div>
+                  <div className="md:col-span-2">
+                    <button
+                      type="button"
+                      onClick={handleAddStoryImage}
+                      disabled={!newStoryImageUrl.trim()}
+                      className="w-full h-9 px-4 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-40 shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>ചേർക്കുക</span>
+                    </button>
                   </div>
                 </div>
-              </div>
 
-              {/* Right Column: Live Website Preview (5 cols) */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sticky top-6">
-                  <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
-                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-                      <Eye className="w-3.5 h-3.5 text-editorial-crimson" />
-                      ലൈവ് സൈറ്റ് প্রിവ്യൂ (Live Preview)
-                    </span>
-                    <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      Real-time
+                {newStoryImageUrl && (
+                  <div className="flex items-center gap-3 p-2 bg-white rounded-xl border border-slate-200">
+                    <img
+                      src={newStoryImageUrl}
+                      alt="New Preview"
+                      className="w-14 h-10 object-cover rounded-lg border border-slate-200 shrink-0"
+                    />
+                    <span className="text-xs text-slate-600 truncate font-medium">
+                      ഫോട്ടോ തിരഞ്ഞെടുത്തിരിക്കുന്നു. 'ചേർക്കുക' ക്ലിക്ക് ചെയ്താൽ ഗാലറിയിൽ ഉൾപ്പെടും.
                     </span>
                   </div>
-
-                  {/* Dark Photo Story Replica Box matching Homepage */}
-                  <div className="bg-[#09101d] text-white rounded-xl p-4 sm:p-5 shadow-lg border border-slate-800">
-                    <div className="flex items-center justify-between mb-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] bg-opinion-ochre text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                          {photoStoryData.tagLabel || 'PHOTO STORY'}
-                        </span>
-                        <span className="text-[11px] text-slate-300 uppercase tracking-wider font-semibold">
-                          {photoStoryData.subtitle || 'KERALA IN FRAMES'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <h3 className="font-headline text-base sm:text-lg font-bold mb-1.5 text-white leading-snug">
-                      {photoStoryData.title || 'തലക്കെട്ട് നൽകിയിട്ടില്ല'}
-                    </h3>
-                    <p className="text-[11px] text-slate-400 mb-3 line-clamp-2 leading-relaxed">
-                      {photoStoryData.description || 'വിവരണം നൽകിയിട്ടില്ല'}
-                    </p>
-
-                    <div className="grid grid-cols-3 gap-2">
-                      {(photoStoryData.images && photoStoryData.images.length > 0
-                        ? photoStoryData.images.slice(0, 3)
-                        : DEFAULT_PHOTO_STORY.images
-                      ).map((img, idx) => (
-                        <div key={idx} className="rounded-lg overflow-hidden bg-slate-800 relative group">
-                          <img
-                            src={img.url}
-                            alt={img.caption || `Photo ${idx + 1}`}
-                            className="w-full h-20 sm:h-24 object-cover"
-                          />
-                          {img.caption && (
-                            <div className="absolute inset-x-0 bottom-0 bg-black/80 p-1 text-[9px] text-white truncate text-center">
-                              {img.caption}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {photoStoryData.images && photoStoryData.images.length > 3 && (
-                      <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">
-                        + മറ്റു {photoStoryData.images.length - 3} ചിത്രങ്ങൾ കൂടിയുണ്ട് (സ്ലൈഡറിൽ കാണാം)
-                      </p>
-                    )}
-                  </div>
-
-                  <p className="text-[11px] text-slate-500 mt-3 text-center">
-                    മാറ്റങ്ങൾ വരുത്തിയ ശേഷം മുകളിലുള്ള <strong className="text-editorial-crimson">മാറ്റങ്ങൾ സേവ് ചെയ്യുക</strong> ബട്ടൺ ക്ലിക്ക് ചെയ്യുക.
-                  </p>
-                </div>
+                )}
               </div>
             </div>
           </div>

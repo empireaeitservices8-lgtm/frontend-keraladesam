@@ -420,8 +420,8 @@ export default function Header() {
               type="button"
               onClick={() => setNotificationTab(tab)}
               className={`flex-1 py-1 rounded-md text-center transition-colors text-[11px] ${notificationTab === tab
-                  ? 'bg-white text-ink-midnight shadow-xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-white text-ink-midnight shadow-xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
                 }`}
             >
               {labels[tab]}
@@ -686,8 +686,8 @@ export default function Header() {
                     key={link.label}
                     href={link.href}
                     className={`px-2.5 lg:px-3 py-1.5 rounded-md text-xs lg:text-[13px] font-semibold transition-colors whitespace-nowrap ${isActive
-                        ? 'bg-primary text-white font-bold shadow-sm'
-                        : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'
+                      ? 'bg-primary text-white font-bold shadow-sm'
+                      : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'
                       }`}
                   >
                     {link.label}
@@ -727,8 +727,8 @@ export default function Header() {
                       if (next) setTimeout(() => searchInputRef.current?.focus(), 80);
                     }}
                     className={`p-2 lg:p-2.5 rounded-full transition-colors flex items-center justify-center ${searchOpen
-                        ? 'bg-primary text-white shadow-xs'
-                        : 'text-secondary hover:text-primary hover:bg-surface-container'
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'text-secondary hover:text-primary hover:bg-surface-container'
                       }`}
                     title="വാർത്തകൾ തിരയുക"
                     aria-label="വാർത്തകൾ തിരയുക"
@@ -809,8 +809,8 @@ export default function Header() {
                   <button
                     onClick={() => setShowAlertsDropdown(!showAlertsDropdown)}
                     className={`p-2 lg:p-2.5 rounded-full transition-colors relative flex items-center justify-center ${showAlertsDropdown
-                        ? 'bg-primary text-white shadow-xs'
-                        : 'text-secondary hover:text-primary hover:bg-surface-container'
+                      ? 'bg-primary text-white shadow-xs'
+                      : 'text-secondary hover:text-primary hover:bg-surface-container'
                       }`}
                     title="Notifications"
                     aria-label="Notifications"
@@ -852,33 +852,38 @@ export default function Header() {
           </div>
         </div>
         {/* Social Media Sub Navigation */}
+        {/* Social Media Sub Navbar */}
         <div className="w-full bg-[#F1F3F6] border-y border-slate-200">
-          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="min-h-10 flex items-center justify-center gap-3 sm:gap-5 overflow-x-auto whitespace-nowrap no-scrollbar">
-              <span className="text-[10px] sm:text-[11px] font-bold tracking-wider text-slate-600 shrink-0">
+          <div className="max-w-[1400px] mx-auto px-4">
+            <div className="min-h-[46px] flex items-center gap-6 overflow-x-auto whitespace-nowrap">
+
+              {/* Follow Us */}
+              <span className="text-[11px] font-bold tracking-wider text-slate-500 shrink-0 border-r border-slate-300 pr-5">
                 FOLLOW US
               </span>
 
-              <span className="h-4 w-px bg-slate-300 shrink-0" />
-
+              {/* Social Links */}
               {SOCIAL_LINKS.map((social) => (
                 <a
                   key={social.name}
                   href={social.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title={social.name}
                   aria-label={`Follow Kerala Desam on ${social.name}`}
-                  className="inline-flex items-center gap-1.5 shrink-0 text-slate-700 hover:text-primary transition-colors group"
+                  className="group flex items-center gap-2 shrink-0 text-slate-700 hover:text-red-600 transition-colors"
                 >
-                  <span className={`w-5 h-5 rounded-full ${social.bg} text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform`}>
+                  <span
+                    className={`w-6 h-6 flex items-center justify-center rounded-full text-white ${social.bg} group-hover:scale-110 transition-transform`}
+                  >
                     {social.icon}
                   </span>
-                  <span className="text-[11px] sm:text-xs font-semibold">
-                    {social.name === 'X (Twitter)' ? 'X' : social.name}
+
+                  <span className="text-xs font-semibold">
+                    {social.name === "X (Twitter)" ? "X" : social.name}
                   </span>
                 </a>
               ))}
+
             </div>
           </div>
         </div>
