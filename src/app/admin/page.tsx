@@ -45,6 +45,14 @@ import {
   ArrowUp,
   ArrowDown,
   RotateCcw,
+  LayoutDashboard,
+  TrendingUp,
+  BarChart3,
+  Layers,
+  Globe,
+  Activity,
+  Database,
+  ArrowRight,
 } from 'lucide-react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Article, VideoItem, KERALA_DISTRICTS } from '@/data/newsData';
@@ -170,7 +178,7 @@ const ADMIN_CATEGORIES: CategoryGroup[] = [
   },
 ];
 
-type TabType = 'upload' | 'articles' | 'breaking' | 'videos' | 'subscribers' | 'ads' | 'photoStory';
+type TabType = 'dashboard' | 'upload' | 'articles' | 'breaking' | 'videos' | 'subscribers' | 'ads' | 'photoStory';
 
 export default function AdminPortalPage() {
   const router = useRouter();
@@ -200,7 +208,7 @@ export default function AdminPortalPage() {
   const [newStoryImageCaption, setNewStoryImageCaption] = useState<string>('');
   const [newStoryImageFile, setNewStoryImageFile] = useState<File | null>(null);
   const [storyImageMode, setStoryImageMode] = useState<'upload' | 'url'>('upload');
-  const [activeTab, setActiveTab] = useState<TabType>('upload');
+  const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Search & Filter in Manage tab
@@ -1003,6 +1011,27 @@ export default function AdminPortalPage() {
     });
   }, [articles, searchQuery, selectedCategoryFilter]);
 
+  // Category Breakdown stats for dashboard
+  const categoryStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    articles.forEach((art) => {
+      const cat = art.category || 'പൊതുവായത്';
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    const sorted = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+    return sorted.map(([category, count]) => ({
+      category,
+      count,
+      percent: articles.length ? Math.round((count / articles.length) * 100) : 0,
+    }));
+  }, [articles]);
+
+  const recentArticles = useMemo(() => {
+    return articles.slice(0, 6);
+  }, [articles]);
+
   // Derived live statistics from content
   const contentStats = useMemo(() => {
     const paras = formContent
@@ -1029,6 +1058,11 @@ export default function AdminPortalPage() {
 
   
   const NAV_ITEMS = [
+    {
+      id: 'dashboard',
+      label: 'ഡാഷ്‌ബോർഡ്',
+      icon: LayoutDashboard,
+    },
     {
       id: 'upload',
       label: 'പുതിയ വാർത്ത ചേർക്കുക',
@@ -1324,6 +1358,7 @@ export default function AdminPortalPage() {
         <div className="hidden lg:flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200/80 sticky top-0 z-20 shadow-2xs">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-slate-100 text-editorial-crimson">
+              {activeTab === 'dashboard' && <LayoutDashboard className="w-5 h-5" />}
               {activeTab === 'upload' && <Sparkles className="w-5 h-5" />}
               {activeTab === 'articles' && <FileText className="w-5 h-5" />}
               {activeTab === 'breaking' && <Radio className="w-5 h-5" />}
@@ -1334,6 +1369,7 @@ export default function AdminPortalPage() {
             </div>
             <div>
               <h2 className="font-headline text-lg font-bold text-slate-900 leading-tight">
+                {activeTab === 'dashboard' && 'അഡ്മിൻ ഡാഷ്‌ബോർഡ് (CMS Overview)'}
                 {activeTab === 'upload' && 'പുതിയ വാർത്ത തയ്യാറാക്കലും പ്രസിദ്ധീകരണവും'}
                 {activeTab === 'articles' && `പ്രസിദ്ധീകരിച്ച വാർത്തകൾ (${articles.length})`}
                 {activeTab === 'breaking' && `ബ്രേക്കിംഗ് ന്യൂസ് ടിക്കർ (${breakingList.length})`}
@@ -1343,6 +1379,7 @@ export default function AdminPortalPage() {
                 {activeTab === 'photoStory' && 'ഫോട്ടോ സ്റ്റോറി (Photo Story - Kerala in Frames)'}
               </h2>
               <span className="text-xs text-slate-500 font-medium">
+                {activeTab === 'dashboard' && 'കേരളദേശം ന്യൂസ് നെറ്റ്‌വർക്കിന്റെ തത്സമയ അവലോകനവും പ്രധാന വിവരങ്ങളും'}
                 {activeTab === 'upload' && 'വാർത്താ വിവരങ്ങളും ചിത്രങ്ങളും നൽകി ഉടൻ പ്രസിദ്ധീകരിക്കാം'}
                 {activeTab === 'articles' && 'വാർത്തകൾ തിരയുക, തിരുത്തുക, അല്ലെങ്കിൽ നീക്കം ചെയ്യുക'}
                 {activeTab === 'breaking' && 'വെബ്‌സൈറ്റിൽ തത്സമയം മിന്നുന്ന വാർത്താ അറിയിപ്പുകൾ'}
@@ -1369,7 +1406,456 @@ export default function AdminPortalPage() {
         {/* Main Content Body */}
         <main className={`mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1 flex flex-col gap-6 ${activeTab === 'upload' ? 'max-w-4xl' : 'max-w-6xl xl:max-w-7xl'}`}>
 
-        {/* TAB 1: WRITE & PUBLISH NEWS (Clean, distraction-free CMS) */}
+        {/* TAB 0: CMS OVERVIEW DASHBOARD */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6">
+            {/* 1. Welcome & Status Banner */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#09101d] via-[#111f36] to-[#09101d] text-white p-5 sm:p-7 shadow-lg border border-slate-800">
+              <div className="absolute top-0 right-0 w-80 h-80 bg-editorial-crimson/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="text-[11px] font-bold uppercase tracking-wider bg-editorial-crimson text-white px-3 py-0.5 rounded-full shadow-xs">
+                      {user?.role === 'admin' ? 'ചീഫ് അഡ്മിൻ' : 'എഡിറ്റർ'} കൺസോൾ
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                      സിസ്റ്റം ലൈവ് & സജീവം
+                    </span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-bold font-headline text-white">
+                    സ്വാഗതം, {user?.name || 'ചീഫ് എഡിറ്റർ'}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                    കേരളദേശം ഗ്ലോബൽ മലയാളം ന്യൂസ് നെറ്റ്‌വർക്കിന്റെ പ്രധാന ഡാഷ്‌ബോർഡ്. വാർത്തകൾ, ബ്രേക്കിംഗ് അറിയിപ്പുകൾ, ഫോട്ടോ സ്റ്റോറി, വരിക്കാർ എന്നിവയുടെ സമഗ്ര വിവരങ്ങൾ ഇവിടെ കാണാം.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+                  <button
+                    type="button"
+                    onClick={loadPortalData}
+                    disabled={loadingData}
+                    className="h-10 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs flex items-center justify-center gap-2 transition border border-white/10 shadow-xs"
+                    title="ഡാറ്റാബേസിൽ നിന്ന് എല്ലാ വിവരങ്ങളും റീഫ്രഷ് ചെയ്യുക"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${loadingData ? 'animate-spin text-editorial-crimson' : ''}`} />
+                    <span>റീഫ്രഷ്</span>
+                  </button>
+                  <Link
+                    href="/"
+                    target="_blank"
+                    className="h-10 px-4 rounded-xl bg-editorial-crimson hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-md"
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>ലൈവ് സൈറ്റ് കാണുക</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Key Metrics Grid (6 Stats Cards) */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 sm:gap-4">
+              {/* Card 1: Articles */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('articles')}
+                className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-red-300 text-left transition-all group flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-red-50 text-editorial-crimson flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-editorial-crimson group-hover:translate-x-0.5 transition-all" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black text-slate-900 font-mono tracking-tight">
+                    {articles.length}
+                  </div>
+                  <div className="text-xs font-bold text-slate-700 mt-0.5">വാർത്തകൾ</div>
+                  <div className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">പ്രസിദ്ധീകരിച്ചവ</div>
+                </div>
+              </button>
+
+              {/* Card 2: Headline */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('articles')}
+                className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-amber-300 text-left transition-all group flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Flame className="w-4 h-4" />
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black text-slate-900 font-mono tracking-tight">
+                    {articles.filter((a) => a.isHeadline).length || 1}
+                  </div>
+                  <div className="text-xs font-bold text-slate-700 mt-0.5">ഹെഡ്‌ലൈൻ</div>
+                  <div className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">ഹോം ഹീറോ വാർത്ത</div>
+                </div>
+              </button>
+
+              {/* Card 3: Breaking News */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('breaking')}
+                className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-rose-300 text-left transition-all group flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Radio className="w-4 h-4" />
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-rose-600 group-hover:translate-x-0.5 transition-all" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black text-slate-900 font-mono tracking-tight">
+                    {breakingList.length}
+                  </div>
+                  <div className="text-xs font-bold text-slate-700 mt-0.5">ബ്രേക്കിംഗ്</div>
+                  <div className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">തത്സമയ ടിക്കർ</div>
+                </div>
+              </button>
+
+              {/* Card 4: Videos */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('videos')}
+                className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-blue-300 text-left transition-all group flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <PlaySquare className="w-4 h-4" />
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black text-slate-900 font-mono tracking-tight">
+                    {videosList.length}
+                  </div>
+                  <div className="text-xs font-bold text-slate-700 mt-0.5">വീഡിയോകൾ</div>
+                  <div className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">ഷോർട്സ് & റീൽസ്</div>
+                </div>
+              </button>
+
+              {/* Card 5: Subscribers */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('subscribers')}
+                className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-indigo-300 text-left transition-all group flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black text-slate-900 font-mono tracking-tight">
+                    {subscribersList.length}
+                  </div>
+                  <div className="text-xs font-bold text-slate-700 mt-0.5">വരിക്കാർ</div>
+                  <div className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">വാർത്താ മടക്കുകൾ</div>
+                </div>
+              </button>
+
+              {/* Card 6: Ad Inquiries */}
+              <button
+                type="button"
+                onClick={() => setActiveTab('ads')}
+                className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-purple-300 text-left transition-all group flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Megaphone className="w-4 h-4" />
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black text-slate-900 font-mono tracking-tight">
+                    {adInquiriesList.length}
+                  </div>
+                  <div className="text-xs font-bold text-slate-700 mt-0.5">പരസ്യങ്ങൾ</div>
+                  <div className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">
+                    {adInquiriesList.filter((a) => a.status === 'New').length} പുതിയവ
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            {/* 3. Quick Action Shortcuts */}
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-editorial-crimson" />
+                <span>ദ്രുത നടപടികൾ (Quick Actions)</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('upload')}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-editorial-crimson to-red-600 text-white font-bold text-xs shadow-sm hover:shadow-md hover:brightness-105 transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>പുതിയ വാർത്ത എഴുതുക</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('breaking')}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white border border-slate-300 text-slate-700 hover:text-editorial-crimson hover:border-editorial-crimson font-bold text-xs shadow-2xs hover:shadow-xs transition"
+                >
+                  <Radio className="w-4 h-4 text-rose-600" />
+                  <span>ബ്രേക്കിംഗ് ന്യൂസ് ചേർക്കുക</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('videos')}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white border border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-500 font-bold text-xs shadow-2xs hover:shadow-xs transition"
+                >
+                  <PlaySquare className="w-4 h-4 text-blue-600" />
+                  <span>വീഡിയോ ചേർക്കുക</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('photoStory')}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white border border-slate-300 text-slate-700 hover:text-opinion-ochre hover:border-opinion-ochre font-bold text-xs shadow-2xs hover:shadow-xs transition"
+                >
+                  <Camera className="w-4 h-4 text-opinion-ochre" />
+                  <span>ഫോട്ടോ സ്റ്റോറി മാറ്റുക</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 4. Main Two Column Section: Recent Articles (7 cols) + Highlights / Categories (5 cols) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column: Recent Articles (7 cols) */}
+              <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-red-50 text-editorial-crimson flex items-center justify-center">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 font-headline">
+                        അടുത്തിടെ ചേർത്ത വാർത്തകൾ
+                      </h3>
+                      <p className="text-[11px] text-slate-500">വെബ്‌സൈറ്റിൽ പ്രസിദ്ധീകരിച്ച ഏറ്റവും പുതിയ വാർത്തകൾ</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('articles')}
+                    className="text-xs font-bold text-editorial-crimson hover:underline flex items-center gap-1 shrink-0"
+                  >
+                    <span>എല്ലാം കാണുക ({articles.length})</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="divide-y divide-slate-100">
+                  {recentArticles.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-slate-400">വാർത്തകൾ ലഭ്യമല്ല.</div>
+                  ) : (
+                    recentArticles.map((art) => (
+                      <div
+                        key={art.id}
+                        className="p-3.5 sm:p-4 hover:bg-slate-50/70 transition flex items-center justify-between gap-3 group"
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          {art.imageUrl && (
+                            <img
+                              src={art.imageUrl}
+                              alt={art.title}
+                              className="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0 bg-slate-100"
+                            />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <span
+                                className="text-[10px] font-bold px-2 py-0.5 rounded text-white"
+                                style={{ backgroundColor: art.categoryColor || '#C8102E' }}
+                              >
+                                {art.category || 'ജനറൽ'}
+                              </span>
+                              {art.isHeadline && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                  <Flame className="w-3 h-3 fill-amber-500 text-amber-500" />
+                                  <span>ഹെഡ്‌ലൈൻ</span>
+                                </span>
+                              )}
+                              <span className="text-[10px] text-slate-400">
+                                {art.publishedAt || 'ഇന്ന്'}
+                              </span>
+                            </div>
+                            <h4
+                              className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-editorial-crimson transition truncate cursor-pointer"
+                              onClick={() => handleOpenEdit(art)}
+                              title={art.title}
+                            >
+                              {art.title}
+                            </h4>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(art)}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition"
+                            title="വാർത്ത തിരുത്തുക"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <Link
+                            href={`/article/${art.id}`}
+                            target="_blank"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-editorial-crimson hover:bg-red-50 transition"
+                            title="സൈറ്റിൽ കാണുക"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Breaking Feed + Category Breakdown (5 cols) */}
+              <div className="lg:col-span-5 space-y-6">
+                {/* Active Breaking News Box */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                        തത്സമയ ബ്രേക്കിംഗ് ന്യൂസ് ({breakingList.length})
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('breaking')}
+                      className="text-xs font-bold text-editorial-crimson hover:underline"
+                    >
+                      മാനേജ് ചെയ്യുക
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {breakingList.length === 0 ? (
+                      <p className="text-xs text-slate-400 text-center py-4">ബ്രേക്കിംഗ് വാർത്തകൾ ലഭ്യമല്ല.</p>
+                    ) : (
+                      breakingList.slice(0, 4).map((brk, idx) => (
+                        <div
+                          key={brk._id || idx}
+                          className="flex items-start gap-2.5 p-2.5 rounded-xl bg-red-50/50 border border-red-100 text-xs font-semibold text-slate-800 leading-snug"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-600 mt-1.5 shrink-0" />
+                          <p className="flex-1 line-clamp-2">{brk.headline}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Category Distribution Box */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                      <BarChart3 className="w-3.5 h-3.5 text-editorial-crimson" />
+                      <span>വാർത്താ വിഭാഗങ്ങൾ (Categories)</span>
+                    </h4>
+                    <span className="text-[10px] text-slate-400 font-mono font-bold">
+                      ആകെ: {articles.length}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {categoryStats.map((item, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-700">
+                          <span>{item.category}</span>
+                          <span className="font-mono text-slate-500">
+                            {item.count} ({item.percent}%)
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-editorial-crimson transition-all duration-500"
+                            style={{ width: `${Math.max(item.percent, 8)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 5. System Health & Environment Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-slate-800">MySQL ഡാറ്റാബേസ്</div>
+                  <div className="text-[11px] text-emerald-700 font-semibold mt-0.5">കണക്ഷൻ സജീവം (Port 3306)</div>
+                  <div className="text-[10px] text-slate-400">keraladesam_db ലൈവ് റീഡ്/റൈറ്റ്</div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between gap-3.5">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-11 h-11 rounded-xl bg-amber-50 text-opinion-ochre flex items-center justify-center shrink-0 border border-amber-100">
+                    <Camera className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-800">ഫോട്ടോ സ്റ്റോറി</div>
+                    <div className="text-[11px] text-slate-600 font-semibold truncate mt-0.5" title={photoStoryData.title}>
+                      {photoStoryData.title || 'കുട്ടനാടൻ കായൽ ജീവിതം'}
+                    </div>
+                    <div className="text-[10px] text-slate-400">{photoStoryData.images?.length || 0} ചിത്രങ്ങൾ സജീവം</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('photoStory')}
+                  className="px-2.5 py-1 text-[11px] rounded-lg bg-amber-50 text-opinion-ochre hover:bg-amber-100 font-bold shrink-0 transition"
+                >
+                  എഡിറ്റ്
+                </button>
+              </div>
+
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between gap-3.5">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-slate-800">CMS വേർഷൻ</div>
+                    <div className="text-[11px] text-blue-700 font-semibold mt-0.5">കേരളദേശം CMS v2.4</div>
+                    <div className="text-[10px] text-slate-400">Next.js 14 & Node.js Express</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearApiCache();
+                    showToast('ക്യാഷ് ക്ലിയർ ചെയ്തു.');
+                  }}
+                  className="px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold shrink-0 transition"
+                  title="തത്സമയ കാഷ് മെമ്മറി ക്ലിയർ ചെയ്യുക"
+                >
+                  Clear Cache
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+                {/* TAB 1: WRITE & PUBLISH NEWS (Clean, distraction-free CMS) */}
         {activeTab === 'upload' && (
           <div className="space-y-4">
             {/* Published Success Banner */}
