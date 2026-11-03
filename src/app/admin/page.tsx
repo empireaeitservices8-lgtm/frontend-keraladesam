@@ -39,6 +39,12 @@ import {
   Megaphone,
   Phone,
   MessageCircle,
+  Camera,
+  Save,
+  Plus,
+  ArrowUp,
+  ArrowDown,
+  RotateCcw,
 } from 'lucide-react';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Article, VideoItem, KERALA_DISTRICTS } from '@/data/newsData';
@@ -63,6 +69,10 @@ import {
   adminDeleteAdInquiry,
   AdInquiryItem,
   clearApiCache,
+  getRealPhotoStory,
+  adminUpdatePhotoStory,
+  PhotoStoryItem,
+  DEFAULT_PHOTO_STORY,
 } from '@/lib/api';
 
 interface CategoryGroup {
@@ -160,7 +170,7 @@ const ADMIN_CATEGORIES: CategoryGroup[] = [
   },
 ];
 
-type TabType = 'upload' | 'articles' | 'breaking' | 'videos' | 'subscribers' | 'ads';
+type TabType = 'upload' | 'articles' | 'breaking' | 'videos' | 'subscribers' | 'ads' | 'photoStory';
 
 export default function AdminPortalPage() {
   const router = useRouter();
@@ -181,6 +191,15 @@ export default function AdminPortalPage() {
   const [deletingAdId, setDeletingAdId] = useState<string | null>(null);
   const [updatingAdId, setUpdatingAdId] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState<boolean>(true);
+
+  // Photo Story Editor State
+  const [photoStoryData, setPhotoStoryData] = useState<PhotoStoryItem>(DEFAULT_PHOTO_STORY);
+  const [loadingPhotoStory, setLoadingPhotoStory] = useState<boolean>(false);
+  const [savingPhotoStory, setSavingPhotoStory] = useState<boolean>(false);
+  const [newStoryImageUrl, setNewStoryImageUrl] = useState<string>('');
+  const [newStoryImageCaption, setNewStoryImageCaption] = useState<string>('');
+  const [newStoryImageFile, setNewStoryImageFile] = useState<File | null>(null);
+  const [storyImageMode, setStoryImageMode] = useState<'upload' | 'url'>('upload');
   const [activeTab, setActiveTab] = useState<TabType>('upload');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -256,12 +275,13 @@ export default function AdminPortalPage() {
   const loadPortalData = async () => {
     try {
       setLoadingData(true);
-      const [artList, brkList, vidList, subRes, adRes] = await Promise.all([
+      const [artList, brkList, vidList, subRes, adRes, psData] = await Promise.all([
         getRealArticles({ limit: 100 }),
         adminGetRawBreaking(),
         getRealVideos({ limit: 100 }),
         adminGetSubscribers(token || undefined),
         adminGetAdInquiries(token || undefined),
+        getRealPhotoStory(),
       ]);
       setArticles(artList);
       setBreakingList(brkList);
@@ -271,6 +291,9 @@ export default function AdminPortalPage() {
       }
       if (adRes && adRes.success) {
         setAdInquiriesList(adRes.inquiries);
+      }
+      if (psData) {
+        setPhotoStoryData(psData);
       }
     } catch (err) {
       console.error('Failed to load portal data:', err);
@@ -355,6 +378,9 @@ export default function AdminPortalPage() {
     }
     if (activeTab === 'ads') {
       loadAdInquiriesData();
+    }
+    if (activeTab === 'photoStory') {
+      loadPhotoStoryData();
     }
   }, [activeTab]);
 
@@ -441,6 +467,110 @@ export default function AdminPortalPage() {
       setFormImageUrl(dataUrl);
     };
     reader.readAsDataURL(file);
+  };
+
+  // Photo Story Loader
+  const loadPhotoStoryData = async () => {
+    try {
+      setLoadingPhotoStory(true);
+      const data = await getRealPhotoStory();
+      if (data) setPhotoStoryData(data);
+    } catch (err) {
+      console.error('Failed to load photo story:', err);
+    } finally {
+      setLoadingPhotoStory(false);
+    }
+  };
+
+  const handleStoryImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setNewStoryImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setNewStoryImageUrl(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddStoryImage = () => {
+    if (!newStoryImageUrl.trim()) {
+      showToast('ചിത്രത്തിന്റെ URL നൽകുകയോ ഫയൽ തിരഞ്ഞെടുക്കുകയോ ചെയ്യുക.', 'warning');
+      return;
+    }
+    setPhotoStoryData((prev) => ({
+      ...prev,
+      images: [
+        ...(prev.images || []),
+        { url: newStoryImageUrl.trim(), caption: newStoryImageCaption.trim() },
+      ],
+    }));
+    setNewStoryImageUrl('');
+    setNewStoryImageCaption('');
+    setNewStoryImageFile(null);
+    showToast('ചിത്രം ഗാലറിയിലേക്ക് ചേർത്തു.');
+  };
+
+  const handleRemoveStoryImage = (index: number) => {
+    setPhotoStoryData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, idx) => idx !== index),
+    }));
+    showToast('ചിത്രം നീക്കം ചെയ്തു.');
+  };
+
+  const handleMoveStoryImage = (index: number, direction: 'up' | 'down') => {
+    setPhotoStoryData((prev) => {
+      const targetIdx = direction === 'up' ? index - 1 : index + 1;
+      if (targetIdx < 0 || targetIdx >= prev.images.length) return prev;
+      const images = [...prev.images];
+      const temp = images[index];
+      images[index] = images[targetIdx];
+      images[targetIdx] = temp;
+      return { ...prev, images };
+    });
+  };
+
+  const handleStoryImageCaptionChange = (index: number, caption: string) => {
+    setPhotoStoryData((prev) => {
+      const images = [...prev.images];
+      images[index] = { ...images[index], caption };
+      return { ...prev, images };
+    });
+  };
+
+  const handleResetPhotoStory = () => {
+    if (window.confirm('ഫോട്ടോ സ്റ്റോറി ഡിഫോൾട്ട് രീതിയിലേക്ക് പുനഃസ്ഥാപിക്കണമെന്നുണ്ടോ?')) {
+      setPhotoStoryData(DEFAULT_PHOTO_STORY);
+      showToast('ഡിഫോൾട്ട് ഡാറ്റ റീസ്റ്റോർ ചെയ്തു.');
+    }
+  };
+
+  const handleSavePhotoStory = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!photoStoryData.title.trim()) {
+      showToast('പ്രധാന തലക്കെട്ട് നൽകുക.', 'error');
+      return;
+    }
+    if (!photoStoryData.images || photoStoryData.images.length === 0) {
+      showToast('കുറഞ്ഞത് ഒരു ചിത്രമെങ്കിലും ചേർക്കുക.', 'warning');
+      return;
+    }
+    setSavingPhotoStory(true);
+    try {
+      const res = await adminUpdatePhotoStory(photoStoryData, token || undefined);
+      if (res.success) {
+        if (res.photoStory) setPhotoStoryData(res.photoStory);
+        showToast('ഫോട്ടോ സ്റ്റോറി വിജയകരമായി സേവ് ചെയ്തു!', 'success');
+      } else {
+        showToast(res.error || 'ഫോട്ടോ സ്റ്റോറി സേവ് ചെയ്യാൻ സാധിച്ചില്ല.', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'സേവ് ചെയ്യുന്നതിൽ പിഴവ് സംഭവിച്ചു.', 'error');
+    } finally {
+      setSavingPhotoStory(false);
+    }
   };
 
   // Remove chosen image
@@ -934,6 +1064,11 @@ export default function AdminPortalPage() {
       icon: Megaphone,
       count: adInquiriesList.length,
     },
+    {
+      id: 'photoStory',
+      label: 'ഫോട്ടോ സ്റ്റോറി',
+      icon: Camera,
+    },
   ];
 
   return (
@@ -1195,6 +1330,7 @@ export default function AdminPortalPage() {
               {activeTab === 'videos' && <PlaySquare className="w-5 h-5" />}
               {activeTab === 'subscribers' && <Mail className="w-5 h-5" />}
               {activeTab === 'ads' && <Megaphone className="w-5 h-5" />}
+              {activeTab === 'photoStory' && <Camera className="w-5 h-5" />}
             </div>
             <div>
               <h2 className="font-headline text-lg font-bold text-slate-900 leading-tight">
@@ -1204,6 +1340,7 @@ export default function AdminPortalPage() {
                 {activeTab === 'videos' && `വീഡിയോ മാനേജ്മെന്റ് (${videosList.length})`}
                 {activeTab === 'subscribers' && `ഇമെയിൽ വരിക്കാർ (${subscribersList.length})`}
                 {activeTab === 'ads' && `പരസ്യ അന്വേഷണങ്ങൾ & നിരക്കുകൾ (${adInquiriesList.length})`}
+                {activeTab === 'photoStory' && 'ഫോട്ടോ സ്റ്റോറി (Photo Story - Kerala in Frames)'}
               </h2>
               <span className="text-xs text-slate-500 font-medium">
                 {activeTab === 'upload' && 'വാർത്താ വിവരങ്ങളും ചിത്രങ്ങളും നൽകി ഉടൻ പ്രസിദ്ധീകരിക്കാം'}
@@ -1212,6 +1349,7 @@ export default function AdminPortalPage() {
                 {activeTab === 'videos' && 'യൂട്യൂബ് വീഡിയോകളും ഡിജിറ്റൽ ബുള്ളറ്റിനുകളും ചേർക്കുക'}
                 {activeTab === 'subscribers' && 'വാർത്താ മടക്കുകൾ സ്വീകരിക്കുന്ന സജീവ വരിക്കാരുടെ പട്ടിക'}
                 {activeTab === 'ads' && 'പരസ്യദാതാക്കളിൽ നിന്ന് ലഭിച്ച അപേക്ഷകളും അന്വേഷണങ്ങളും'}
+                {activeTab === 'photoStory' && 'ഹോംപേജിലെ ഫോട്ടോ സ്റ്റോറി തലക്കെട്ട്, വിവരണം, ചിത്രങ്ങൾ എന്നിവ ഇവിടെ മാറ്റാം'}
               </span>
             </div>
           </div>
@@ -2433,6 +2571,523 @@ export default function AdminPortalPage() {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: ADS INQUIRIES MANAGEMENT */}
+        {activeTab === 'ads' && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                  <Megaphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 font-headline">
+                    പരസ്യ അന്വേഷണങ്ങൾ (Ad Inquiries)
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    വെബ്‌സൈറ്റിൽ പരസ്യം നൽകാൻ ആഗ്രഹിച്ച് സമർപ്പിച്ച അന്വേഷണങ്ങളും വിവരങ്ങളും.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={loadAdInquiriesData}
+                  disabled={refreshingAds}
+                  className="h-10 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-300 shadow-2xs"
+                  title="ലിസ്റ്റ് റീഫ്രഷ് ചെയ്യുക"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${refreshingAds ? 'animate-spin text-purple-600' : ''}`} />
+                  <span>റീഫ്രഷ്</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-3.5 sm:p-4 border-b border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={adInquiriesSearch}
+                    onChange={(e) => setAdInquiriesSearch(e.target.value)}
+                    placeholder="പേര്, കമ്പനി, ഫോൺ നമ്പർ എന്നിവ തിരയുക..."
+                    className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-editorial-crimson font-medium"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={adInquiriesStatusFilter}
+                    onChange={(e) => setAdInquiriesStatusFilter(e.target.value)}
+                    className="px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-editorial-crimson"
+                  >
+                    <option value="all">എല്ലാ അവസ്ഥകളും</option>
+                    <option value="pending">തീർപ്പാക്കാത്തവ (Pending)</option>
+                    <option value="contacted">ബന്ധപ്പെട്ടു (Contacted)</option>
+                    <option value="resolved">പൂർത്തിയായി (Resolved)</option>
+                  </select>
+                </div>
+              </div>
+
+              {filteredAds.length === 0 ? (
+                <div className="p-10 text-center text-slate-400 text-xs">
+                  പരസ്യ അന്വേഷണങ്ങൾ ലഭ്യമല്ല.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead className="bg-slate-50 text-slate-600 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
+                      <tr>
+                        <th className="py-3 px-4 w-12 text-center">#</th>
+                        <th className="py-3 px-4">പരസ്യദാതാവ്</th>
+                        <th className="py-3 px-4">ബന്ധപ്പെടേണ്ട നമ്പർ / ഇമെയിൽ</th>
+                        <th className="py-3 px-4">പരസ്യ തരം</th>
+                        <th className="py-3 px-4">സന്ദേശം</th>
+                        <th className="py-3 px-4 text-center">അവസ്ഥ</th>
+                        <th className="py-3 px-4 text-center w-28">നടപടി</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredAds.map((ad, idx) => (
+                        <tr key={ad._id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-3.5 px-4 text-center text-slate-400 font-mono text-xs">
+                            {idx + 1}
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-slate-900">
+                            <div>{ad.name}</div>
+                            {ad.companyName && (
+                              <div className="text-[11px] font-normal text-slate-500">{ad.companyName}</div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-700">
+                            <div>{ad.phone}</div>
+                            {ad.email && <div className="text-[11px] text-slate-400">{ad.email}</div>}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold text-[11px]">
+                              {ad.adType || 'ജനറൽ'}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-600 max-w-xs truncate" title={ad.message}>
+                            {ad.message || '—'}
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <select
+                              value={ad.status}
+                              disabled={updatingAdId === ad._id}
+                              onChange={(e) => handleUpdateAdStatus(ad._id, e.target.value)}
+                              className="px-2 py-1 text-[11px] rounded font-bold border border-slate-200 bg-white cursor-pointer"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="contacted">Contacted</option>
+                              <option value="resolved">Resolved</option>
+                            </select>
+                          </td>
+                          <td className="py-3.5 px-4 text-center">
+                            <div className="inline-flex items-center gap-1.5">
+                              {ad.phone && (
+                                <a
+                                  href={`https://wa.me/${ad.phone.replace(/[^0-9]/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50"
+                                  title="WhatsApp"
+                                >
+                                  <MessageCircle className="w-4 h-4" />
+                                </a>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteAdInquiry(ad._id, ad.name)}
+                                disabled={deletingAdId === ad._id}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"
+                                title="ഒഴിവാക്കുക"
+                              >
+                                {deletingAdId === ad._id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-red-600" />
+                                ) : (
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 7: PHOTO STORY MANAGEMENT */}
+        {activeTab === 'photoStory' && (
+          <div className="space-y-6">
+            {/* Top Info & Action Card */}
+            <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-opinion-ochre border border-opinion-ochre/20 flex items-center justify-center shrink-0 shadow-inner">
+                  <Camera className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 font-headline">
+                      ഫോട്ടോ സ്റ്റോറി എഡിറ്റർ (Photo Story Editor)
+                    </h3>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-opinion-ochre/15 text-opinion-ochre border border-opinion-ochre/30">
+                      Kerala in Frames
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    ഹോംപേജിലെ ഫോട്ടോ സ്റ്റോറി വിഭാഗത്തിന്റെ ടാഗ്, ഉപവിഭാഗം, പ്രധാന തലക്കെട്ട്, വിവരണം, ചിത്രങ്ങൾ എന്നിവ മാറ്റാം.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={loadPhotoStoryData}
+                  disabled={loadingPhotoStory}
+                  className="h-10 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-300 shadow-2xs"
+                  title="ഡാറ്റാബേസിൽ നിന്ന് വീണ്ടും ലഭ്യമാക്കുക"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingPhotoStory ? 'animate-spin text-opinion-ochre' : ''}`} />
+                  <span>റീഫ്രഷ്</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetPhotoStory}
+                  className="h-10 px-3.5 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-300"
+                  title="ഡിഫോൾട്ട് കുട്ടനാട് ഫോട്ടോകളിലേക്ക് മാറ്റുക"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>ഡിഫോൾട്ട്</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSavePhotoStory}
+                  disabled={savingPhotoStory}
+                  className="h-10 flex-1 md:flex-none px-6 rounded-xl bg-gradient-to-r from-editorial-crimson to-red-600 hover:from-red-700 hover:to-red-800 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition shadow-md hover:shadow-lg disabled:opacity-50"
+                >
+                  {savingPhotoStory ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>സേവ് ചെയ്യുന്നു...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>മാറ്റങ്ങൾ സേവ് ചെയ്യുക</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Main Form & Live Preview Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Left Column: Form Details & Image Management (7 cols) */}
+              <div className="lg:col-span-7 space-y-6">
+                {/* Meta Inputs Card */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 space-y-4">
+                  <h4 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-editorial-crimson" />
+                    <span>സ്റ്റോറി വിവരങ്ങളും തലക്കെട്ടും</span>
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        ബാഡ്ജ് ടാഗ് (Tag Label)
+                      </label>
+                      <input
+                        type="text"
+                        value={photoStoryData.tagLabel}
+                        onChange={(e) => setPhotoStoryData({ ...photoStoryData, tagLabel: e.target.value })}
+                        placeholder="PHOTO STORY"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        ഉപവിഭാഗം (Subtitle / Feature Name)
+                      </label>
+                      <input
+                        type="text"
+                        value={photoStoryData.subtitle}
+                        onChange={(e) => setPhotoStoryData({ ...photoStoryData, subtitle: e.target.value })}
+                        placeholder="KERALA IN FRAMES"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      പ്രധാന തലക്കെട്ട് (Story Headline) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={photoStoryData.title}
+                      onChange={(e) => setPhotoStoryData({ ...photoStoryData, title: e.target.value })}
+                      placeholder="ഉദാഹരണം: കുട്ടനാടൻ കായൽ ജീവിതം: വേനൽമഴയുടെ വരവറിയിച്ച് ഓളങ്ങൾ"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      വിവരണം (Story Description)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={photoStoryData.description}
+                      onChange={(e) => setPhotoStoryData({ ...photoStoryData, description: e.target.value })}
+                      placeholder="Visual captures of life, landscapes, and backwaters across God's Own Country."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs leading-relaxed font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                    />
+                  </div>
+                </div>
+
+                {/* Images Manager Card */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sm:p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <ImageIcon className="w-4 h-4 text-editorial-crimson" />
+                      <span>സ്റ്റോറി ചിത്രങ്ങൾ ({photoStoryData.images?.length || 0})</span>
+                    </h4>
+                    <span className="text-[11px] text-slate-500 font-semibold">
+                      കുറഞ്ഞത് 3 ചിത്രങ്ങൾ ശുപാർശ ചെയ്യുന്നു
+                    </span>
+                  </div>
+
+                  {/* Existing Images List */}
+                  <div className="space-y-3">
+                    {photoStoryData.images && photoStoryData.images.length > 0 ? (
+                      photoStoryData.images.map((img, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition"
+                        >
+                          {/* Image preview */}
+                          <div className="w-20 h-16 sm:w-24 sm:h-20 rounded-lg overflow-hidden shrink-0 border border-slate-200 relative bg-slate-200">
+                            <img
+                              src={img.url}
+                              alt={img.caption || `Image ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <span className="absolute bottom-1 left-1 bg-black/70 text-white font-mono text-[9px] px-1.5 py-0.5 rounded">
+                              #{idx + 1}
+                            </span>
+                          </div>
+
+                          {/* Caption Input */}
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <input
+                              type="text"
+                              value={img.caption || ''}
+                              onChange={(e) => handleStoryImageCaptionChange(idx, e.target.value)}
+                              placeholder={`ചിത്രം ${idx + 1} അടിക്കുറിപ്പ് (Caption - ഓപ്ഷണൽ)`}
+                              className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-editorial-crimson"
+                            />
+                            <p className="text-[10px] text-slate-400 truncate select-all font-mono">
+                              {img.url}
+                            </p>
+                          </div>
+
+                          {/* Action Buttons: Move Up / Down / Delete */}
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveStoryImage(idx, 'up')}
+                              disabled={idx === 0}
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 disabled:opacity-30 transition"
+                              title="മുകളിലേക്ക് മാറ്റുക"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveStoryImage(idx, 'down')}
+                              disabled={idx === photoStoryData.images.length - 1}
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-200 disabled:opacity-30 transition"
+                              title="താഴേക്ക് മാറ്റുക"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveStoryImage(idx)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
+                              title="ചിത്രം ഒഴിവാക്കുക"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-8 text-center text-slate-400 border border-dashed border-slate-300 rounded-xl text-xs">
+                        നിലവിൽ ചിത്രങ്ങൾ ചേർത്തിട്ടില്ല. താഴെയുള്ള ബോക്സ് വഴി ചിത്രങ്ങൾ ചേർക്കാം.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Add New Image Sub-Card */}
+                  <div className="p-4 rounded-xl border border-slate-300 bg-slate-50/90 space-y-3 mt-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <Plus className="w-3.5 h-3.5 text-editorial-crimson" />
+                        <span>പുതിയ ചിത്രം ചേർക്കുക</span>
+                      </span>
+
+                      {/* Mode Switch: Upload vs URL */}
+                      <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200 text-[11px] font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setStoryImageMode('upload')}
+                          className={`px-2.5 py-1 rounded-md transition ${storyImageMode === 'upload' ? 'bg-editorial-crimson text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                        >
+                          ഡിവൈസ് ഫയൽ
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setStoryImageMode('url')}
+                          className={`px-2.5 py-1 rounded-md transition ${storyImageMode === 'url' ? 'bg-editorial-crimson text-white' : 'text-slate-600 hover:text-slate-900'}`}
+                        >
+                          ഇമേജ് ലിങ്ക്
+                        </button>
+                      </div>
+                    </div>
+
+                    {storyImageMode === 'upload' ? (
+                      <div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleStoryImageFileChange}
+                          className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-editorial-crimson file:text-white hover:file:bg-red-700 cursor-pointer"
+                        />
+                      </div>
+                    ) : (
+                      <input
+                        type="url"
+                        value={newStoryImageUrl}
+                        onChange={(e) => setNewStoryImageUrl(e.target.value)}
+                        placeholder="https://example.com/image.jpg"
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-mono focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                      />
+                    )}
+
+                    {newStoryImageUrl && (
+                      <div className="flex items-center gap-3 p-2 bg-white rounded-lg border border-slate-200">
+                        <img
+                          src={newStoryImageUrl}
+                          alt="Preview"
+                          className="w-12 h-10 object-cover rounded shrink-0 border border-slate-200"
+                        />
+                        <span className="text-[11px] text-slate-500 truncate flex-1">
+                          തിരഞ്ഞെടുത്ത ചിത്രം തയ്യാറാണ്
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row gap-2.5">
+                      <input
+                        type="text"
+                        value={newStoryImageCaption}
+                        onChange={(e) => setNewStoryImageCaption(e.target.value)}
+                        placeholder="അടിക്കുറിപ്പ് നൽകുക (ഓപ്ഷണൽ)"
+                        className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddStoryImage}
+                        disabled={!newStoryImageUrl.trim()}
+                        className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-40 shrink-0"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>ഗാലറിയിൽ ചേർക്കുക</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Live Website Preview (5 cols) */}
+              <div className="lg:col-span-5 space-y-4">
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sticky top-6">
+                  <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2.5">
+                    <span className="text-xs font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                      <Eye className="w-3.5 h-3.5 text-editorial-crimson" />
+                      ലൈവ് സൈറ്റ് প্রിവ്യൂ (Live Preview)
+                    </span>
+                    <span className="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Real-time
+                    </span>
+                  </div>
+
+                  {/* Dark Photo Story Replica Box matching Homepage */}
+                  <div className="bg-[#09101d] text-white rounded-xl p-4 sm:p-5 shadow-lg border border-slate-800">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] bg-opinion-ochre text-white px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                          {photoStoryData.tagLabel || 'PHOTO STORY'}
+                        </span>
+                        <span className="text-[11px] text-slate-300 uppercase tracking-wider font-semibold">
+                          {photoStoryData.subtitle || 'KERALA IN FRAMES'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <h3 className="font-headline text-base sm:text-lg font-bold mb-1.5 text-white leading-snug">
+                      {photoStoryData.title || 'തലക്കെട്ട് നൽകിയിട്ടില്ല'}
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mb-3 line-clamp-2 leading-relaxed">
+                      {photoStoryData.description || 'വിവരണം നൽകിയിട്ടില്ല'}
+                    </p>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      {(photoStoryData.images && photoStoryData.images.length > 0
+                        ? photoStoryData.images.slice(0, 3)
+                        : DEFAULT_PHOTO_STORY.images
+                      ).map((img, idx) => (
+                        <div key={idx} className="rounded-lg overflow-hidden bg-slate-800 relative group">
+                          <img
+                            src={img.url}
+                            alt={img.caption || `Photo ${idx + 1}`}
+                            className="w-full h-20 sm:h-24 object-cover"
+                          />
+                          {img.caption && (
+                            <div className="absolute inset-x-0 bottom-0 bg-black/80 p-1 text-[9px] text-white truncate text-center">
+                              {img.caption}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {photoStoryData.images && photoStoryData.images.length > 3 && (
+                      <p className="text-[10px] text-slate-400 text-center mt-2 font-medium">
+                        + മറ്റു {photoStoryData.images.length - 3} ചിത്രങ്ങൾ കൂടിയുണ്ട് (സ്ലൈഡറിൽ കാണാം)
+                      </p>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 mt-3 text-center">
+                    മാറ്റങ്ങൾ വരുത്തിയ ശേഷം മുകളിലുള്ള <strong className="text-editorial-crimson">മാറ്റങ്ങൾ സേവ് ചെയ്യുക</strong> ബട്ടൺ ക്ലിക്ക് ചെയ്യുക.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}

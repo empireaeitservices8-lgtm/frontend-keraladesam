@@ -933,5 +933,116 @@ export async function adminDeleteAdInquiry(
   }
 }
 
+// ----------------- PHOTO STORY API -----------------
+export interface PhotoStoryImage {
+  url: string;
+  caption?: string;
+}
+
+export interface PhotoStoryItem {
+  id?: number | string;
+  tagLabel: string;
+  subtitle: string;
+  title: string;
+  description: string;
+  images: PhotoStoryImage[];
+  updatedAt?: string;
+}
+
+export const DEFAULT_PHOTO_STORY: PhotoStoryItem = {
+  tagLabel: 'PHOTO STORY',
+  subtitle: 'KERALA IN FRAMES',
+  title: 'കുട്ടനാടൻ കായൽ ജീവിതം: വേനൽമഴയുടെ വരവറിയിച്ച് ഓളങ്ങൾ',
+  description: "Visual captures of life, landscapes, and backwaters across God's Own Country.",
+  images: [
+    {
+      url: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=600&q=80',
+      caption: 'കുട്ടനാട് 1',
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
+      caption: 'കുട്ടനാട് 2',
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&w=600&q=80',
+      caption: 'കുട്ടനാട് 3',
+    },
+  ],
+};
+
+export async function getRealPhotoStory(): Promise<PhotoStoryItem> {
+  const cacheKey = 'photo_story_active';
+  const cached = getCachedData<PhotoStoryItem>(cacheKey);
+
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/photo-story?_t=${Date.now()}`, {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.photoStory) {
+        setCachedData(cacheKey, data.photoStory);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('kd_photo_story', JSON.stringify(data.photoStory));
+        }
+        return data.photoStory;
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to fetch photo story from API, checking local fallback:', err);
+  }
+
+  if (cached) return cached;
+  if (typeof window !== 'undefined') {
+    try {
+      const local = localStorage.getItem('kd_photo_story');
+      if (local) return JSON.parse(local);
+    } catch {}
+  }
+  return DEFAULT_PHOTO_STORY;
+}
+
+export async function adminUpdatePhotoStory(
+  storyData: PhotoStoryItem,
+  token?: string
+): Promise<{ success: boolean; photoStory?: PhotoStoryItem; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch(`${baseUrl}/photo-story`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(storyData),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update photo story');
+
+    // Update caches
+    setCachedData('photo_story_active', data.photoStory);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('kd_photo_story', JSON.stringify(data.photoStory));
+      window.dispatchEvent(new Event('kd_photo_story_updated'));
+    }
+
+    return { success: true, photoStory: data.photoStory };
+  } catch (err: any) {
+    // If backend is offline, save locally
+    if (typeof window !== 'undefined') {
+      setCachedData('photo_story_active', storyData);
+      localStorage.setItem('kd_photo_story', JSON.stringify(storyData));
+      window.dispatchEvent(new Event('kd_photo_story_updated'));
+      return { success: true, photoStory: storyData };
+    }
+    return { success: false, error: err.message };
+  }
+}
+
 
 

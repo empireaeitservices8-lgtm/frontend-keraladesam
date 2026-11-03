@@ -164,7 +164,7 @@ export default function Header() {
     try {
       const stored = localStorage.getItem('keraladesyam_read_notifications');
       if (stored) setReadNotificationIds(JSON.parse(stored));
-    } catch {}
+    } catch { }
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setBrowserPushAllowed(Notification.permission === 'granted');
     }
@@ -197,7 +197,7 @@ export default function Header() {
                   body: headlines[0],
                   icon: '/logo.png',
                 });
-              } catch {}
+              } catch { }
             }
           }
           if (Array.isArray(latest)) setNotificationArticles(latest);
@@ -245,7 +245,7 @@ export default function Header() {
             setIsLiveTemp(true);
           }
         }
-      } catch {}
+      } catch { }
     }
     fetchWeather();
     const weatherTimer = setInterval(fetchWeather, 15 * 60 * 1000);
@@ -266,7 +266,7 @@ export default function Header() {
       try {
         const res = await getRealArticles({ search: searchQuery.trim(), limit: 6 });
         if (isMounted) setSearchResults(res);
-      } catch {}
+      } catch { }
     }, 200);
     return () => {
       isMounted = false;
@@ -346,7 +346,7 @@ export default function Header() {
     setReadNotificationIds(allIds);
     try {
       localStorage.setItem('keraladesyam_read_notifications', JSON.stringify(allIds));
-    } catch {}
+    } catch { }
   };
 
   const handleNotificationClick = (item: NotificationItem) => {
@@ -355,7 +355,7 @@ export default function Header() {
       setReadNotificationIds(updated);
       try {
         localStorage.setItem('keraladesyam_read_notifications', JSON.stringify(updated));
-      } catch {}
+      } catch { }
     }
     setShowAlertsDropdown(false);
   };
@@ -371,7 +371,7 @@ export default function Header() {
             icon: '/logo.png',
           });
         }
-      } catch {}
+      } catch { }
     }
   };
 
@@ -419,11 +419,10 @@ export default function Header() {
               key={tab}
               type="button"
               onClick={() => setNotificationTab(tab)}
-              className={`flex-1 py-1 rounded-md text-center transition-colors text-[11px] ${
-                notificationTab === tab
+              className={`flex-1 py-1 rounded-md text-center transition-colors text-[11px] ${notificationTab === tab
                   ? 'bg-white text-ink-midnight shadow-xs font-bold'
                   : 'text-slate-600 hover:text-slate-900'
-              }`}
+                }`}
             >
               {labels[tab]}
             </button>
@@ -444,9 +443,8 @@ export default function Header() {
               key={item.id}
               href={item.url}
               onClick={() => handleNotificationClick(item)}
-              className={`block p-2.5 transition-colors rounded-lg ${
-                !readNotificationIds.includes(item.id) ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-slate-50'
-              }`}
+              className={`block p-2.5 transition-colors rounded-lg ${!readNotificationIds.includes(item.id) ? 'bg-red-50/50 hover:bg-red-50' : 'hover:bg-slate-50'
+                }`}
             >
               <div className="flex items-start gap-2.5">
                 <div className="flex-1 min-w-0">
@@ -573,9 +571,8 @@ export default function Header() {
                   <button
                     key={size}
                     onClick={() => setFontSize(size)}
-                    className={`px-1.5 py-0.5 text-[10px] sm:text-xs rounded transition-colors ${
-                      fontSize === size ? 'bg-primary text-white font-bold' : 'text-surface-pure hover:bg-secondary/40'
-                    }`}
+                    className={`px-1.5 py-0.5 text-[10px] sm:text-xs rounded transition-colors ${fontSize === size ? 'bg-primary text-white font-bold' : 'text-surface-pure hover:bg-secondary/40'
+                      }`}
                   >
                     {size === 'sm' ? 'A-' : size === 'md' ? 'A' : 'A+'}
                   </button>
@@ -623,9 +620,8 @@ export default function Header() {
               </button>
               <button
                 onClick={() => setShowAlertsDropdown(!showAlertsDropdown)}
-                className={`p-2 transition-colors relative rounded-full hover:bg-surface-container ${
-                  showAlertsDropdown ? 'text-primary bg-surface-container' : 'text-secondary hover:text-primary'
-                }`}
+                className={`p-2 transition-colors relative rounded-full hover:bg-surface-container ${showAlertsDropdown ? 'text-primary bg-surface-container' : 'text-secondary hover:text-primary'
+                  }`}
                 title="Notifications"
                 aria-label="Notifications"
               >
@@ -689,37 +685,17 @@ export default function Header() {
                   <Link
                     key={link.label}
                     href={link.href}
-                    className={`px-2.5 lg:px-3 py-1.5 rounded-md text-xs lg:text-[13px] font-semibold transition-colors whitespace-nowrap ${
-                      isActive
+                    className={`px-2.5 lg:px-3 py-1.5 rounded-md text-xs lg:text-[13px] font-semibold transition-colors whitespace-nowrap ${isActive
                         ? 'bg-primary text-white font-bold shadow-sm'
                         : 'text-on-surface-variant hover:text-primary hover:bg-surface-container-low'
-                    }`}
+                      }`}
                   >
                     {link.label}
                   </Link>
                 );
               })}
 
-              {/* Vertical Divider before Social Icons */}
-              <div className="h-4 w-px bg-slate-300 mx-1 shrink-0" />
-
-              {/* Social Media Links (Exactly matching the design) */}
-              <div className="flex items-center gap-1 shrink-0">
-                {SOCIAL_LINKS.map((s) => (
-                  <a
-                    key={s.name}
-                    href={s.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={s.name}
-                    className={`w-6 h-6 rounded-full ${s.bg} text-white flex items-center justify-center shadow-xs hover:scale-110 active:scale-95 transition-transform duration-200`}
-                  >
-                    {s.icon}
-                  </a>
-                ))}
-              </div>
-
-              {/* Vertical Divider after Social Icons */}
+              {/* Divider before Live TV */}
               <div className="h-4 w-px bg-slate-300 mx-1 shrink-0" />
 
               {/* Redesigned Premium Live TV Broadcast Button */}
@@ -750,11 +726,10 @@ export default function Header() {
                       setSearchOpen(next);
                       if (next) setTimeout(() => searchInputRef.current?.focus(), 80);
                     }}
-                    className={`p-2 lg:p-2.5 rounded-full transition-colors flex items-center justify-center ${
-                      searchOpen
+                    className={`p-2 lg:p-2.5 rounded-full transition-colors flex items-center justify-center ${searchOpen
                         ? 'bg-primary text-white shadow-xs'
                         : 'text-secondary hover:text-primary hover:bg-surface-container'
-                    }`}
+                      }`}
                     title="വാർത്തകൾ തിരയുക"
                     aria-label="വാർത്തകൾ തിരയുക"
                   >
@@ -833,11 +808,10 @@ export default function Header() {
                 <div ref={alertsContainerRef} className="relative shrink-0">
                   <button
                     onClick={() => setShowAlertsDropdown(!showAlertsDropdown)}
-                    className={`p-2 lg:p-2.5 rounded-full transition-colors relative flex items-center justify-center ${
-                      showAlertsDropdown
+                    className={`p-2 lg:p-2.5 rounded-full transition-colors relative flex items-center justify-center ${showAlertsDropdown
                         ? 'bg-primary text-white shadow-xs'
                         : 'text-secondary hover:text-primary hover:bg-surface-container'
-                    }`}
+                      }`}
                     title="Notifications"
                     aria-label="Notifications"
                   >
@@ -875,6 +849,37 @@ export default function Header() {
                 </button>
               </div>
             </nav>
+          </div>
+        </div>
+        {/* Social Media Sub Navigation */}
+        <div className="w-full bg-[#F1F3F6] border-y border-slate-200">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="min-h-10 flex items-center justify-center gap-3 sm:gap-5 overflow-x-auto whitespace-nowrap no-scrollbar">
+              <span className="text-[10px] sm:text-[11px] font-bold tracking-wider text-slate-600 shrink-0">
+                FOLLOW US
+              </span>
+
+              <span className="h-4 w-px bg-slate-300 shrink-0" />
+
+              {SOCIAL_LINKS.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={social.name}
+                  aria-label={`Follow Kerala Desam on ${social.name}`}
+                  className="inline-flex items-center gap-1.5 shrink-0 text-slate-700 hover:text-primary transition-colors group"
+                >
+                  <span className={`w-5 h-5 rounded-full ${social.bg} text-white flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform`}>
+                    {social.icon}
+                  </span>
+                  <span className="text-[11px] sm:text-xs font-semibold">
+                    {social.name === 'X (Twitter)' ? 'X' : social.name}
+                  </span>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -982,9 +987,8 @@ export default function Header() {
                       key={link.label}
                       href={link.href}
                       onClick={() => setMobileMenuOpen(false)}
-                      className={`px-3 py-2 text-sm font-semibold rounded transition-colors ${
-                        isActive ? 'bg-primary text-white font-bold' : 'hover:bg-surface-container text-on-surface'
-                      }`}
+                      className={`px-3 py-2 text-sm font-semibold rounded transition-colors ${isActive ? 'bg-primary text-white font-bold' : 'hover:bg-surface-container text-on-surface'
+                        }`}
                     >
                       {link.label}
                     </Link>

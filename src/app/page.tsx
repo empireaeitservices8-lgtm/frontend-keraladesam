@@ -15,14 +15,24 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Article, VideoItem } from '@/data/newsData';
-import { getRealArticles, getRealVideos, deduplicateArticles, getCachedData } from '@/lib/api';
+import {
+  getRealArticles,
+  getRealVideos,
+  deduplicateArticles,
+  getCachedData,
+  getRealPhotoStory,
+  PhotoStoryItem,
+  DEFAULT_PHOTO_STORY,
+} from '@/lib/api';
 import { useFont } from '@/components/FontContext';
 import VideoPlayerModal from '@/components/VideoPlayerModal';
 
 export default function HomePage() {
   const { toggleBookmark, isBookmarked } = useFont();
 
+  const [mounted, setMounted] = useState(false);
   const [articles, setArticles] = useState<Article[]>([]);
+  const [photoStory, setPhotoStory] = useState<PhotoStoryItem>(DEFAULT_PHOTO_STORY);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,6 +70,7 @@ export default function HomePage() {
 
   useEffect(() => {
     let isMounted = true;
+    setMounted(true);
 
     // 1. Immediately hydrate from client-side memory/session cache on mount
     const cachedArticles =
@@ -75,12 +86,18 @@ export default function HomePage() {
       setVideos(cachedVideos);
     }
 
+    const cachedPhotoStory = getCachedData<PhotoStoryItem>('photo_story_active');
+    if (cachedPhotoStory) {
+      setPhotoStory(cachedPhotoStory);
+    }
+
     // 2. Fetch fresh data from backend
     async function loadData() {
       try {
-        const [articlesData, videosData] = await Promise.all([
+        const [articlesData, videosData, photoStoryData] = await Promise.all([
           getRealArticles(),
           getRealVideos(),
+          getRealPhotoStory(),
         ]);
         if (isMounted) {
           if (articlesData && articlesData.length > 0) {
@@ -88,6 +105,9 @@ export default function HomePage() {
           }
           if (videosData && videosData.length > 0) {
             setVideos(videosData);
+          }
+          if (photoStoryData) {
+            setPhotoStory(photoStoryData);
           }
         }
       } catch (err) {
@@ -97,8 +117,17 @@ export default function HomePage() {
       }
     }
     loadData();
+
+    const handlePhotoStoryUpdate = () => {
+      getRealPhotoStory().then((data) => {
+        if (data && isMounted) setPhotoStory(data);
+      }).catch(console.error);
+    };
+    window.addEventListener('kd_photo_story_updated', handlePhotoStoryUpdate);
+
     return () => {
       isMounted = false;
+      window.removeEventListener('kd_photo_story_updated', handlePhotoStoryUpdate);
     };
   }, []);
 
@@ -222,6 +251,19 @@ export default function HomePage() {
       setTimeout(() => setCopiedId(null), 2500);
     }
   };
+
+  if (!mounted) {
+    return (
+      <div className="flex flex-col w-full pb-16">
+        <main className="w-full max-w-[1360px] mx-auto px-3 sm:px-5 lg:px-8 py-4 sm:py-6 md:py-8">
+          <div className="bg-surface-pure rounded-lg p-10 border border-slate-border flex flex-col items-center justify-center text-center gap-3">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <p className="text-sm font-semibold text-slate-700">ഡാറ്റാബേസിൽ നിന്ന് തത്സമയ വാർത്തകൾ ലഭ്യമാക്കുന്നു...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full pb-16">
@@ -551,10 +593,10 @@ export default function HomePage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-[11px] bg-opinion-ochre text-white px-2.5 py-1 rounded font-bold uppercase tracking-wider">
-                  PHOTO STORY
+                  {photoStory.tagLabel || 'PHOTO STORY'}
                 </span>
                 <span className="text-xs text-secondary-fixed-dim uppercase tracking-wider font-semibold">
-                  KERALA IN FRAMES
+                  {photoStory.subtitle || 'KERALA IN FRAMES'}
                 </span>
               </div>
 
@@ -579,38 +621,34 @@ export default function HomePage() {
               </div>
             </div>
             <h3 className="font-headline text-xl sm:text-2xl font-bold mb-2 text-surface-pure">
-              കുട്ടനാടൻ കായൽ ജീവിതം: വേനൽമഴയുടെ വരവറിയിച്ച് ഓളങ്ങൾ
+              {photoStory.title}
             </h3>
             <p className="text-xs sm:text-sm text-secondary-fixed-dim mb-4 leading-relaxed max-w-2xl">
-              Visual captures of life, landscapes, and backwaters across God&apos;s Own Country.
+              {photoStory.description}
             </p>
 
             {/* Mobile swipeable slider, desktop 3-col grid */}
             <div
               ref={photoSliderRef}
-              className="flex sm:grid sm:grid-cols-3 gap-3 overflow-x-auto sm:overflow-visible no-scrollbar scroll-smooth snap-x snap-mandatory pb-2 sm:pb-0"
+              className={`flex sm:grid ${(photoStory.images?.length || 3) <= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'} gap-3 overflow-x-auto sm:overflow-visible no-scrollbar scroll-smooth snap-x snap-mandatory pb-2 sm:pb-0`}
             >
-              <div className="w-[260px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-lg group">
-                <img
-                  src="https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=600&q=80"
-                  alt="Kuttanad 1"
-                  className="rounded-lg object-cover h-40 sm:h-44 w-full group-hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-              <div className="w-[260px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-lg group">
-                <img
-                  src="https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80"
-                  alt="Kuttanad 2"
-                  className="rounded-lg object-cover h-40 sm:h-44 w-full group-hover:scale-105 transition-transform duration-300"
-                />
-              </div>
-              <div className="w-[260px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-lg group">
-                <img
-                  src="https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&w=600&q=80"
-                  alt="Kuttanad 3"
-                  className="rounded-lg object-cover h-40 sm:h-44 w-full group-hover:scale-105 transition-transform duration-300"
-                />
-              </div>
+              {(photoStory.images && photoStory.images.length > 0
+                ? photoStory.images
+                : DEFAULT_PHOTO_STORY.images
+              ).map((img, idx) => (
+                <div key={idx} className="w-[260px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-lg group relative">
+                  <img
+                    src={img.url}
+                    alt={img.caption || `Photo ${idx + 1}`}
+                    className="rounded-lg object-cover h-40 sm:h-44 w-full group-hover:scale-105 transition-transform duration-300"
+                  />
+                  {img.caption && (
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-2 text-[11px] text-white/90 truncate font-medium">
+                      {img.caption}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
