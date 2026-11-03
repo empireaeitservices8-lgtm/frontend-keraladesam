@@ -695,8 +695,25 @@ export default function Header() {
                 );
               })}
 
-              {/* Divider before Live TV */}
-              <div className="h-4 w-px bg-slate-300 mx-1 shrink-0" />
+              {/* Divider before Social Media */}
+              <div className="h-5 w-px bg-slate-300 mx-1.5 shrink-0" />
+
+              {/* Social Media Circular Links */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {SOCIAL_LINKS.map((social) => (
+                  <a
+                    key={social.name}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={social.name}
+                    aria-label={`Follow Kerala Desam on ${social.name}`}
+                    className={`w-6 h-6 flex items-center justify-center rounded-full text-white ${social.bg} hover:scale-110 active:scale-95 transition-transform shadow-2xs`}
+                  >
+                    {social.icon}
+                  </a>
+                ))}
+              </div>
 
               {/* Redesigned Premium Live TV Broadcast Button */}
               <button
@@ -851,46 +868,10 @@ export default function Header() {
             </nav>
           </div>
         </div>
-        {/* Social Media Sub Navigation */}
-        {/* Social Media Sub Navbar */}
-        <div className="w-full bg-[#F1F3F6] border-y border-slate-200">
-          <div className="max-w-[1400px] mx-auto px-4">
-            <div className="min-h-[46px] flex items-center gap-6 overflow-x-auto whitespace-nowrap">
-
-              {/* Follow Us */}
-              <span className="text-[11px] font-bold tracking-wider text-slate-500 shrink-0 border-r border-slate-300 pr-5">
-                FOLLOW US
-              </span>
-
-              {/* Social Links */}
-              {SOCIAL_LINKS.map((social) => (
-                <a
-                  key={social.name}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Follow Kerala Desam on ${social.name}`}
-                  className="group flex items-center gap-2 shrink-0 text-slate-700 hover:text-red-600 transition-colors"
-                >
-                  <span
-                    className={`w-6 h-6 flex items-center justify-center rounded-full text-white ${social.bg} group-hover:scale-110 transition-transform`}
-                  >
-                    {social.icon}
-                  </span>
-
-                  <span className="text-xs font-semibold">
-                    {social.name === "X (Twitter)" ? "X" : social.name}
-                  </span>
-                </a>
-              ))}
-
-            </div>
-          </div>
-        </div>
 
         {/* Premium Breaking News Banner */}
         <section className="bg-gradient-to-r from-[#7a0010] via-[#9e051c] to-[#6d000e] text-white border-y border-red-950/40 shadow-sm overflow-hidden select-none">
-          <div className="max-w-[1400px] mx-auto flex flex-col sm:flex-row items-center justify-center sm:justify-start py-1.5 sm:py-0 sm:h-12 md:h-14 lg:h-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-center sm:justify-start py-1.5 sm:py-0 sm:h-12 md:h-14 lg:h-16 px-4 sm:px-6 lg:px-8">
             {/* Breaking Label Badge */}
             <div className="flex shrink-0 items-center justify-center gap-1.5 sm:gap-2 md:gap-3 bg-[#4d000a] border border-red-400/30 px-2.5 sm:px-3 md:px-4 py-0.5 sm:py-1 md:py-1.5 rounded-full sm:rounded-md shadow-xs mx-auto sm:mx-0 sm:mr-3 md:mr-4 mb-1 sm:mb-0">
               <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 shrink-0">
