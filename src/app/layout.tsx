@@ -44,8 +44,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ml">
-      <body className="bg-parchment-base font-body-md text-on-surface antialiased min-h-screen flex flex-col">
+    <html lang="ml" suppressHydrationWarning>
+      <body suppressHydrationWarning className="bg-parchment-base font-body-md text-on-surface antialiased min-h-screen flex flex-col">
         <AdminAuthProvider>
           <FontProvider>
             <Header />

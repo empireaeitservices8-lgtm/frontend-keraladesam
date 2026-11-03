@@ -1,7 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X, Play, Volume2, VolumeX, Radio, Maximize2, Users, Tv, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  X,
+  Volume2,
+  VolumeX,
+  Radio,
+  Users,
+  Tv,
+  ExternalLink,
+  Settings,
+  Check,
+  Play,
+  Maximize2
+} from 'lucide-react';
 
 interface LiveTvModalProps {
   isOpen: boolean;
@@ -13,67 +25,174 @@ interface ChannelOption {
   name: string;
   tagline: string;
   videoId?: string;
+  channelId?: string;
 }
 
-const CHANNELS: ChannelOption[] = [
-  {
-    id: 'keraladesam',
-    name: 'കേരളദേശം 24x7 HD',
-    tagline: 'പ്രധാന ലൈവ് സ്റ്റുഡിയോ',
-  },
-  {
-    id: 'asianet',
-    name: 'ഏഷ്യാനെറ്റ് ന്യൂസ്',
-    tagline: 'തത്സമയം വാർത്തകൾ',
-    videoId: 'Ko18SgHA43I', // Asianet News Live stream
-  },
-  {
-    id: 'twentyfour',
-    name: '24 ന്യൂസ്',
-    tagline: 'ലൈവ് ബ്രോഡ്കാസ്റ്റ്',
-    videoId: '0U17y9a2q3w', // 24 News Live stream
-  },
-];
+// Helper to extract YouTube video ID from various URL formats
+function extractYouTubeId(url: string): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const match = trimmed.match(
+    /(?:youtube\.com\/(?:watch\?.*v=|shorts\/|embed\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i
+  );
+  return match ? match[1] : '';
+}
 
 export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
-  const [selectedChannel, setSelectedChannel] = useState<ChannelOption>(CHANNELS[0]);
+  const defaultKeralaDesamId =
+    process.env.NEXT_PUBLIC_LIVETV_YOUTUBE_ID || 'dXpuzlD21g0';
+
+  const [customVideoId, setCustomVideoId] = useState<string>('');
+  const [inputUrl, setInputUrl] = useState('');
+  const [showConfig, setShowConfig] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [viewerCount, setViewerCount] = useState(48219);
-  const [useIframe, setUseIframe] = useState(false);
+
+  // Default channels list
+  const CHANNELS: ChannelOption[] = [
+    {
+      id: 'keraladesam',
+      name: 'കേരളദേശം 24x7 HD',
+      tagline: 'പ്രധാന ലൈവ് സ്റ്റുഡിയോ',
+      videoId: customVideoId || defaultKeralaDesamId,
+    },
+    {
+      id: 'twentyfour',
+      name: '24 ന്യൂസ്',
+      tagline: 'തത്സമയം വാർത്തകൾ',
+      videoId: '0U17y9a2q3w',
+    },
+    {
+      id: 'asianet',
+      name: 'ഏഷ്യാനെറ്റ് ന്യൂസ്',
+      tagline: 'ലൈവ് സംപ്രേഷണം',
+      videoId: 'Ko18SgHA43I',
+    },
+    {
+      id: 'manorama',
+      name: 'മനോരമ ന്യൂസ്',
+      tagline: 'തത്സമയം ബുള്ളറ്റിൻ',
+      videoId: 'g5c22K7hFkQ',
+    },
+    {
+      id: 'mediaone',
+      name: 'മീഡിയാവൺ',
+      tagline: 'ലൈവ് വാർത്തകൾ',
+      videoId: '0mQ7gHqPq2I',
+    },
+  ];
+
+  const [selectedChannel, setSelectedChannel] = useState<ChannelOption>(CHANNELS[0]);
+
+  // Load custom saved video ID from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kd_custom_livetv_id');
+      if (saved) {
+        setCustomVideoId(saved);
+      }
+    }
+  }, []);
+
+  // Sync selectedChannel when customVideoId changes
+  useEffect(() => {
+    if (selectedChannel.id === 'keraladesam') {
+      setSelectedChannel((prev) => ({
+        ...prev,
+        videoId: customVideoId || defaultKeralaDesamId,
+      }));
+    }
+  }, [customVideoId, defaultKeralaDesamId]);
 
   if (!isOpen) return null;
 
+  const currentVideoId = selectedChannel.videoId || defaultKeralaDesamId;
+
+  const handleApplyCustomUrl = (e: React.FormEvent) => {
+    e.preventDefault();
+    const id = extractYouTubeId(inputUrl);
+    if (id) {
+      setCustomVideoId(id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kd_custom_livetv_id', id);
+      }
+      setSelectedChannel({
+        id: 'keraladesam',
+        name: 'കേരളദേശം 24x7 HD',
+        tagline: 'കസ്റ്റം ലൈവ് സ്ട്രീം',
+        videoId: id,
+      });
+      setInputUrl('');
+      setShowConfig(false);
+    } else {
+      alert('സാധുവായ ഒരു YouTube Live URL അല്ലെങ്കിൽ Video ID നൽകുക.');
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-5 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-4 md:p-6 animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-4xl bg-ink-midnight text-surface-pure rounded-xl overflow-hidden shadow-2xl border border-secondary/30 flex flex-col"
+        className="relative w-full max-w-4xl bg-neutral-950 text-surface-pure rounded-2xl overflow-hidden shadow-2xl border border-neutral-800 flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Top Bar */}
-        <div className="flex items-center justify-between px-4 py-3 bg-neutral-900 border-b border-neutral-800">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-live-alert animate-ping" />
-            <span className="font-bold text-sm tracking-wide text-live-alert flex items-center gap-1.5">
-              <Radio className="w-4 h-4 text-live-alert" />
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-neutral-900 border-b border-neutral-800">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
+            <span className="font-bold text-xs sm:text-sm tracking-wide text-white flex items-center gap-1.5">
+              <Radio className="w-4 h-4 text-red-500 shrink-0" />
               <span>{selectedChannel.name}</span>
             </span>
-            <span className="text-[11px] bg-red-950/80 text-red-300 font-semibold px-2 py-0.5 rounded border border-red-800/40 uppercase tracking-wider">
-              LIVE
+            <span className="text-[10px] sm:text-[11px] bg-red-600 text-white font-bold px-2 py-0.5 rounded uppercase tracking-wider">
+              LIVE 24x7
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Custom URL Toggle Settings */}
+            <button
+              onClick={() => setShowConfig(!showConfig)}
+              className={`p-1.5 rounded-md transition-colors ${
+                showConfig
+                  ? 'bg-red-600 text-white'
+                  : 'hover:bg-neutral-800 text-neutral-300 hover:text-white'
+              }`}
+              title="ലൈവ് സ്ട്രീം ലിങ്ക് മാറ്റുക (Settings)"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+
             {/* Audio Toggle */}
             <button
               onClick={() => setIsMuted(!isMuted)}
               className="p-1.5 rounded-md hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
               title={isMuted ? 'Unmute' : 'Mute'}
             >
-              {isMuted ? <VolumeX className="w-4 h-4 text-amber-400" /> : <Volume2 className="w-4 h-4" />}
+              {isMuted ? (
+                <VolumeX className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Volume2 className="w-4 h-4 text-neutral-300" />
+              )}
             </button>
+
+            {/* Open on YouTube */}
+            {currentVideoId && (
+              <a
+                href={`https://www.youtube.com/watch?v=${currentVideoId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-md hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors hidden sm:block"
+                title="യൂട്യൂബിൽ കാണുക"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
 
             {/* Close Modal */}
             <button
@@ -86,112 +205,92 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
           </div>
         </div>
 
-        {/* Video Player Display Area */}
+        {/* Custom Stream URL Configuration Box */}
+        {showConfig && (
+          <form
+            onSubmit={handleApplyCustomUrl}
+            className="bg-neutral-900/90 border-b border-neutral-800 p-3 sm:p-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 animate-in slide-in-from-top-2"
+          >
+            <div className="flex-1">
+              <label className="text-[11px] text-neutral-400 font-semibold mb-1 block">
+                കേരളദേശം സ്വന്തം YouTube Live URL അല്ലെങ്കിൽ Video ID ഇവിടെ നൽകുക:
+              </label>
+              <input
+                type="text"
+                value={inputUrl}
+                onChange={(e) => setInputUrl(e.target.value)}
+                placeholder="ഉദാ: https://www.youtube.com/watch?v=... അല്ലെങ്കിൽ ലൈവ് ലിങ്ക്"
+                className="w-full bg-black/60 border border-neutral-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-red-500"
+              />
+            </div>
+            <div className="flex items-center gap-2 shrink-0 sm:pt-4">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
+              >
+                <Play className="w-3.5 h-3.5 fill-current" />
+                പ്ലേ ചെയ്യുക
+              </button>
+              {customVideoId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomVideoId('');
+                    if (typeof window !== 'undefined') {
+                      localStorage.removeItem('kd_custom_livetv_id');
+                    }
+                  }}
+                  className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg text-xs font-medium transition-colors"
+                >
+                  റീസെറ്റ്
+                </button>
+              )}
+            </div>
+          </form>
+        )}
+
+        {/* Video Player Display Area - Auto Playing Iframe */}
         <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
-          {useIframe && selectedChannel.videoId ? (
+          {currentVideoId ? (
             <iframe
-              src={`https://www.youtube-nocookie.com/embed/${selectedChannel.videoId}?autoplay=1&mute=${isMuted ? 1 : 0}`}
+              src={`https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1&mute=${
+                isMuted ? 1 : 0
+              }&playsinline=1&rel=0`}
               title={selectedChannel.name}
               className="w-full h-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
           ) : (
-            <>
-              {/* Broadcast Studio Backdrop */}
-              <div
-                className="absolute inset-0 bg-cover bg-center opacity-75 transform scale-105 transition-transform duration-1000"
-                style={{
-                  backgroundImage:
-                    'url(https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=1200&q=80)',
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-black/70" />
-
-              {/* On-Air Live Badge Top Left */}
-              <div className="absolute top-4 left-4 flex items-center gap-2 bg-live-alert text-white px-2.5 py-1 rounded-sm text-xs font-bold shadow-lg uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                LIVE
-              </div>
-
-              {/* Active Viewers Counter Top Right */}
-              <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/70 backdrop-blur px-2.5 py-1 rounded text-xs text-white border border-white/10">
-                <Users className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{viewerCount.toLocaleString('en-IN')} watching</span>
-              </div>
-
-              {/* Center Play Graphic */}
-              <div className="z-10 text-center px-4">
-                <div
-                  onClick={() => {
-                    setUseIframe(true);
-                    if (selectedChannel.id === 'keraladesyam') {
-                      setSelectedChannel(CHANNELS[1]);
-                    }
-                  }}
-                  className="w-16 h-16 rounded-full bg-primary/90 text-white flex items-center justify-center mx-auto shadow-2xl hover:scale-110 transition-all cursor-pointer border-2 border-white/50 group"
-                  title="Watch Live Stream"
-                >
-                  <Play className="w-7 h-7 fill-current translate-x-0.5 group-hover:scale-110 transition-transform" />
-                </div>
-                <h3 className="mt-3 text-base md:text-lg font-bold text-white drop-shadow-md">
-                  {selectedChannel.name} • പ്രൈം ടൈം വാർത്താ ബുള്ളറ്റിൻ
-                </h3>
-                <p className="text-xs text-neutral-300 drop-shadow mt-1">
-                  തത്സമയ വിശകലനം • ലൈവ് സംപ്രേഷണം പുരോഗമിക്കുന്നു
-                </p>
-                <div className="mt-3 flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => {
-                      setUseIframe(true);
-                      setSelectedChannel(CHANNELS[1]);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold shadow transition-colors uppercase tracking-wider"
-                  >
-                    <Tv className="w-3.5 h-3.5" />
-                    PLAY YOUTUBE LIVE
-                  </button>
-                </div>
-              </div>
-
-              {/* News Flash Ticker Inside Video */}
-              <div className="absolute bottom-0 left-0 right-0 bg-neutral-950/95 border-t border-neutral-800 p-2.5 flex items-center gap-3">
-                <span className="bg-editorial-crimson text-white text-[10px] font-bold px-2 py-0.5 rounded shrink-0 uppercase tracking-wider">
-                  BREAKING
-                </span>
-                <div className="overflow-hidden whitespace-nowrap text-xs text-neutral-200 font-medium">
-                  <span className="inline-block animate-ticker">
-                    വയനാട് തുരങ്കപാത നിർമാണത്തിന് കേന്ദ്ര പരിസ്ഥിതി അനുമതി ലഭിച്ചു; ടെൻഡർ നടപടികൾ വേഗത്തിലാക്കാൻ നിർദേശം • കൊച്ചി മെട്രോ കാക്കനാട് പാത ട്രയൽ റൺ ഡിസംബറിൽ • സംസ്ഥാനത്ത് വേനൽമഴ ശക്തമാകാൻ സാധ്യത
-                  </span>
-                </div>
-              </div>
-            </>
+            <div className="text-center p-6 text-neutral-400 text-xs">
+              ലൈവ് സ്ട്രീം ലഭ്യമായിട്ടില്ല. മുകളിലെ സെറ്റിംഗ്സിൽ നിന്ന് യൂട്യൂബ് ലൈവ് ലിങ്ക് നൽകുക.
+            </div>
           )}
+
+          {/* Active Viewers Counter Top Right Overlay */}
+          <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/75 backdrop-blur-xs px-2 py-1 rounded text-[11px] text-white border border-white/10 pointer-events-none">
+            <Users className="w-3 h-3 text-emerald-400" />
+            <span>{viewerCount.toLocaleString('en-IN')} watching</span>
+          </div>
         </div>
 
-        {/* Channel Selection & Audio Quality Ribbon */}
-        <div className="p-3.5 bg-neutral-950 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs border-t border-neutral-800">
-          <div className="flex items-center flex-wrap gap-2">
-            <span className="text-neutral-400 font-semibold flex items-center gap-1 uppercase tracking-wider text-[11px]">
-              <Tv className="w-3.5 h-3.5 text-primary" /> CHANNELS:
+        {/* Channel Selection Ribbon */}
+        <div className="p-3 bg-neutral-950 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs border-t border-neutral-800">
+          <div className="flex items-center flex-wrap gap-1.5 sm:gap-2 w-full md:w-auto">
+            <span className="text-neutral-400 font-bold flex items-center gap-1 uppercase tracking-wider text-[11px] shrink-0 mr-1">
+              <Tv className="w-3.5 h-3.5 text-red-500" /> CHANNELS:
             </span>
+
             {CHANNELS.map((ch) => {
               const isCurrent = selectedChannel.id === ch.id;
               return (
                 <button
                   key={ch.id}
-                  onClick={() => {
-                    setSelectedChannel(ch);
-                    if (ch.videoId) {
-                      setUseIframe(true);
-                    } else {
-                      setUseIframe(false);
-                    }
-                  }}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  onClick={() => setSelectedChannel(ch)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${
                     isCurrent
-                      ? 'bg-primary text-white font-bold shadow-sm'
-                      : 'bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                      ? 'bg-red-600 text-white font-bold shadow-sm scale-105'
+                      : 'bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-white border border-neutral-800'
                   }`}
                 >
                   {ch.name}
@@ -200,13 +299,13 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
             })}
           </div>
 
-          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
-            <span className="text-neutral-400 text-[11px] hidden sm:inline">
-              HD 1080p • Malayalam
+          <div className="flex items-center gap-2.5 w-full md:w-auto justify-between md:justify-end border-t md:border-t-0 pt-2 md:pt-0 border-neutral-800">
+            <span className="text-neutral-400 text-[11px]">
+              HD 1080p • തത്സമയം
             </span>
             <button
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-white font-medium transition-colors uppercase tracking-wider text-[11px]"
+              className="px-3.5 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-white font-bold transition-colors uppercase tracking-wider text-[11px]"
             >
               CLOSE
             </button>

@@ -22,25 +22,10 @@ import VideoPlayerModal from '@/components/VideoPlayerModal';
 export default function HomePage() {
   const { toggleBookmark, isBookmarked } = useFont();
 
-  // Instant SWR state initialization from memory/session cache
-  const [articles, setArticles] = useState<Article[]>(() => {
-    if (typeof window !== 'undefined') {
-      return (
-        getCachedData<Article[]>('articles_all___def_f') ||
-        getCachedData<Article[]>('articles_all___50_f') ||
-        []
-      );
-    }
-    return [];
-  });
-  const [videos, setVideos] = useState<VideoItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      return getCachedData<VideoItem[]>('videos_all_20') || [];
-    }
-    return [];
-  });
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
-  const [loading, setLoading] = useState(() => articles.length === 0);
+  const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -75,6 +60,22 @@ export default function HomePage() {
 
   useEffect(() => {
     let isMounted = true;
+
+    // 1. Immediately hydrate from client-side memory/session cache on mount
+    const cachedArticles =
+      getCachedData<Article[]>('articles_all___def_f') ||
+      getCachedData<Article[]>('articles_all___50_f');
+    if (cachedArticles && cachedArticles.length > 0) {
+      setArticles(deduplicateArticles(cachedArticles));
+      setLoading(false);
+    }
+
+    const cachedVideos = getCachedData<VideoItem[]>('videos_all_20');
+    if (cachedVideos && cachedVideos.length > 0) {
+      setVideos(cachedVideos);
+    }
+
+    // 2. Fetch fresh data from backend
     async function loadData() {
       try {
         const [articlesData, videosData] = await Promise.all([
@@ -392,7 +393,17 @@ export default function HomePage() {
           </div>
 
           {/* Mobile View: 2 cards per row (grid-cols-2), Responsive across tablet & desktop */}
-          {paginatedArticles.length === 0 ? (
+          {loading && paginatedArticles.length === 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
+              {[...Array(8)].map((_, idx) => (
+                <div key={idx} className="bg-surface-pure rounded-xl p-3 border border-slate-200 animate-pulse flex flex-col gap-2">
+                  <div className="w-full aspect-[16/10] bg-slate-200 rounded-lg" />
+                  <div className="h-4 bg-slate-200 rounded w-4/5 mt-1" />
+                  <div className="h-3 bg-slate-200 rounded w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : paginatedArticles.length === 0 ? (
             <div className="bg-surface-pure rounded-xl p-8 border border-slate-200 text-center text-secondary text-sm">
               കൂടുതൽ വാർത്തകൾ ലഭ്യമല്ല.
             </div>

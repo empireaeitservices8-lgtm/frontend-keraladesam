@@ -23,8 +23,10 @@ interface BookmarksDrawerProps {
 export default function BookmarksDrawer({ isOpen, onClose }: BookmarksDrawerProps) {
   const { savedArticles, toggleBookmark } = useFont();
   const [allArticles, setAllArticles] = React.useState<Article[]>([]);
+  const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
+    setIsMounted(true);
     if (isOpen) {
       getRealArticles().then((data) => setAllArticles(data)).catch(console.error);
     }
@@ -123,7 +125,7 @@ export default function BookmarksDrawer({ isOpen, onClose }: BookmarksDrawerProp
                       <span className="text-[10px] font-bold uppercase text-editorial-crimson block">
                         {item.category}
                       </span>
-                      {typeof window !== 'undefined' && localStorage.getItem(`kd_followed_${item.id}`) && (
+                      {isMounted && typeof window !== 'undefined' && localStorage.getItem(`kd_followed_${item.id}`) && (
                         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[9px] font-bold border border-emerald-200">
                           🔔 ഫോളോ ചെയ്യുന്നു
                         </span>
