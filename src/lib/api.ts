@@ -947,6 +947,7 @@ export interface PhotoStoryItem {
   description: string;
   images: PhotoStoryImage[];
   updatedAt?: string;
+  isCustom?: boolean;
 }
 
 export const DEFAULT_PHOTO_STORY: PhotoStoryItem = {
@@ -974,6 +975,20 @@ export async function getRealPhotoStory(): Promise<PhotoStoryItem> {
   const cacheKey = 'photo_story_active';
   const cached = getCachedData<PhotoStoryItem>(cacheKey);
 
+  // Check if we have a locally stored custom story
+  let localCustomStory: PhotoStoryItem | null = null;
+  if (typeof window !== 'undefined') {
+    try {
+      const local = localStorage.getItem('kd_photo_story');
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (parsed && (parsed.isCustom || (parsed.images && parsed.images.length > 0))) {
+          localCustomStory = parsed;
+        }
+      }
+    } catch {}
+  }
+
   try {
     const baseUrl = getApiBaseUrl();
     const res = await fetch(`${baseUrl}/photo-story?_t=${Date.now()}`, {
@@ -983,24 +998,32 @@ export async function getRealPhotoStory(): Promise<PhotoStoryItem> {
     if (res.ok) {
       const data = await res.json();
       if (data.photoStory) {
-        setCachedData(cacheKey, data.photoStory);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('kd_photo_story', JSON.stringify(data.photoStory));
+        const remoteStory = data.photoStory;
+        const isRemoteDefault =
+          remoteStory.title === DEFAULT_PHOTO_STORY.title &&
+          remoteStory.images?.length === 3 &&
+          remoteStory.images[0]?.url === DEFAULT_PHOTO_STORY.images[0]?.url;
+
+        // If backend returned default but client has saved custom images, preserve custom images!
+        if (isRemoteDefault && localCustomStory && localCustomStory.images && localCustomStory.images.length > 0) {
+          adminUpdatePhotoStory(localCustomStory).catch(() => {});
+          setCachedData(cacheKey, localCustomStory);
+          return localCustomStory;
         }
-        return data.photoStory;
+
+        setCachedData(cacheKey, remoteStory);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('kd_photo_story', JSON.stringify(remoteStory));
+        }
+        return remoteStory;
       }
     }
   } catch (err) {
     console.warn('Failed to fetch photo story from API, checking local fallback:', err);
   }
 
+  if (localCustomStory) return localCustomStory;
   if (cached) return cached;
-  if (typeof window !== 'undefined') {
-    try {
-      const local = localStorage.getItem('kd_photo_story');
-      if (local) return JSON.parse(local);
-    } catch {}
-  }
   return DEFAULT_PHOTO_STORY;
 }
 
@@ -1008,6 +1031,23 @@ export async function adminUpdatePhotoStory(
   storyData: PhotoStoryItem,
   token?: string
 ): Promise<{ success: boolean; photoStory?: PhotoStoryItem; error?: string }> {
+  const customStory: PhotoStoryItem = {
+    ...storyData,
+    isCustom: true,
+    updatedAt: new Date().toISOString(),
+  };
+
+  // Always update memory cache & localStorage immediately
+  if (typeof window !== 'undefined') {
+    setCachedData('photo_story_active', customStory);
+    try {
+      localStorage.setItem('kd_photo_story', JSON.stringify(customStory));
+    } catch (e) {
+      console.warn('LocalStorage save warning:', e);
+    }
+    window.dispatchEvent(new Event('kd_photo_story_updated'));
+  }
+
   try {
     const baseUrl = getApiBaseUrl();
     const headers: Record<string, string> = {
@@ -1018,29 +1058,23 @@ export async function adminUpdatePhotoStory(
     const res = await fetch(`${baseUrl}/photo-story`, {
       method: 'PUT',
       headers,
-      body: JSON.stringify(storyData),
+      body: JSON.stringify(customStory),
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to update photo story');
-
-    // Update caches
-    setCachedData('photo_story_active', data.photoStory);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('kd_photo_story', JSON.stringify(data.photoStory));
-      window.dispatchEvent(new Event('kd_photo_story_updated'));
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.photoStory) {
+      const merged = { ...data.photoStory, isCustom: true };
+      setCachedData('photo_story_active', merged);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kd_photo_story', JSON.stringify(merged));
+        window.dispatchEvent(new Event('kd_photo_story_updated'));
+      }
+      return { success: true, photoStory: merged };
     }
 
-    return { success: true, photoStory: data.photoStory };
+    return { success: true, photoStory: customStory };
   } catch (err: any) {
-    // If backend is offline, save locally
-    if (typeof window !== 'undefined') {
-      setCachedData('photo_story_active', storyData);
-      localStorage.setItem('kd_photo_story', JSON.stringify(storyData));
-      window.dispatchEvent(new Event('kd_photo_story_updated'));
-      return { success: true, photoStory: storyData };
-    }
-    return { success: false, error: err.message };
+    return { success: true, photoStory: customStory };
   }
 }
 

@@ -490,16 +490,56 @@ export default function AdminPortalPage() {
     }
   };
 
-  const handleStoryImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressStoryImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          const maxDim = 1200;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.85));
+          } else {
+            resolve((e.target?.result as string) || '');
+          }
+        };
+        img.onerror = () => resolve((e.target?.result as string) || '');
+        img.src = (e.target?.result as string) || '';
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleStoryImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setNewStoryImageFile(file);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      setNewStoryImageUrl(dataUrl);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressStoryImage(file);
+      setNewStoryImageUrl(compressed || '');
+    } catch {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setNewStoryImageUrl((reader.result as string) || '');
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleAddStoryImage = () => {

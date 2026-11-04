@@ -89,6 +89,16 @@ export default function HomePage() {
     const cachedPhotoStory = getCachedData<PhotoStoryItem>('photo_story_active');
     if (cachedPhotoStory) {
       setPhotoStory(cachedPhotoStory);
+    } else if (typeof window !== 'undefined') {
+      try {
+        const local = localStorage.getItem('kd_photo_story');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (parsed && parsed.images && parsed.images.length > 0) {
+            setPhotoStory(parsed);
+          }
+        }
+      } catch {}
     }
 
     // 2. Fetch fresh data from backend
@@ -119,6 +129,15 @@ export default function HomePage() {
     loadData();
 
     const handlePhotoStoryUpdate = () => {
+      if (typeof window !== 'undefined') {
+        try {
+          const local = localStorage.getItem('kd_photo_story');
+          if (local) {
+            const parsed = JSON.parse(local);
+            if (parsed && isMounted) setPhotoStory(parsed);
+          }
+        } catch {}
+      }
       getRealPhotoStory().then((data) => {
         if (data && isMounted) setPhotoStory(data);
       }).catch(console.error);
