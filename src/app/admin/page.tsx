@@ -1192,7 +1192,7 @@ export default function AdminPortalPage() {
             </div>
             <div className="flex-1 min-w-0">
               <span className="text-xs font-bold text-white block truncate leading-tight">
-                {user?.name || 'Chief Editor'}
+                {user?.name || 'Editor'}
               </span>
               <span className="text-[10px] text-slate-400 font-mono block truncate">
                 {user?.role === 'admin' ? 'ADMINISTRATOR' : 'EDITOR'}
@@ -1291,7 +1291,7 @@ export default function AdminPortalPage() {
             {/* Mobile Sidebar Footer */}
             <div className="p-4 border-t border-white/10 bg-[#090f17] flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white truncate">{user?.name || 'Chief Editor'}</span>
+                <span className="text-xs font-bold text-white truncate">{user?.name || 'Editor'}</span>
                 <span className="text-[10px] bg-editorial-crimson px-2 py-0.5 rounded text-white font-mono uppercase">
                   {user?.role === 'admin' ? 'ADMIN' : 'EDITOR'}
                 </span>
@@ -1424,7 +1424,7 @@ export default function AdminPortalPage() {
                     </span>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold font-headline text-white">
-                    സ്വാഗതം, {user?.name || 'ചീഫ് എഡിറ്റർ'}
+                    സ്വാഗതം, {user?.name || 'എഡിറ്റർ'}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
                     കേരളദേശം ഗ്ലോബൽ മലയാളം ന്യൂസ് നെറ്റ്‌വർക്കിന്റെ പ്രധാന ഡാഷ്‌ബോർഡ്. വാർത്തകൾ, ബ്രേക്കിംഗ് അറിയിപ്പുകൾ, ഫോട്ടോ സ്റ്റോറി, വരിക്കാർ എന്നിവയുടെ സമഗ്ര വിവരങ്ങൾ ഇവിടെ കാണാം.

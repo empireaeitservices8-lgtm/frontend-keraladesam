@@ -79,7 +79,7 @@ export function normalizeArticle(raw: any): Article {
     updatedAt: raw.updatedAt ? new Date(raw.updatedAt).toLocaleString('ml-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '',
     createdAt: raw.createdAt ? new Date(raw.createdAt).toISOString() : (raw.publishedAt || new Date().toISOString()),
     author: {
-      name: raw.author?.name === 'Chief Editor' ? 'ചീഫ് എഡിറ്റർ' : (raw.author?.name || 'കേരളദേശം ന്യൂസ് ഡെസ്ക്'),
+      name: (raw.author?.name === 'Chief Editor' || raw.author?.name === 'Editor') ? 'എഡിറ്റർ' : (raw.author?.name || 'കേരളദേശം ന്യൂസ് ഡെസ്ക്'),
       designation: raw.author?.designation || 'ഡെസ്ക് റിപ്പോർട്ടർ',
       location: raw.author?.location || 'കേരളം',
       avatar:
