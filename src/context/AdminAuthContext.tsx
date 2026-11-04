@@ -17,6 +17,17 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
 
 const TOKEN_KEY = 'keraladesam_admin_jwt';
 
+function sanitizeUser(u: AdminUser): AdminUser {
+  const cleanName = (u.name || 'Editor')
+    .replace(/chief\s*/i, '')
+    .replace(/ചീഫ്\s*/, '')
+    .trim() || 'Editor';
+  return {
+    ...u,
+    name: cleanName,
+  };
+}
+
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -27,13 +38,13 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     let isMounted = true;
     async function initAuth() {
       if (typeof window === 'undefined') return;
-      const storedToken = localStorage.getItem(TOKEN_KEY);
+      const storedToken = localStorage.getItem(TOKEN_KEY) || localStorage.getItem('token');
       if (storedToken) {
         setToken(storedToken);
         const meRes = await adminGetMe(storedToken);
         if (isMounted) {
           if (meRes.success && meRes.user) {
-            setUser(meRes.user);
+            setUser(sanitizeUser(meRes.user));
           } else {
             // Invalid / expired token
             localStorage.removeItem(TOKEN_KEY);
@@ -55,8 +66,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     const res = await adminLogin(email, pass);
     setLoading(false);
     if (res.success && res.token && res.user) {
+      const cleanUser = sanitizeUser(res.user);
       setToken(res.token);
-      setUser(res.user);
+      setUser(cleanUser);
       localStorage.setItem(TOKEN_KEY, res.token);
       return { success: true };
     }
@@ -68,8 +80,9 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     const res = await adminRegister(name, email, pass, role);
     setLoading(false);
     if (res.success && res.token && res.user) {
+      const cleanUser = sanitizeUser(res.user);
       setToken(res.token);
-      setUser(res.user);
+      setUser(cleanUser);
       localStorage.setItem(TOKEN_KEY, res.token);
       return { success: true };
     }

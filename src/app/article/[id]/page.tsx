@@ -339,7 +339,7 @@ export default function ArticleDetailPage() {
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
                   <span className="font-headline text-base font-bold text-ink-midnight leading-none">
-                    {article.author.name === 'Chief Editor' || article.author.name === 'Editor'
+                    {(article.author.name?.toLowerCase().includes('editor') || article.author.name?.toLowerCase().includes('chief'))
                       ? 'എഡിറ്റർ'
                       : article.author.name || 'കേരളദേശം ന്യൂസ് ഡെസ്ക്'}
                   </span>
@@ -574,7 +574,7 @@ export default function ArticleDetailPage() {
                 className="w-16 h-16 rounded-full object-cover mx-auto ring-2 ring-primary mb-2 shadow-xs"
               />
               <h4 className="font-headline text-base font-bold text-ink-midnight">
-                {article.author.name === 'Chief Editor' || article.author.name === 'Editor'
+                {(article.author.name?.toLowerCase().includes('editor') || article.author.name?.toLowerCase().includes('chief'))
                   ? 'എഡിറ്റർ'
                   : article.author.name || 'കേരളദേശം ന്യൂസ് ഡെസ്ക്'}
               </h4>

@@ -79,7 +79,7 @@ export function normalizeArticle(raw: any): Article {
     updatedAt: raw.updatedAt ? new Date(raw.updatedAt).toLocaleString('ml-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '',
     createdAt: raw.createdAt ? new Date(raw.createdAt).toISOString() : (raw.publishedAt || new Date().toISOString()),
     author: {
-      name: (raw.author?.name === 'Chief Editor' || raw.author?.name === 'Editor') ? 'എഡിറ്റർ' : (raw.author?.name || 'കേരളദേശം ന്യൂസ് ഡെസ്ക്'),
+      name: (raw.author?.name?.toLowerCase().includes('editor') || raw.author?.name?.toLowerCase().includes('chief')) ? 'എഡിറ്റർ' : (raw.author?.name || 'കേരളദേശം ന്യൂസ് ഡെസ്ക്'),
       designation: raw.author?.designation || 'ഡെസ്ക് റിപ്പോർട്ടർ',
       location: raw.author?.location || 'കേരളം',
       avatar:
@@ -828,6 +828,7 @@ export async function adminDeleteSubscriber(
 
 export interface AdInquiryItem {
   _id: string;
+  id?: string;
   name: string;
   companyName?: string;
   phone: string;
@@ -899,13 +900,18 @@ export async function adminUpdateAdInquiryStatus(
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const activeToken =
+      token ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+        : undefined);
+    if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
     const res = await fetch(`${baseUrl}/ads/inquiries/${id}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ status }),
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) return { success: false, error: data.error || 'Failed to update status' };
     return { success: true };
   } catch (err: any) {
@@ -920,12 +926,17 @@ export async function adminDeleteAdInquiry(
   try {
     const baseUrl = getApiBaseUrl();
     const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const activeToken =
+      token ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+        : undefined);
+    if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
     const res = await fetch(`${baseUrl}/ads/inquiries/${id}`, {
       method: 'DELETE',
       headers,
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) return { success: false, error: data.error || 'Failed to delete inquiry' };
     return { success: true };
   } catch (err: any) {
@@ -1006,7 +1017,8 @@ export async function getRealPhotoStory(): Promise<PhotoStoryItem> {
 
         // If backend returned default but client has saved custom images, preserve custom images!
         if (isRemoteDefault && localCustomStory && localCustomStory.images && localCustomStory.images.length > 0) {
-          adminUpdatePhotoStory(localCustomStory).catch(() => {});
+          const storedToken = typeof window !== 'undefined' ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token') : null;
+          adminUpdatePhotoStory(localCustomStory, storedToken || undefined).catch(() => {});
           setCachedData(cacheKey, localCustomStory);
           return localCustomStory;
         }
@@ -1053,7 +1065,12 @@ export async function adminUpdatePhotoStory(
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const activeToken =
+      token ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+        : undefined);
+    if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
 
     const res = await fetch(`${baseUrl}/photo-story`, {
       method: 'PUT',

@@ -182,6 +182,12 @@ export default function AdminPortalPage() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading: authLoading, logout } = useAdminAuth();
 
+  const editorDisplayName = (user?.name || 'Editor')
+    .replace(/chief\s*/i, '')
+    .replace(/ചീഫ്\s*/, '')
+    .trim() || 'Editor';
+  const editorInitials = (editorDisplayName === 'Editor' ? 'ED' : editorDisplayName.slice(0, 2)).toUpperCase();
+
   const [articles, setArticles] = useState<Article[]>([]);
   const [breakingList, setBreakingList] = useState<Array<{ _id: string; headline: string; active: boolean }>>([]);
   const [videosList, setVideosList] = useState<VideoItem[]>([]);
@@ -339,10 +345,15 @@ export default function AdminPortalPage() {
   const handleUpdateAdStatus = async (id: string, newStatus: string) => {
     try {
       setUpdatingAdId(id);
-      const res = await adminUpdateAdInquiryStatus(id, newStatus, token || undefined);
+      const activeToken =
+        token ||
+        (typeof window !== 'undefined'
+          ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+          : undefined);
+      const res = await adminUpdateAdInquiryStatus(id, newStatus, activeToken || undefined);
       if (res.success) {
         setAdInquiriesList((prev) =>
-          prev.map((item) => (item._id === id ? { ...item, status: newStatus as any } : item))
+          prev.map((item) => (item._id === id || String(item.id) === id ? { ...item, status: newStatus as any } : item))
         );
         showToast('അവസ്ഥ വിജയകരമായി അപ്‌ഡേറ്റ് ചെയ്തു.', 'success');
       } else {
@@ -360,9 +371,14 @@ export default function AdminPortalPage() {
     if (!window.confirm(`"${name}" ന്റെ പരസ്യ അപേക്ഷ ലിസ്റ്റിൽ നിന്ന് നീക്കം ചെയ്യണോ?`)) return;
     try {
       setDeletingAdId(id);
-      const res = await adminDeleteAdInquiry(id, token || undefined);
+      const activeToken =
+        token ||
+        (typeof window !== 'undefined'
+          ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+          : undefined);
+      const res = await adminDeleteAdInquiry(id, activeToken || undefined);
       if (res.success) {
-        setAdInquiriesList((prev) => prev.filter((item) => item._id !== id));
+        setAdInquiriesList((prev) => prev.filter((item) => item._id !== id && String(item.id) !== id));
       } else {
         alert(res.error || 'അപേക്ഷ നീക്കം ചെയ്യാൻ കഴിഞ്ഞില്ല');
       }
@@ -607,7 +623,12 @@ export default function AdminPortalPage() {
     }
     setSavingPhotoStory(true);
     try {
-      const res = await adminUpdatePhotoStory(photoStoryData, token || undefined);
+      const activeToken =
+        token ||
+        (typeof window !== 'undefined'
+          ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+          : undefined);
+      const res = await adminUpdatePhotoStory(photoStoryData, activeToken || undefined);
       if (res.success) {
         if (res.photoStory) setPhotoStoryData(res.photoStory);
         showToast('ഫോട്ടോ സ്റ്റോറി വിജയകരമായി സേവ് ചെയ്തു!', 'success');
@@ -1228,11 +1249,11 @@ export default function AdminPortalPage() {
         <div className="p-4 border-t border-white/10 bg-[#090f17] flex flex-col gap-3">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full bg-slate-800 text-editorial-crimson ring-1 ring-white/20 flex items-center justify-center font-bold text-xs shrink-0">
-              {user?.name ? user.name.slice(0, 2).toUpperCase() : 'KD'}
+              {editorInitials}
             </div>
             <div className="flex-1 min-w-0">
               <span className="text-xs font-bold text-white block truncate leading-tight">
-                {user?.name || 'Editor'}
+                {editorDisplayName}
               </span>
               <span className="text-[10px] text-slate-400 font-mono block truncate">
                 {user?.role === 'admin' ? 'ADMINISTRATOR' : 'EDITOR'}
@@ -1331,7 +1352,7 @@ export default function AdminPortalPage() {
             {/* Mobile Sidebar Footer */}
             <div className="p-4 border-t border-white/10 bg-[#090f17] flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white truncate">{user?.name || 'Editor'}</span>
+                <span className="text-xs font-bold text-white truncate">{editorDisplayName}</span>
                 <span className="text-[10px] bg-editorial-crimson px-2 py-0.5 rounded text-white font-mono uppercase">
                   {user?.role === 'admin' ? 'ADMIN' : 'EDITOR'}
                 </span>
@@ -1456,7 +1477,7 @@ export default function AdminPortalPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <span className="text-[11px] font-bold uppercase tracking-wider bg-editorial-crimson text-white px-3 py-0.5 rounded-full shadow-xs">
-                      {user?.role === 'admin' ? 'ചീഫ് അഡ്മിൻ' : 'എഡിറ്റർ'} കൺസോൾ
+                      {user?.role === 'admin' ? 'അഡ്മിൻ' : 'എഡിറ്റർ'} കൺസോൾ
                     </span>
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-300 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
@@ -1464,7 +1485,7 @@ export default function AdminPortalPage() {
                     </span>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold font-headline text-white">
-                    സ്വാഗതം, {user?.name || 'എഡിറ്റർ'}
+                    സ്വാഗതം, {editorDisplayName === 'Editor' ? 'എഡിറ്റർ' : editorDisplayName}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
                     കേരളദേശം ഗ്ലോബൽ മലയാളം ന്യൂസ് നെറ്റ്‌വർക്കിന്റെ പ്രധാന ഡാഷ്‌ബോർഡ്. വാർത്തകൾ, ബ്രേക്കിംഗ് അറിയിപ്പുകൾ, ഫോട്ടോ സ്റ്റോറി, വരിക്കാർ എന്നിവയുടെ സമഗ്ര വിവരങ്ങൾ ഇവിടെ കാണാം.
