@@ -77,6 +77,8 @@ import {
   clearApiCache,
   getRealPhotoStory,
   adminUpdatePhotoStory,
+  adminDeletePhotoStory,
+  adminUploadMedia,
   PhotoStoryItem,
   DEFAULT_PHOTO_STORY,
 } from '@/lib/api';
@@ -570,6 +572,15 @@ export default function AdminPortalPage() {
     if (!file) return;
     setNewStoryImageFile(file);
     try {
+      const uploadRes = await adminUploadMedia(file, token || undefined);
+      if (uploadRes.success && uploadRes.url) {
+        setNewStoryImageUrl(uploadRes.url);
+        showToast('ചിത്രം ക്ലൗഡിലേക്ക് അപ്‌ലോഡ് ചെയ്തു!');
+        return;
+      }
+    } catch {}
+
+    try {
       const compressed = await compressStoryImage(file);
       setNewStoryImageUrl(compressed || '');
     } catch {
@@ -633,6 +644,34 @@ export default function AdminPortalPage() {
     if (window.confirm('ഫോട്ടോ സ്റ്റോറി ഡിഫോൾട്ട് രീതിയിലേക്ക് പുനഃസ്ഥാപിക്കണമെന്നുണ്ടോ?')) {
       setPhotoStoryData(sanitizePhotoStory(DEFAULT_PHOTO_STORY));
       showToast('ഡിഫോൾട്ട് ഡാറ്റ റീസ്റ്റോർ ചെയ്തു.');
+    }
+  };
+
+  const handleDeletePhotoStory = async () => {
+    if (window.confirm('ഫോട്ടോ സ്റ്റോറി പൂർണ്ണമായും ഡിലീറ്റ് ചെയ്യണമെന്നുണ്ടോ?')) {
+      setSavingPhotoStory(true);
+      try {
+        const activeToken =
+          token ||
+          (typeof window !== 'undefined'
+            ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+            : undefined);
+        await adminDeletePhotoStory(activeToken || undefined);
+        setPhotoStoryData(
+          sanitizePhotoStory({
+            tagLabel: 'PHOTO STORY',
+            subtitle: 'KERALA IN FRAMES',
+            title: '',
+            description: '',
+            images: [],
+          })
+        );
+        showToast('ഫോട്ടോ സ്റ്റോറി പൂർണ്ണമായും നീക്കം ചെയ്തു.', 'success');
+      } catch (err: any) {
+        showToast(err.message || 'ഡിലീറ്റ് ചെയ്യുന്നതിൽ പിഴവ് സംഭവിച്ചു.', 'error');
+      } finally {
+        setSavingPhotoStory(false);
+      }
     }
   };
 
@@ -3271,11 +3310,22 @@ export default function AdminPortalPage() {
                 <button
                   type="button"
                   onClick={handleResetPhotoStory}
-                  className="h-10 px-3.5 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-200 whitespace-nowrap"
+                  className="h-10 px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-200 whitespace-nowrap"
                   title="ഡിഫോൾട്ട് കുട്ടനാട് ഫോട്ടോകളിലേക്ക് മാറ്റുക"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>ഡിഫോൾട്ട്</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDeletePhotoStory}
+                  disabled={savingPhotoStory}
+                  className="h-10 px-3.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-red-200 whitespace-nowrap"
+                  title="ഫോട്ടോ സ്റ്റോറി പൂർണ്ണമായും ഡിലീറ്റ് ചെയ്യുക"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                  <span>ഡിലീറ്റ്</span>
                 </button>
 
                 <button

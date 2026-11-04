@@ -1128,5 +1128,68 @@ export async function adminUpdatePhotoStory(
   }
 }
 
+export async function adminDeletePhotoStory(
+  token?: string
+): Promise<{ success: boolean; error?: string }> {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('kd_photo_story');
+    setCachedData('photo_story_active', null);
+    window.dispatchEvent(new Event('kd_photo_story_updated'));
+  }
+  try {
+    const baseUrl = getApiBaseUrl();
+    const headers: Record<string, string> = {};
+    const activeToken =
+      token ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+        : undefined);
+    if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+
+    const res = await apiFetch(`${baseUrl}/photo-story`, {
+      method: 'DELETE',
+      headers,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { success: false, error: data.error || 'Failed to delete photo story' };
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network error' };
+  }
+}
+
+export async function adminUploadMedia(
+  file: File,
+  token?: string
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: Record<string, string> = {};
+    const activeToken =
+      token ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+        : undefined);
+    if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
+
+    const res = await apiFetch(`${baseUrl}/upload`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.data?.url) {
+      return { success: false, error: data.error || 'Upload failed' };
+    }
+    return { success: true, url: data.data.url };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Upload network error' };
+  }
+}
+
+
 
 
