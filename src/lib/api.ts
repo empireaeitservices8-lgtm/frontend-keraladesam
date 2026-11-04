@@ -1,16 +1,67 @@
 import { Article, VideoItem } from '@/data/newsData';
 
+export const LIVE_API_BASE_URL = 'https://kerala-dhesam-admin.vercel.app/api';
+let isLocalBackendOffline = false;
+
 export function getApiBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  // During server-side build/prerender (Node.js), avoid external network hangs
+  if (typeof window === 'undefined') {
+    return 'http://127.0.0.1:5000/api';
+  }
+  if (isLocalBackendOffline) {
+    return LIVE_API_BASE_URL;
+  }
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    if (
+      isLocalBackendOffline &&
+      (process.env.NEXT_PUBLIC_API_URL.includes('localhost') ||
+        process.env.NEXT_PUBLIC_API_URL.includes('127.0.0.1'))
+    ) {
+      return LIVE_API_BASE_URL;
+    }
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
   if (
-    typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1' ||
-      window.location.hostname.startsWith('192.168.'))
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.startsWith('192.168.')
   ) {
     return 'http://localhost:5000/api';
   }
-  return 'https://kerala-dhesam-admin.vercel.app/api';
+  return LIVE_API_BASE_URL;
+}
+
+export async function apiFetch(input: string | URL, init?: RequestInit): Promise<Response> {
+  const urlStr = input.toString();
+
+  // If in browser and local backend is already known to be offline, route directly to live API
+  if (
+    typeof window !== 'undefined' &&
+    isLocalBackendOffline &&
+    (urlStr.includes('localhost:5000') || urlStr.includes('127.0.0.1:5000'))
+  ) {
+    const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):5000\/api/i, LIVE_API_BASE_URL);
+    return await fetch(fallbackUrl, init);
+  }
+
+  try {
+    return await fetch(input, init);
+  } catch (err: any) {
+    // If request to localhost/127.0.0.1 failed (ERR_CONNECTION_REFUSED when local backend isn't running)
+    if (urlStr.includes('localhost:5000') || urlStr.includes('127.0.0.1:5000')) {
+      isLocalBackendOffline = true;
+      const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):5000\/api/i, LIVE_API_BASE_URL);
+      if (typeof window !== 'undefined') {
+        console.warn(`[Kerala Desam] Local backend server at :5000 is offline. Automatically routed request to Live API: ${fallbackUrl}`);
+        try {
+          return await fetch(fallbackUrl, init);
+        } catch (fallbackErr) {
+          throw fallbackErr;
+        }
+      }
+    }
+    throw err;
+  }
 }
 
 export function getMalayalamAudioUrl(text: string): string {
@@ -185,7 +236,7 @@ export async function getArticles(params?: ArticleQueryParams): Promise<Article[
         url.searchParams.set('limit', params.limit.toString());
       }
 
-      const res = await fetch(url.toString(), {
+      const res = await apiFetch(url.toString(), {
         headers: { Accept: 'application/json' },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -218,7 +269,7 @@ export async function getArticleById(id: string): Promise<Article | null> {
   const fetchTask = async () => {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/articles/${id}`, {
+      const res = await apiFetch(`${baseUrl}/articles/${id}`, {
         headers: { Accept: 'application/json' },
       });
       if (res.ok) {
@@ -250,7 +301,7 @@ export async function likeArticle(
 ): Promise<{ success: boolean; likesCount?: number }> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/articles/${id}/like`, {
+    const res = await apiFetch(`${baseUrl}/articles/${id}/like`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -281,7 +332,7 @@ export async function getBreakingNews(): Promise<string[]> {
   const fetchTask = async () => {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/breaking`, {
+      const res = await apiFetch(`${baseUrl}/breaking`, {
         headers: { Accept: 'application/json' },
       });
       if (res.ok) {
@@ -329,7 +380,7 @@ export async function adminLogin(
 ): Promise<{ success: boolean; token?: string; user?: AdminUser; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/auth/login`, {
+    const res = await apiFetch(`${baseUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -352,7 +403,7 @@ export async function adminRegister(
 ): Promise<{ success: boolean; token?: string; user?: AdminUser; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/auth/register`, {
+    const res = await apiFetch(`${baseUrl}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password, role }),
@@ -370,7 +421,7 @@ export async function adminRegister(
 export async function adminGetMe(token: string): Promise<{ success: boolean; user?: AdminUser; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/auth/me`, {
+    const res = await apiFetch(`${baseUrl}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
@@ -403,7 +454,7 @@ export async function adminCreateArticle(
       });
       formData.append('image', imageFile);
 
-      res = await fetch(`${baseUrl}/articles`, {
+      res = await apiFetch(`${baseUrl}/articles`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -411,7 +462,7 @@ export async function adminCreateArticle(
         body: formData,
       });
     } else {
-      res = await fetch(`${baseUrl}/articles`, {
+      res = await apiFetch(`${baseUrl}/articles`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -464,7 +515,7 @@ export async function adminUpdateArticle(
       });
       formData.append('image', imageFile);
 
-      res = await fetch(`${baseUrl}/articles/${id}`, {
+      res = await apiFetch(`${baseUrl}/articles/${id}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -472,7 +523,7 @@ export async function adminUpdateArticle(
         body: formData,
       });
     } else {
-      res = await fetch(`${baseUrl}/articles/${id}`, {
+      res = await apiFetch(`${baseUrl}/articles/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -496,7 +547,7 @@ export async function adminDeleteArticle(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/articles/${id}`, {
+    const res = await apiFetch(`${baseUrl}/articles/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -511,7 +562,7 @@ export async function adminDeleteArticle(
 export async function adminGetRawBreaking(): Promise<Array<{ _id: string; headline: string; active: boolean; createdAt: string }>> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/breaking?_t=${Date.now()}`, { cache: 'no-store' });
+    const res = await apiFetch(`${baseUrl}/breaking?_t=${Date.now()}`, { cache: 'no-store' });
     const data = await res.json();
     return Array.isArray(data.headlines) ? data.headlines : [];
   } catch {
@@ -525,7 +576,7 @@ export async function adminCreateBreaking(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/breaking`, {
+    const res = await apiFetch(`${baseUrl}/breaking`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -547,7 +598,7 @@ export async function adminDeleteBreaking(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/breaking/${id}`, {
+    const res = await apiFetch(`${baseUrl}/breaking/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -566,7 +617,7 @@ export async function adminUpdateBreaking(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/breaking/${id}`, {
+    const res = await apiFetch(`${baseUrl}/breaking/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -626,7 +677,7 @@ export async function getVideos(params?: { category?: string; limit?: number; pa
         url.searchParams.set('page', params.page.toString());
       }
 
-      const res = await fetch(url.toString(), {
+      const res = await apiFetch(url.toString(), {
         headers: { Accept: 'application/json' },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -653,7 +704,7 @@ export async function getVideos(params?: { category?: string; limit?: number; pa
 export async function getVideoById(id: string): Promise<VideoItem | null> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/videos/${id}?_t=${Date.now()}`, { cache: 'no-store' });
+    const res = await apiFetch(`${baseUrl}/videos/${id}?_t=${Date.now()}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       if (data.video) return normalizeVideo(data.video);
@@ -690,7 +741,7 @@ export async function adminCreateVideo(
       });
       formData.append('thumbnail', thumbnailFile);
 
-      res = await fetch(`${baseUrl}/videos`, {
+      res = await apiFetch(`${baseUrl}/videos`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -698,7 +749,7 @@ export async function adminCreateVideo(
         body: formData,
       });
     } else {
-      res = await fetch(`${baseUrl}/videos`, {
+      res = await apiFetch(`${baseUrl}/videos`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -722,7 +773,7 @@ export async function adminDeleteVideo(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/videos/${id}`, {
+    const res = await apiFetch(`${baseUrl}/videos/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -742,7 +793,7 @@ export async function adminToggleHeadline(
 ): Promise<{ success: boolean; isHeadline?: boolean; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/articles/${id}/headline`, {
+    const res = await apiFetch(`${baseUrl}/articles/${id}/headline`, {
       method: 'PATCH',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -768,7 +819,7 @@ export async function subscribeNewsletter(
 ): Promise<{ success: boolean; message: string; alreadySubscribed?: boolean; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/subscribers`, {
+    const res = await apiFetch(`${baseUrl}/subscribers`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.trim() }),
@@ -794,7 +845,7 @@ export async function adminGetSubscribers(
     const baseUrl = getApiBaseUrl();
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await fetch(`${baseUrl}/subscribers?_t=${Date.now()}`, {
+    const res = await apiFetch(`${baseUrl}/subscribers?_t=${Date.now()}`, {
       headers,
       cache: 'no-store',
     });
@@ -814,7 +865,7 @@ export async function adminDeleteSubscriber(
     const baseUrl = getApiBaseUrl();
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await fetch(`${baseUrl}/subscribers/${id}`, {
+    const res = await apiFetch(`${baseUrl}/subscribers/${id}`, {
       method: 'DELETE',
       headers,
     });
@@ -851,7 +902,7 @@ export async function submitAdInquiry(data: {
 }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/ads/inquiry`, {
+    const res = await apiFetch(`${baseUrl}/ads/inquiry`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -876,7 +927,7 @@ export async function adminGetAdInquiries(
     const baseUrl = getApiBaseUrl();
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await fetch(`${baseUrl}/ads/inquiries?_t=${Date.now()}`, {
+    const res = await apiFetch(`${baseUrl}/ads/inquiries?_t=${Date.now()}`, {
       headers,
       cache: 'no-store',
     });
@@ -906,7 +957,7 @@ export async function adminUpdateAdInquiryStatus(
         ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
         : undefined);
     if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
-    const res = await fetch(`${baseUrl}/ads/inquiries/${id}`, {
+    const res = await apiFetch(`${baseUrl}/ads/inquiries/${id}`, {
       method: 'PATCH',
       headers,
       body: JSON.stringify({ status }),
@@ -932,7 +983,7 @@ export async function adminDeleteAdInquiry(
         ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
         : undefined);
     if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
-    const res = await fetch(`${baseUrl}/ads/inquiries/${id}`, {
+    const res = await apiFetch(`${baseUrl}/ads/inquiries/${id}`, {
       method: 'DELETE',
       headers,
     });
@@ -1002,7 +1053,7 @@ export async function getRealPhotoStory(): Promise<PhotoStoryItem> {
 
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await fetch(`${baseUrl}/photo-story?_t=${Date.now()}`, {
+    const res = await apiFetch(`${baseUrl}/photo-story?_t=${Date.now()}`, {
       headers: { Accept: 'application/json' },
       cache: 'no-store',
     });
@@ -1072,7 +1123,7 @@ export async function adminUpdatePhotoStory(
         : undefined);
     if (activeToken) headers['Authorization'] = `Bearer ${activeToken}`;
 
-    const res = await fetch(`${baseUrl}/photo-story`, {
+    const res = await apiFetch(`${baseUrl}/photo-story`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(customStory),
