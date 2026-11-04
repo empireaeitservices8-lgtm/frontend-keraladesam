@@ -613,14 +613,6 @@ export default function AdminPortalPage() {
 
   const handleSavePhotoStory = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!photoStoryData.title.trim()) {
-      showToast('പ്രധാന തലക്കെട്ട് നൽകുക.', 'error');
-      return;
-    }
-    if (!photoStoryData.images || photoStoryData.images.length === 0) {
-      showToast('കുറഞ്ഞത് ഒരു ചിത്രമെങ്കിലും ചേർക്കുക.', 'warning');
-      return;
-    }
     setSavingPhotoStory(true);
     try {
       const activeToken =

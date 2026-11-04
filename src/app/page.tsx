@@ -32,7 +32,7 @@ export default function HomePage() {
 
   const [mounted, setMounted] = useState(false);
   const [articles, setArticles] = useState<Article[]>([]);
-  const [photoStory, setPhotoStory] = useState<PhotoStoryItem>(DEFAULT_PHOTO_STORY);
+  const [photoStory, setPhotoStory] = useState<PhotoStoryItem | null>(null);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -617,68 +617,67 @@ export default function HomePage() {
           )}
 
           {/* Sliding Effect 3: Visual Journalism / Photo Feature Gallery with swipeable mobile slide */}
-          <div className="bg-ink-midnight text-surface-pure rounded-xl p-4 sm:p-7 relative overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] bg-opinion-ochre text-white px-2.5 py-1 rounded font-bold uppercase tracking-wider">
-                  {photoStory.tagLabel || 'PHOTO STORY'}
-                </span>
-                <span className="text-xs text-secondary-fixed-dim uppercase tracking-wider font-semibold">
-                  {photoStory.subtitle || 'KERALA IN FRAMES'}
-                </span>
-              </div>
-
-              {/* Slider Controls */}
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => slideLeft(photoSliderRef)}
-                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
-                  title="മുമ്പത്തെ ഫോട്ടോ"
-                  aria-label="Previous Photo"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => slideRight(photoSliderRef)}
-                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
-                  title="അടുത്ത ഫോട്ടോ"
-                  aria-label="Next Photo"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-            <h3 className="font-headline text-xl sm:text-2xl font-bold mb-2 text-surface-pure">
-              {photoStory.title}
-            </h3>
-            <p className="text-xs sm:text-sm text-secondary-fixed-dim mb-4 leading-relaxed max-w-2xl">
-              {photoStory.description}
-            </p>
-
-            {/* Mobile swipeable slider, desktop 3-col grid */}
-            <div
-              ref={photoSliderRef}
-              className={`flex sm:grid ${(photoStory.images?.length || 3) <= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'} gap-3 overflow-x-auto sm:overflow-visible no-scrollbar scroll-smooth snap-x snap-mandatory pb-2 sm:pb-0`}
-            >
-              {(photoStory.images && photoStory.images.length > 0
-                ? photoStory.images
-                : DEFAULT_PHOTO_STORY.images
-              ).map((img, idx) => (
-                <div key={idx} className="w-[260px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-lg group relative">
-                  <img
-                    src={img.url}
-                    alt={img.caption || `Photo ${idx + 1}`}
-                    className="rounded-lg object-cover h-40 sm:h-44 w-full group-hover:scale-105 transition-transform duration-300"
-                  />
-                  {img.caption && (
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-2 text-[11px] text-white/90 truncate font-medium">
-                      {img.caption}
-                    </div>
-                  )}
+          {photoStory && photoStory.images && photoStory.images.length > 0 && (
+            <div className="bg-ink-midnight text-surface-pure rounded-xl p-4 sm:p-7 relative overflow-hidden shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] bg-opinion-ochre text-white px-2.5 py-1 rounded font-bold uppercase tracking-wider">
+                    {photoStory.tagLabel || 'PHOTO STORY'}
+                  </span>
+                  <span className="text-xs text-secondary-fixed-dim uppercase tracking-wider font-semibold">
+                    {photoStory.subtitle || 'KERALA IN FRAMES'}
+                  </span>
                 </div>
-              ))}
+
+                {/* Slider Controls */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => slideLeft(photoSliderRef)}
+                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
+                    title="മുമ്പത്തെ ഫോട്ടോ"
+                    aria-label="Previous Photo"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => slideRight(photoSliderRef)}
+                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
+                    title="അടുത്ത ഫോട്ടോ"
+                    aria-label="Next Photo"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+              <h3 className="font-headline text-xl sm:text-2xl font-bold mb-2 text-surface-pure">
+                {photoStory.title}
+              </h3>
+              <p className="text-xs sm:text-sm text-secondary-fixed-dim mb-4 leading-relaxed max-w-2xl">
+                {photoStory.description}
+              </p>
+
+              {/* Mobile swipeable slider, desktop 3-col grid */}
+              <div
+                ref={photoSliderRef}
+                className={`flex sm:grid ${(photoStory.images?.length || 3) <= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'} gap-3 overflow-x-auto sm:overflow-visible no-scrollbar scroll-smooth snap-x snap-mandatory pb-2 sm:pb-0`}
+              >
+                {photoStory.images.map((img, idx) => (
+                  <div key={idx} className="w-[260px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-lg group relative">
+                    <img
+                      src={img.url}
+                      alt={img.caption || `Photo ${idx + 1}`}
+                      className="rounded-lg object-cover h-40 sm:h-44 w-full group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {img.caption && (
+                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-2 text-[11px] text-white/90 truncate font-medium">
+                        {img.caption}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Sliding Effect 4: Video Shorts & Reels Horizontal Sliding Carousel */}
           {videos.length > 0 && (

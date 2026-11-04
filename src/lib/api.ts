@@ -1033,20 +1033,16 @@ export const DEFAULT_PHOTO_STORY: PhotoStoryItem = {
   ],
 };
 
-export async function getRealPhotoStory(): Promise<PhotoStoryItem> {
+export async function getRealPhotoStory(): Promise<PhotoStoryItem | null> {
   const cacheKey = 'photo_story_active';
   const cached = getCachedData<PhotoStoryItem>(cacheKey);
 
-  // Check if we have a locally stored custom story
   let localCustomStory: PhotoStoryItem | null = null;
   if (typeof window !== 'undefined') {
     try {
       const local = localStorage.getItem('kd_photo_story');
       if (local) {
-        const parsed = JSON.parse(local);
-        if (parsed && (parsed.isCustom || (parsed.images && parsed.images.length > 0))) {
-          localCustomStory = parsed;
-        }
+        localCustomStory = JSON.parse(local);
       }
     } catch {}
   }
@@ -1060,25 +1056,11 @@ export async function getRealPhotoStory(): Promise<PhotoStoryItem> {
     if (res.ok) {
       const data = await res.json();
       if (data.photoStory) {
-        const remoteStory = data.photoStory;
-        const isRemoteDefault =
-          remoteStory.title === DEFAULT_PHOTO_STORY.title &&
-          remoteStory.images?.length === 3 &&
-          remoteStory.images[0]?.url === DEFAULT_PHOTO_STORY.images[0]?.url;
-
-        // If backend returned default but client has saved custom images, preserve custom images!
-        if (isRemoteDefault && localCustomStory && localCustomStory.images && localCustomStory.images.length > 0) {
-          const storedToken = typeof window !== 'undefined' ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token') : null;
-          adminUpdatePhotoStory(localCustomStory, storedToken || undefined).catch(() => {});
-          setCachedData(cacheKey, localCustomStory);
-          return localCustomStory;
-        }
-
-        setCachedData(cacheKey, remoteStory);
+        setCachedData(cacheKey, data.photoStory);
         if (typeof window !== 'undefined') {
-          localStorage.setItem('kd_photo_story', JSON.stringify(remoteStory));
+          localStorage.setItem('kd_photo_story', JSON.stringify(data.photoStory));
         }
-        return remoteStory;
+        return data.photoStory;
       }
     }
   } catch (err) {
@@ -1087,7 +1069,7 @@ export async function getRealPhotoStory(): Promise<PhotoStoryItem> {
 
   if (localCustomStory) return localCustomStory;
   if (cached) return cached;
-  return DEFAULT_PHOTO_STORY;
+  return null;
 }
 
 export async function adminUpdatePhotoStory(
