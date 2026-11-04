@@ -695,25 +695,8 @@ export default function Header() {
                 );
               })}
 
-              {/* Divider before Social Media */}
-              <div className="h-5 w-px bg-slate-300 mx-1.5 shrink-0" />
-
-              {/* Social Media Circular Links */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                {SOCIAL_LINKS.map((social) => (
-                  <a
-                    key={social.name}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={social.name}
-                    aria-label={`Follow Kerala Desam on ${social.name}`}
-                    className={`w-6 h-6 flex items-center justify-center rounded-full text-white ${social.bg} hover:scale-110 active:scale-95 transition-transform shadow-2xs`}
-                  >
-                    {social.icon}
-                  </a>
-                ))}
-              </div>
+              {/* Divider before Live TV */}
+              <div className="h-4 w-px bg-slate-300 mx-1 shrink-0" />
 
               {/* Redesigned Premium Live TV Broadcast Button */}
               <button
@@ -866,6 +849,39 @@ export default function Header() {
                 </button>
               </div>
             </nav>
+          </div>
+        </div>
+
+        {/* Social Media Sub Navbar */}
+        <div className="w-full bg-[#F1F3F6] border-y border-slate-200">
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="min-h-[44px] flex items-center justify-start sm:justify-center gap-4 sm:gap-6 lg:gap-8 overflow-x-auto whitespace-nowrap no-scrollbar py-2">
+              {/* Follow Us */}
+              <span className="text-[11px] font-bold tracking-wider text-slate-500 shrink-0 border-r border-slate-300 pr-4 sm:pr-6">
+                FOLLOW US
+              </span>
+
+              {/* Social Links */}
+              {SOCIAL_LINKS.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Follow Kerala Desam on ${social.name}`}
+                  className="group flex items-center gap-2 shrink-0 text-slate-700 hover:text-red-600 transition-colors"
+                >
+                  <span
+                    className={`w-6 h-6 flex items-center justify-center rounded-full text-white ${social.bg} group-hover:scale-110 transition-transform shadow-2xs`}
+                  >
+                    {social.icon}
+                  </span>
+                  <span className="text-xs font-semibold">
+                    {social.name === 'X (Twitter)' ? 'X' : social.name}
+                  </span>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 

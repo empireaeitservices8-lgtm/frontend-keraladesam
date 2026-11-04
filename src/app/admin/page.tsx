@@ -344,11 +344,13 @@ export default function AdminPortalPage() {
         setAdInquiriesList((prev) =>
           prev.map((item) => (item._id === id ? { ...item, status: newStatus as any } : item))
         );
+        showToast('അവസ്ഥ വിജയകരമായി അപ്‌ഡേറ്റ് ചെയ്തു.', 'success');
       } else {
-        alert(res.error || 'സ്റ്റാറ്റസ് മാറ്റാൻ കഴിഞ്ഞില്ല');
+        showToast(res.error || 'സ്റ്റാറ്റസ് മാറ്റാൻ കഴിഞ്ഞില്ല.', 'error');
       }
     } catch (err) {
       console.error('Failed to update status:', err);
+      showToast('സ്റ്റാറ്റസ് മാറ്റുന്നതിൽ പിഴവ് സംഭവിച്ചു.', 'error');
     } finally {
       setUpdatingAdId(null);
     }
@@ -3050,10 +3052,11 @@ export default function AdminPortalPage() {
                     onChange={(e) => setAdInquiriesStatusFilter(e.target.value)}
                     className="px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-editorial-crimson"
                   >
-                    <option value="all">എല്ലാ അവസ്ഥകളും</option>
-                    <option value="pending">തീർപ്പാക്കാത്തവ (Pending)</option>
-                    <option value="contacted">ബന്ധപ്പെട്ടു (Contacted)</option>
-                    <option value="resolved">പൂർത്തിയായി (Resolved)</option>
+                    <option value="all">എല്ലാ അവസ്ഥകളും (All)</option>
+                    <option value="New">തീർപ്പാക്കാത്തവ (Pending / New)</option>
+                    <option value="Contacted">ബന്ധപ്പെട്ടു (Contacted)</option>
+                    <option value="Confirmed">ഉറപ്പിച്ചു (Confirmed)</option>
+                    <option value="Closed">പൂർത്തിയായി (Closed)</option>
                   </select>
                 </div>
               </div>
@@ -3102,14 +3105,15 @@ export default function AdminPortalPage() {
                           </td>
                           <td className="py-3.5 px-4 text-center">
                             <select
-                              value={ad.status}
+                              value={ad.status || 'New'}
                               disabled={updatingAdId === ad._id}
                               onChange={(e) => handleUpdateAdStatus(ad._id, e.target.value)}
                               className="px-2 py-1 text-[11px] rounded font-bold border border-slate-200 bg-white cursor-pointer"
                             >
-                              <option value="pending">Pending</option>
-                              <option value="contacted">Contacted</option>
-                              <option value="resolved">Resolved</option>
+                              <option value="New">Pending</option>
+                              <option value="Contacted">Contacted</option>
+                              <option value="Confirmed">Confirmed</option>
+                              <option value="Closed">Closed</option>
                             </select>
                           </td>
                           <td className="py-3.5 px-4 text-center">

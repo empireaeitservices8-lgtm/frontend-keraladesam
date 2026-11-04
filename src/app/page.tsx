@@ -94,20 +94,20 @@ export default function HomePage() {
     // 2. Fetch fresh data from backend
     async function loadData() {
       try {
-        const [articlesData, videosData, photoStoryData] = await Promise.all([
+        const [articlesResult, videosResult, photoStoryResult] = await Promise.allSettled([
           getRealArticles(),
           getRealVideos(),
           getRealPhotoStory(),
         ]);
         if (isMounted) {
-          if (articlesData && articlesData.length > 0) {
-            setArticles(deduplicateArticles(articlesData));
+          if (articlesResult.status === 'fulfilled' && articlesResult.value && articlesResult.value.length > 0) {
+            setArticles(deduplicateArticles(articlesResult.value));
           }
-          if (videosData && videosData.length > 0) {
-            setVideos(videosData);
+          if (videosResult.status === 'fulfilled' && videosResult.value && videosResult.value.length > 0) {
+            setVideos(videosResult.value);
           }
-          if (photoStoryData) {
-            setPhotoStory(photoStoryData);
+          if (photoStoryResult.status === 'fulfilled' && photoStoryResult.value) {
+            setPhotoStory(photoStoryResult.value);
           }
         }
       } catch (err) {
@@ -123,11 +123,20 @@ export default function HomePage() {
         if (data && isMounted) setPhotoStory(data);
       }).catch(console.error);
     };
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'kd_photo_story' && e.newValue && isMounted) {
+        try {
+          setPhotoStory(JSON.parse(e.newValue));
+        } catch {}
+      }
+    };
     window.addEventListener('kd_photo_story_updated', handlePhotoStoryUpdate);
+    window.addEventListener('storage', handleStorageChange);
 
     return () => {
       isMounted = false;
       window.removeEventListener('kd_photo_story_updated', handlePhotoStoryUpdate);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
