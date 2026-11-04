@@ -184,7 +184,7 @@ export default function AdminLoginPage() {
               <Mail className="w-4 h-4 absolute left-3.5 top-3 text-slate-400 pointer-events-none" />
               <input
                 type="email"
-                value={email}
+                value={email ?? ''}
                 onChange={(e) => handleEmailChange(e.target.value)}
                 placeholder="editor@keraladesam.com"
                 className={`w-full bg-slate-950/80 rounded-lg py-2.5 pl-10 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none transition-all ${
@@ -210,7 +210,7 @@ export default function AdminLoginPage() {
               <Lock className="w-4 h-4 absolute left-3.5 top-3 text-slate-400 pointer-events-none" />
               <input
                 type={showPassword ? 'text' : 'password'}
-                value={password}
+                value={password ?? ''}
                 onChange={(e) => handlePasswordChange(e.target.value)}
                 placeholder="കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ"
                 className={`w-full bg-slate-950/80 rounded-lg py-2.5 pl-10 pr-10 text-xs text-white placeholder-slate-500 focus:outline-none transition-all ${

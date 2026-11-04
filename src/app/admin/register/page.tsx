@@ -125,7 +125,7 @@ export default function AdminRegisterPage() {
               <input
                 type="text"
                 required
-                value={name}
+                value={name ?? ''}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="ഉദാ: ആനന്ദ് നായർ"
                 className="w-full bg-slate-950/80 border border-white/15 rounded-lg py-2.5 pl-10 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
@@ -142,7 +142,7 @@ export default function AdminRegisterPage() {
               <input
                 type="email"
                 required
-                value={email}
+                value={email ?? ''}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="anand@keraladesam.com"
                 className="w-full bg-slate-950/80 border border-white/15 rounded-lg py-2.5 pl-10 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"
@@ -160,7 +160,7 @@ export default function AdminRegisterPage() {
                 type="password"
                 required
                 minLength={6}
-                value={password}
+                value={password ?? ''}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full bg-slate-950/80 border border-white/15 rounded-lg py-2.5 pl-10 pr-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all"

@@ -178,6 +178,25 @@ const ADMIN_CATEGORIES: CategoryGroup[] = [
 
 type TabType = 'dashboard' | 'upload' | 'articles' | 'breaking' | 'videos' | 'subscribers' | 'ads' | 'photoStory';
 
+// Safe sanitization helper ensuring all controlled input fields always have defined string/array values
+function sanitizePhotoStory(data?: Partial<PhotoStoryItem> | null): PhotoStoryItem {
+  return {
+    tagLabel: data?.tagLabel ?? 'PHOTO STORY',
+    subtitle: data?.subtitle ?? 'KERALA IN FRAMES',
+    title: data?.title ?? '',
+    description: data?.description ?? '',
+    images: Array.isArray(data?.images)
+      ? data.images.map((img) => ({
+          url: img?.url ?? '',
+          caption: img?.caption ?? '',
+        }))
+      : [],
+    id: data?.id,
+    isCustom: data?.isCustom,
+    updatedAt: data?.updatedAt,
+  };
+}
+
 export default function AdminPortalPage() {
   const router = useRouter();
   const { user, token, isAuthenticated, loading: authLoading, logout } = useAdminAuth();
@@ -204,8 +223,8 @@ export default function AdminPortalPage() {
   const [updatingAdId, setUpdatingAdId] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState<boolean>(true);
 
-  // Photo Story Editor State
-  const [photoStoryData, setPhotoStoryData] = useState<PhotoStoryItem>(DEFAULT_PHOTO_STORY);
+  // Photo Story Editor State - safely initialized with fully defined properties
+  const [photoStoryData, setPhotoStoryData] = useState<PhotoStoryItem>(() => sanitizePhotoStory(DEFAULT_PHOTO_STORY));
   const [loadingPhotoStory, setLoadingPhotoStory] = useState<boolean>(false);
   const [savingPhotoStory, setSavingPhotoStory] = useState<boolean>(false);
   const [newStoryImageUrl, setNewStoryImageUrl] = useState<string>('');
@@ -305,7 +324,7 @@ export default function AdminPortalPage() {
         setAdInquiriesList(adRes.inquiries);
       }
       if (psData) {
-        setPhotoStoryData(psData);
+        setPhotoStoryData(sanitizePhotoStory(psData));
       }
     } catch (err) {
       console.error('Failed to load portal data:', err);
@@ -438,8 +457,8 @@ export default function AdminPortalPage() {
 
   // Open Modal for Editing an Existing Article
   const handleOpenEdit = (art: Article) => {
-    setEditingArticleId(art._id || art.id);
-    setFormTitle(art.title);
+    setEditingArticleId(art._id || art.id || null);
+    setFormTitle(art.title ?? '');
 
     let foundGroup = ADMIN_CATEGORIES.find((g) => g.name.toLowerCase() === (art.category || '').toLowerCase());
     let foundSub = ADMIN_CATEGORIES[0].subcategories[0];
@@ -461,17 +480,21 @@ export default function AdminPortalPage() {
       foundGroup = ADMIN_CATEGORIES[0];
     }
     setFormMainCategory(foundGroup.name);
-    setFormSubCategory(foundSub);
+    setFormSubCategory(foundSub ?? foundGroup.subcategories[0] ?? '');
     setFormCategoryColor(art.categoryColor || foundGroup.color);
 
-    setFormDistrict(art.district || '');
-    setFormContent(art.paragraphs?.join('\n\n') || art.lead || '');
-    setFormCustomLead(art.lead || '');
+    setFormDistrict(art.district ?? '');
+    setFormContent(
+      (Array.isArray(art.paragraphs) && art.paragraphs.length > 0
+        ? art.paragraphs.join('\n\n')
+        : art.lead) ?? ''
+    );
+    setFormCustomLead(art.lead ?? '');
     setShowLeadAccordion(Boolean(art.lead));
-    setFormImageUrl(art.imageUrl || '');
+    setFormImageUrl(art.imageUrl ?? '');
     setFormImageFile(null);
-    setFormImagePreview(art.imageUrl || '');
-    setFormImageCaption(art.imageCaption || '');
+    setFormImagePreview(art.imageUrl ?? '');
+    setFormImageCaption(art.imageCaption ?? '');
     setFormHeadline(Boolean(art.isHeadline));
     setFormTrending(Boolean(art.trending));
     setFormBreaking(Boolean(art.breaking));
@@ -498,7 +521,7 @@ export default function AdminPortalPage() {
     try {
       setLoadingPhotoStory(true);
       const data = await getRealPhotoStory();
-      if (data) setPhotoStoryData(data);
+      if (data) setPhotoStoryData(sanitizePhotoStory(data));
     } catch (err) {
       console.error('Failed to load photo story:', err);
     } finally {
@@ -598,15 +621,17 @@ export default function AdminPortalPage() {
 
   const handleStoryImageCaptionChange = (index: number, caption: string) => {
     setPhotoStoryData((prev) => {
-      const images = [...prev.images];
-      images[index] = { ...images[index], caption };
+      const images = [...(prev.images || [])];
+      if (images[index]) {
+        images[index] = { ...images[index], caption: caption ?? '' };
+      }
       return { ...prev, images };
     });
   };
 
   const handleResetPhotoStory = () => {
     if (window.confirm('ഫോട്ടോ സ്റ്റോറി ഡിഫോൾട്ട് രീതിയിലേക്ക് പുനഃസ്ഥാപിക്കണമെന്നുണ്ടോ?')) {
-      setPhotoStoryData(DEFAULT_PHOTO_STORY);
+      setPhotoStoryData(sanitizePhotoStory(DEFAULT_PHOTO_STORY));
       showToast('ഡിഫോൾട്ട് ഡാറ്റ റീസ്റ്റോർ ചെയ്തു.');
     }
   };
@@ -622,7 +647,7 @@ export default function AdminPortalPage() {
           : undefined);
       const res = await adminUpdatePhotoStory(photoStoryData, activeToken || undefined);
       if (res.success) {
-        if (res.photoStory) setPhotoStoryData(res.photoStory);
+        if (res.photoStory) setPhotoStoryData(sanitizePhotoStory(res.photoStory));
         showToast('ഫോട്ടോ സ്റ്റോറി വിജയകരമായി സേവ് ചെയ്തു!', 'success');
       } else {
         showToast(res.error || 'ഫോട്ടോ സ്റ്റോറി സേവ് ചെയ്യാൻ സാധിച്ചില്ല.', 'error');
@@ -1905,7 +1930,7 @@ export default function AdminPortalPage() {
                   <textarea
                     rows={2}
                     required
-                    value={formTitle}
+                    value={formTitle ?? ''}
                     onChange={(e) => setFormTitle(e.target.value)}
                     placeholder="വാർത്താ തലക്കെട്ട് ഇവിടെ ടൈപ്പ് ചെയ്യുക..."
                     className="w-full bg-slate-50/70 border border-slate-300 rounded-xl p-3.5 text-sm sm:text-base font-headline font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson focus:border-editorial-crimson leading-snug transition-all"
@@ -1919,7 +1944,7 @@ export default function AdminPortalPage() {
                       പ്രധാന വിഭാഗം (Category) *
                     </label>
                     <select
-                      value={formMainCategory}
+                      value={formMainCategory ?? ADMIN_CATEGORIES[0].name}
                       onChange={(e) => {
                         const sel = e.target.value;
                         setFormMainCategory(sel);
@@ -1944,7 +1969,7 @@ export default function AdminPortalPage() {
                       ഉപവിഭാഗം (Sub Category) *
                     </label>
                     <select
-                      value={formSubCategory}
+                      value={formSubCategory ?? ''}
                       onChange={(e) => setFormSubCategory(e.target.value)}
                       className="w-full h-11 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson/20 focus:border-editorial-crimson transition-all"
                     >
@@ -1961,7 +1986,7 @@ export default function AdminPortalPage() {
                       ജില്ല / പ്രദേശം (District - ഓപ്ഷണൽ)
                     </label>
                     <select
-                      value={formDistrict}
+                      value={formDistrict ?? ''}
                       onChange={(e) => setFormDistrict(e.target.value)}
                       className="w-full h-11 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-editorial-crimson/20 focus:border-editorial-crimson transition-all"
                     >
@@ -2016,7 +2041,7 @@ export default function AdminPortalPage() {
                         </span>
                         <input
                           type="text"
-                          value={formImageCaption}
+                          value={formImageCaption ?? ''}
                           onChange={(e) => setFormImageCaption(e.target.value)}
                           placeholder="ചിത്രത്തിന്റെ അടിക്കുറിപ്പ് (Photo Caption - ഓപ്ഷണൽ)..."
                           className="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1 text-xs text-slate-800 focus:bg-white focus:outline-none"
@@ -2043,7 +2068,7 @@ export default function AdminPortalPage() {
                       <div className="flex items-center">
                         <input
                           type="url"
-                          value={formImageUrl}
+                          value={formImageUrl ?? ''}
                           onChange={(e) => {
                             setFormImageUrl(e.target.value);
                             setFormImagePreview(e.target.value);
@@ -2073,7 +2098,7 @@ export default function AdminPortalPage() {
                   <textarea
                     rows={12}
                     required
-                    value={formContent}
+                    value={formContent ?? ''}
                     onPaste={handleContentPaste}
                     onChange={(e) => setFormContent(e.target.value)}
                     placeholder="വാർത്തയുടെ പൂർണ്ണ വിവരങ്ങൾ ഇവിടെ പേസ്റ്റ് ചെയ്യുക അല്ലെങ്കിൽ ടൈപ്പ് ചെയ്യുക...&#10;&#10;എത്ര വലിയ വാർത്തയും ഖണ്ഡികകളും ഇവിടെ നൽകാം (ക്യാരക്ടർ ലിമിറ്റില്ല)."
@@ -2106,7 +2131,7 @@ export default function AdminPortalPage() {
                       </p>
                       <textarea
                         rows={2}
-                        value={formCustomLead}
+                        value={formCustomLead ?? ''}
                         onChange={(e) => setFormCustomLead(e.target.value)}
                         placeholder="പ്രത്യേക ആമുഖം ആവശ്യമെങ്കിൽ മാത്രം ഇവിടെ 1-2 വാക്യത്തിൽ നൽകാം..."
                         className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-editorial-crimson"
@@ -2130,7 +2155,7 @@ export default function AdminPortalPage() {
                     <label className="flex items-center gap-2 cursor-pointer font-bold text-amber-900 text-xs bg-amber-100/70 hover:bg-amber-100 px-3 py-1.5 rounded-lg border border-amber-300 transition shadow-sm">
                       <input
                         type="checkbox"
-                        checked={formHeadline}
+                        checked={Boolean(formHeadline)}
                         onChange={(e) => setFormHeadline(e.target.checked)}
                         className="w-4 h-4 text-amber-600 rounded accent-amber-600"
                       />
@@ -2140,7 +2165,7 @@ export default function AdminPortalPage() {
                     <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
                       <input
                         type="checkbox"
-                        checked={formTrending}
+                        checked={Boolean(formTrending)}
                         onChange={(e) => setFormTrending(e.target.checked)}
                         className="w-4 h-4 text-editorial-crimson rounded accent-editorial-crimson"
                       />
@@ -2150,7 +2175,7 @@ export default function AdminPortalPage() {
                     <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
                       <input
                         type="checkbox"
-                        checked={formBreaking}
+                        checked={Boolean(formBreaking)}
                         onChange={(e) => setFormBreaking(e.target.checked)}
                         className="w-4 h-4 text-editorial-crimson rounded accent-editorial-crimson"
                       />
@@ -2201,7 +2226,7 @@ export default function AdminPortalPage() {
                 <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
                 <input
                   type="text"
-                  value={searchQuery}
+                  value={searchQuery ?? ''}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="തലക്കെട്ടോ ജില്ലയോ തിരയുക..."
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white"
@@ -2211,7 +2236,7 @@ export default function AdminPortalPage() {
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <span className="text-xs text-slate-500 font-semibold shrink-0">വിഭാഗം:</span>
                 <select
-                  value={selectedCategoryFilter}
+                  value={selectedCategoryFilter ?? 'all'}
                   onChange={(e) => setSelectedCategoryFilter(e.target.value)}
                   className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-lg px-3 py-1.5 text-slate-700 focus:outline-none"
                 >
@@ -2507,7 +2532,7 @@ export default function AdminPortalPage() {
                 <input
                   type="text"
                   required
-                  value={newBreakingText}
+                  value={newBreakingText ?? ''}
                   onChange={(e) => setNewBreakingText(e.target.value)}
                   placeholder="ബ്രേക്കിംഗ് ന്യൂസ് തലക്കെട്ട് ഇവിടെ നൽകുക..."
                   className="flex-1 bg-white border border-red-300 rounded-lg py-2 px-3 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
@@ -2545,7 +2570,7 @@ export default function AdminPortalPage() {
                         <div className="flex-1 flex items-center gap-2">
                           <input
                             type="text"
-                            value={editingBreakingText}
+                            value={editingBreakingText ?? ''}
                             onChange={(e) => setEditingBreakingText(e.target.value)}
                             className="flex-1 bg-white border border-editorial-crimson rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none"
                             autoFocus
@@ -2590,7 +2615,7 @@ export default function AdminPortalPage() {
                             <button
                               onClick={() => {
                                 setEditingBreakingId(item._id);
-                                setEditingBreakingText(item.headline);
+                                setEditingBreakingText(item.headline ?? '');
                               }}
                               className="p-1.5 rounded hover:bg-slate-200 text-slate-600 transition"
                               title="എഡിറ്റ് ചെയ്യുക"
@@ -2643,7 +2668,7 @@ export default function AdminPortalPage() {
                   <input
                     type="text"
                     required
-                    value={formVideoTitle}
+                    value={formVideoTitle ?? ''}
                     onChange={(e) => setFormVideoTitle(e.target.value)}
                     placeholder="ഉദാ: വയനാട് തുരങ്കപാത: റൂട്ട് മാപ്പും 3D ദൃശ്യങ്ങളും..."
                     className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
@@ -2658,7 +2683,7 @@ export default function AdminPortalPage() {
                   <input
                     type="url"
                     required
-                    value={formVideoUrl}
+                    value={formVideoUrl ?? ''}
                     onChange={(e) => setFormVideoUrl(e.target.value)}
                     placeholder="https://www.youtube.com/watch?v=... അല്ലെങ്കിൽ https://youtube.com/shorts/..."
                     className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
@@ -2683,7 +2708,7 @@ export default function AdminPortalPage() {
                     <span className="text-xs text-slate-400 hidden sm:inline">അല്ലെങ്കിൽ</span>
                     <input
                       type="url"
-                      value={formVideoThumbnail}
+                      value={formVideoThumbnail ?? ''}
                       onChange={(e) => setFormVideoThumbnail(e.target.value)}
                       placeholder="ചിത്രത്തിന്റെ വെബ് ലിങ്ക് (Image URL)"
                       className="w-full sm:flex-1 bg-white border border-slate-300 rounded-lg p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -2877,7 +2902,7 @@ export default function AdminPortalPage() {
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
-                    value={subscribersSearch}
+                    value={subscribersSearch ?? ''}
                     onChange={(e) => setSubscribersSearch(e.target.value)}
                     placeholder="ഇമെയിൽ വിലാസം തിരയുക..."
                     className="w-full pl-9 pr-8 h-10 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
@@ -3092,7 +3117,7 @@ export default function AdminPortalPage() {
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
-                    value={adInquiriesSearch}
+                    value={adInquiriesSearch ?? ''}
                     onChange={(e) => setAdInquiriesSearch(e.target.value)}
                     placeholder="പേര്, കമ്പനി, ഫോൺ നമ്പർ എന്നിവ തിരയുക..."
                     className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-editorial-crimson font-medium"
@@ -3101,7 +3126,7 @@ export default function AdminPortalPage() {
 
                 <div className="flex items-center gap-2">
                   <select
-                    value={adInquiriesStatusFilter}
+                    value={adInquiriesStatusFilter ?? 'all'}
                     onChange={(e) => setAdInquiriesStatusFilter(e.target.value)}
                     className="px-3 py-2 text-xs rounded-lg border border-slate-200 bg-white font-medium focus:outline-none focus:ring-1 focus:ring-editorial-crimson"
                   >
@@ -3158,7 +3183,7 @@ export default function AdminPortalPage() {
                           </td>
                           <td className="py-3.5 px-4 text-center">
                             <select
-                              value={ad.status || 'New'}
+                              value={ad.status ?? 'New'}
                               disabled={updatingAdId === ad._id}
                               onChange={(e) => handleUpdateAdStatus(ad._id, e.target.value)}
                               className="px-2 py-1 text-[11px] rounded font-bold border border-slate-200 bg-white cursor-pointer"
@@ -3294,7 +3319,7 @@ export default function AdminPortalPage() {
                       </label>
                       <input
                         type="text"
-                        value={photoStoryData.tagLabel}
+                        value={photoStoryData?.tagLabel ?? ''}
                         onChange={(e) => setPhotoStoryData({ ...photoStoryData, tagLabel: e.target.value })}
                         placeholder="PHOTO STORY"
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30 transition"
@@ -3306,7 +3331,7 @@ export default function AdminPortalPage() {
                       </label>
                       <input
                         type="text"
-                        value={photoStoryData.subtitle}
+                        value={photoStoryData?.subtitle ?? ''}
                         onChange={(e) => setPhotoStoryData({ ...photoStoryData, subtitle: e.target.value })}
                         placeholder="KERALA IN FRAMES"
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30 transition"
@@ -3320,7 +3345,7 @@ export default function AdminPortalPage() {
                     </label>
                     <input
                       type="text"
-                      value={photoStoryData.title}
+                      value={photoStoryData?.title ?? ''}
                       onChange={(e) => setPhotoStoryData({ ...photoStoryData, title: e.target.value })}
                       placeholder="ഉദാഹരണം: കുട്ടനാടൻ കായൽ ജീവിതം: വേനൽമഴയുടെ വരവറിയിച്ച് ഓളങ്ങൾ"
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30 transition"
@@ -3333,7 +3358,7 @@ export default function AdminPortalPage() {
                     </label>
                     <textarea
                       rows={3}
-                      value={photoStoryData.description}
+                      value={photoStoryData?.description ?? ''}
                       onChange={(e) => setPhotoStoryData({ ...photoStoryData, description: e.target.value })}
                       placeholder="Visual captures of life, landscapes, and backwaters across God's Own Country."
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs leading-relaxed font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30 transition"
@@ -3487,7 +3512,7 @@ export default function AdminPortalPage() {
                       <div className="space-y-1.5">
                         <input
                           type="text"
-                          value={img.caption || ''}
+                          value={img.caption ?? ''}
                           onChange={(e) => handleStoryImageCaptionChange(idx, e.target.value)}
                           placeholder={`ചിത്രം ${idx + 1} അടിക്കുറിപ്പ് (Caption)`}
                           className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
@@ -3544,7 +3569,7 @@ export default function AdminPortalPage() {
                     ) : (
                       <input
                         type="url"
-                        value={newStoryImageUrl}
+                        value={newStoryImageUrl ?? ''}
                         onChange={(e) => setNewStoryImageUrl(e.target.value)}
                         placeholder="https://images.unsplash.com/photo-..."
                         className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 bg-white font-mono focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
@@ -3555,7 +3580,7 @@ export default function AdminPortalPage() {
                   <div className="md:col-span-5">
                     <input
                       type="text"
-                      value={newStoryImageCaption}
+                      value={newStoryImageCaption ?? ''}
                       onChange={(e) => setNewStoryImageCaption(e.target.value)}
                       placeholder="ചിത്രത്തിന്റെ അടിക്കുറിപ്പ് (Caption - ഉദാ: കുട്ടനാട് 1)"
                       className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-editorial-crimson/30"
@@ -3634,7 +3659,7 @@ export default function AdminPortalPage() {
                 <textarea
                   rows={2}
                   required
-                  value={formTitle}
+                  value={formTitle ?? ''}
                   onChange={(e) => setFormTitle(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs font-headline font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-editorial-crimson"
                 />
@@ -3646,7 +3671,7 @@ export default function AdminPortalPage() {
                     പ്രധാന വിഭാഗം *
                   </label>
                   <select
-                    value={formMainCategory}
+                    value={formMainCategory ?? ADMIN_CATEGORIES[0].name}
                     onChange={(e) => {
                       const sel = e.target.value;
                       setFormMainCategory(sel);
@@ -3671,7 +3696,7 @@ export default function AdminPortalPage() {
                     ഉപവിഭാഗം *
                   </label>
                   <select
-                    value={formSubCategory}
+                    value={formSubCategory ?? ''}
                     onChange={(e) => setFormSubCategory(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
                   >
@@ -3688,7 +3713,7 @@ export default function AdminPortalPage() {
                     ജില്ല / പ്രദേശം
                   </label>
                   <select
-                    value={formDistrict}
+                    value={formDistrict ?? ''}
                     onChange={(e) => setFormDistrict(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
                   >
@@ -3724,7 +3749,7 @@ export default function AdminPortalPage() {
                   </div>
                   <input
                     type="url"
-                    value={formImageUrl}
+                    value={formImageUrl ?? ''}
                     onChange={(e) => setFormImageUrl(e.target.value)}
                     placeholder="https://... (ചിത്രമില്ലെങ്കിൽ ശൂന്യമായി വിടാം)"
                     className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
@@ -3736,7 +3761,7 @@ export default function AdminPortalPage() {
                   </label>
                   <input
                     type="text"
-                    value={formImageCaption}
+                    value={formImageCaption ?? ''}
                     onChange={(e) => setFormImageCaption(e.target.value)}
                     placeholder="അടിക്കുറിപ്പ്..."
                     className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
@@ -3752,7 +3777,7 @@ export default function AdminPortalPage() {
                 <textarea
                   rows={10}
                   required
-                  value={formContent}
+                  value={formContent ?? ''}
                   onPaste={handleContentPaste}
                   onChange={(e) => setFormContent(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-xs text-slate-800 leading-relaxed font-sans"
@@ -3764,7 +3789,7 @@ export default function AdminPortalPage() {
                 <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
                   <input
                     type="checkbox"
-                    checked={formTrending}
+                    checked={Boolean(formTrending)}
                     onChange={(e) => setFormTrending(e.target.checked)}
                     className="w-4 h-4 text-editorial-crimson rounded accent-editorial-crimson"
                   />
@@ -3774,7 +3799,7 @@ export default function AdminPortalPage() {
                 <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800 text-xs">
                   <input
                     type="checkbox"
-                    checked={formBreaking}
+                    checked={Boolean(formBreaking)}
                     onChange={(e) => setFormBreaking(e.target.checked)}
                     className="w-4 h-4 text-editorial-crimson rounded accent-editorial-crimson"
                   />
