@@ -110,10 +110,10 @@ export default function HomePage() {
           getRealPhotoStory(),
         ]);
         if (isMounted) {
-          if (articlesResult.status === 'fulfilled' && articlesResult.value && articlesResult.value.length > 0) {
+          if (articlesResult.status === 'fulfilled' && Array.isArray(articlesResult.value)) {
             setArticles(deduplicateArticles(articlesResult.value));
           }
-          if (videosResult.status === 'fulfilled' && videosResult.value && videosResult.value.length > 0) {
+          if (videosResult.status === 'fulfilled' && Array.isArray(videosResult.value)) {
             setVideos(videosResult.value);
           }
           if (photoStoryResult.status === 'fulfilled' && photoStoryResult.value) {

@@ -562,7 +562,7 @@ export async function adminDeleteArticle(
 export async function adminGetRawBreaking(): Promise<Array<{ _id: string; headline: string; active: boolean; createdAt: string }>> {
   try {
     const baseUrl = getApiBaseUrl();
-    const res = await apiFetch(`${baseUrl}/breaking?_t=${Date.now()}`, { cache: 'no-store' });
+    const res = await apiFetch(`${baseUrl}/breaking?all=true&_t=${Date.now()}`, { cache: 'no-store' });
     const data = await res.json();
     return Array.isArray(data.headlines) ? data.headlines : [];
   } catch {
