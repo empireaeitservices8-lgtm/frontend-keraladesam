@@ -211,21 +211,88 @@ export default function AdminPortalPage() {
     .trim() || 'Editor';
   const editorInitials = (editorDisplayName === 'Editor' ? 'ED' : editorDisplayName.slice(0, 2)).toUpperCase();
 
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [breakingList, setBreakingList] = useState<Array<{ _id: string; headline: string; active: boolean }>>([]);
-  const [videosList, setVideosList] = useState<VideoItem[]>([]);
-  const [subscribersList, setSubscribersList] = useState<SubscriberItem[]>([]);
+  const [articles, setArticles] = useState<Article[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const s = localStorage.getItem('kd_admin_articles');
+        if (s) {
+          const parsed = JSON.parse(s);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
+  const [breakingList, setBreakingList] = useState<Array<{ _id: string; headline: string; active: boolean }>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const s = localStorage.getItem('kd_admin_breaking');
+        if (s) {
+          const parsed = JSON.parse(s);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
+  const [videosList, setVideosList] = useState<VideoItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const s = localStorage.getItem('kd_admin_videos');
+        if (s) {
+          const parsed = JSON.parse(s);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
+  const [subscribersList, setSubscribersList] = useState<SubscriberItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const s = localStorage.getItem('kd_admin_subscribers');
+        if (s) {
+          const parsed = JSON.parse(s);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
   const [subscribersSearch, setSubscribersSearch] = useState('');
   const [copiedSubscribers, setCopiedSubscribers] = useState(false);
   const [deletingSubscriberId, setDeletingSubscriberId] = useState<string | null>(null);
   const [refreshingSubscribers, setRefreshingSubscribers] = useState(false);
-  const [adInquiriesList, setAdInquiriesList] = useState<AdInquiryItem[]>([]);
+  const [adInquiriesList, setAdInquiriesList] = useState<AdInquiryItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const s = localStorage.getItem('kd_admin_ads');
+        if (s) {
+          const parsed = JSON.parse(s);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
   const [adInquiriesSearch, setAdInquiriesSearch] = useState('');
   const [adInquiriesStatusFilter, setAdInquiriesStatusFilter] = useState('all');
   const [refreshingAds, setRefreshingAds] = useState(false);
   const [deletingAdId, setDeletingAdId] = useState<string | null>(null);
   const [updatingAdId, setUpdatingAdId] = useState<string | null>(null);
-  const [loadingData, setLoadingData] = useState<boolean>(true);
+  const [loadingData, setLoadingData] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const s = localStorage.getItem('kd_admin_articles');
+        if (s) {
+          const parsed = JSON.parse(s);
+          if (Array.isArray(parsed) && parsed.length > 0) return false;
+        }
+      } catch {}
+    }
+    return true;
+  });
+  const [refreshingPortalData, setRefreshingPortalData] = useState<boolean>(false);
 
   // Photo Story Editor State - safely initialized with fully defined properties
   const [photoStoryData, setPhotoStoryData] = useState<PhotoStoryItem>(() => sanitizePhotoStory(DEFAULT_PHOTO_STORY));
@@ -306,10 +373,13 @@ export default function AdminPortalPage() {
     router.replace('/admin/login');
   };
 
-  // Load articles, breaking news, videos, and subscribers
-  const loadPortalData = async () => {
+  // Load articles, breaking news, videos, and subscribers with instant SWR revalidation
+  const loadPortalData = async (silent = false) => {
     try {
-      setLoadingData(true);
+      if (!silent && articles.length === 0 && breakingList.length === 0) {
+        setLoadingData(true);
+      }
+      setRefreshingPortalData(true);
       const [artList, brkList, vidList, subRes, adRes, psData] = await Promise.all([
         adminGetArticles(),
         adminGetRawBreaking(),
@@ -330,12 +400,43 @@ export default function AdminPortalPage() {
       if (psData) {
         setPhotoStoryData(sanitizePhotoStory(psData));
       }
+
+      // Persist to localStorage for 0ms instant reload next time
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('kd_admin_articles', JSON.stringify(artList));
+          localStorage.setItem('kd_admin_breaking', JSON.stringify(brkList));
+          localStorage.setItem('kd_admin_videos', JSON.stringify(vidList));
+          if (subRes && subRes.success) localStorage.setItem('kd_admin_subscribers', JSON.stringify(subRes.subscribers));
+          if (adRes && adRes.success) localStorage.setItem('kd_admin_ads', JSON.stringify(adRes.inquiries));
+        } catch {}
+      }
     } catch (err) {
       console.error('Failed to load portal data:', err);
     } finally {
       setLoadingData(false);
+      setRefreshingPortalData(false);
     }
   };
+
+  // Keep localStorage continuously synchronized on state updates
+  useEffect(() => {
+    if (articles.length > 0 && typeof window !== 'undefined') {
+      try { localStorage.setItem('kd_admin_articles', JSON.stringify(articles)); } catch {}
+    }
+  }, [articles]);
+
+  useEffect(() => {
+    if (breakingList.length > 0 && typeof window !== 'undefined') {
+      try { localStorage.setItem('kd_admin_breaking', JSON.stringify(breakingList)); } catch {}
+    }
+  }, [breakingList]);
+
+  useEffect(() => {
+    if (videosList.length > 0 && typeof window !== 'undefined') {
+      try { localStorage.setItem('kd_admin_videos', JSON.stringify(videosList)); } catch {}
+    }
+  }, [videosList]);
 
   const loadSubscribersData = async () => {
     try {
@@ -1637,12 +1738,12 @@ export default function AdminPortalPage() {
                 <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
                   <button
                     type="button"
-                    onClick={loadPortalData}
-                    disabled={loadingData}
+                    onClick={() => loadPortalData(true)}
+                    disabled={refreshingPortalData}
                     className="h-10 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs flex items-center justify-center gap-2 transition border border-white/10 shadow-xs"
                     title="ഡാറ്റാബേസിൽ നിന്ന് എല്ലാ വിവരങ്ങളും റീഫ്രഷ് ചെയ്യുക"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${loadingData ? 'animate-spin text-editorial-crimson' : ''}`} />
+                    <RefreshCw className={`w-3.5 h-3.5 ${refreshingPortalData ? 'animate-spin text-editorial-crimson' : ''}`} />
                     <span>റീഫ്രഷ്</span>
                   </button>
                   <Link

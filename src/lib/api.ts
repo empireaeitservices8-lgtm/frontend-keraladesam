@@ -202,23 +202,32 @@ export function normalizeArticle(raw: any): Article {
   };
 }
 
-// In-Memory & Session Storage Cache for 0ms Instant Loading (SWR)
+// In-Memory & LocalStorage SWR Cache for 0ms Instant Loading
 const memoryCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL_MS = 25000; // 25 seconds freshness
+const CACHE_TTL_MS = 30000; // 30 seconds freshness
 
-export function getCachedData<T>(key: string): T | null {
+export function getCachedData<T>(key: string, allowStale = true): T | null {
   const entry = memoryCache.get(key);
-  if (entry && Date.now() - entry.timestamp < CACHE_TTL_MS) {
+  if (entry) {
+    if (!allowStale && Date.now() - entry.timestamp > CACHE_TTL_MS) {
+      return null;
+    }
     return entry.data as T;
   }
   if (typeof window !== 'undefined') {
     try {
-      const stored = sessionStorage.getItem(`kd_${key}`);
+      const stored = sessionStorage.getItem(`kd_${key}`) || localStorage.getItem(`kd_${key}`);
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
+        if (parsed && parsed.data !== undefined) {
           memoryCache.set(key, parsed);
+          if (!allowStale && Date.now() - parsed.timestamp > CACHE_TTL_MS) {
+            return null;
+          }
           return parsed.data as T;
+        } else if (parsed && !parsed.timestamp) {
+          // Direct stored object/array
+          return parsed as T;
         }
       }
     } catch {}
@@ -231,7 +240,9 @@ export function setCachedData(key: string, data: any) {
   memoryCache.set(key, entry);
   if (typeof window !== 'undefined') {
     try {
-      sessionStorage.setItem(`kd_${key}`, JSON.stringify(entry));
+      const serialized = JSON.stringify(entry);
+      sessionStorage.setItem(`kd_${key}`, serialized);
+      localStorage.setItem(`kd_${key}`, serialized);
     } catch {}
   }
 }
@@ -240,11 +251,9 @@ export function clearApiCache() {
   memoryCache.clear();
   if (typeof window !== 'undefined') {
     try {
+      // Clear session network cache without destroying user persistent settings or auth tokens in localStorage
       Object.keys(sessionStorage).forEach((k) => {
         if (k.startsWith('kd_')) sessionStorage.removeItem(k);
-      });
-      Object.keys(localStorage).forEach((k) => {
-        if (k.startsWith('kd_')) localStorage.removeItem(k);
       });
     } catch {}
   }
@@ -629,29 +638,55 @@ export async function adminDeleteArticle(
 }
 
 export async function adminGetArticles(): Promise<Article[]> {
-  try {
-    const baseUrl = getApiBaseUrl();
-    const res = await apiFetch(`${baseUrl}/articles?limit=200&_t=${Date.now()}`, {
-      cache: 'no-store',
-      headers: { Accept: 'application/json' },
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
-  } catch {
-    return [];
+  const cacheKey = 'admin_articles_all';
+  const cached = getCachedData<Article[]>(cacheKey);
+
+  const fetchTask = async () => {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await apiFetch(`${baseUrl}/articles?limit=100&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) return cached || [];
+      const data = await res.json();
+      const list = Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
+      setCachedData(cacheKey, list);
+      return list;
+    } catch {
+      return cached || [];
+    }
+  };
+
+  if (cached && cached.length > 0) {
+    fetchTask();
+    return cached;
   }
+  return await fetchTask();
 }
 
 export async function adminGetRawBreaking(): Promise<Array<{ _id: string; headline: string; active: boolean; createdAt: string }>> {
-  try {
-    const baseUrl = getApiBaseUrl();
-    const res = await apiFetch(`${baseUrl}/breaking?all=true&_t=${Date.now()}`, { cache: 'no-store' });
-    const data = await res.json();
-    return Array.isArray(data.headlines) ? data.headlines : [];
-  } catch {
-    return [];
+  const cacheKey = 'admin_breaking_all';
+  const cached = getCachedData<Array<{ _id: string; headline: string; active: boolean; createdAt: string }>>(cacheKey);
+
+  const fetchTask = async () => {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await apiFetch(`${baseUrl}/breaking?all=true&_t=${Date.now()}`, { cache: 'no-store' });
+      const data = await res.json();
+      const list = Array.isArray(data.headlines) ? data.headlines : [];
+      setCachedData(cacheKey, list);
+      return list;
+    } catch {
+      return cached || [];
+    }
+  };
+
+  if (cached && cached.length > 0) {
+    fetchTask();
+    return cached;
   }
+  return await fetchTask();
 }
 
 export async function adminCreateBreaking(
@@ -872,18 +907,31 @@ export async function adminDeleteVideo(
 }
 
 export async function adminGetVideos(): Promise<VideoItem[]> {
-  try {
-    const baseUrl = getApiBaseUrl();
-    const res = await apiFetch(`${baseUrl}/videos?limit=200&_t=${Date.now()}`, {
-      cache: 'no-store',
-      headers: { Accept: 'application/json' },
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data.videos) ? data.videos.map(normalizeVideo) : [];
-  } catch {
-    return [];
+  const cacheKey = 'admin_videos_all';
+  const cached = getCachedData<VideoItem[]>(cacheKey);
+
+  const fetchTask = async () => {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await apiFetch(`${baseUrl}/videos?limit=100&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) return cached || [];
+      const data = await res.json();
+      const list = Array.isArray(data.videos) ? data.videos.map(normalizeVideo) : [];
+      setCachedData(cacheKey, list);
+      return list;
+    } catch {
+      return cached || [];
+    }
+  };
+
+  if (cached && cached.length > 0) {
+    fetchTask();
+    return cached;
   }
+  return await fetchTask();
 }
 
 export const getRealVideos = getVideos;
@@ -942,20 +990,33 @@ export async function subscribeNewsletter(
 export async function adminGetSubscribers(
   token?: string
 ): Promise<{ success: boolean; subscribers: SubscriberItem[]; error?: string }> {
-  try {
-    const baseUrl = getApiBaseUrl();
-    const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await apiFetch(`${baseUrl}/subscribers?_t=${Date.now()}`, {
-      headers,
-      cache: 'no-store',
-    });
-    const data = await res.json();
-    if (!res.ok) return { success: false, subscribers: [], error: data.error || 'Failed to fetch subscribers' };
-    return { success: true, subscribers: Array.isArray(data.subscribers) ? data.subscribers : [] };
-  } catch (err: any) {
-    return { success: false, subscribers: [], error: err.message };
+  const cacheKey = 'admin_subscribers_all';
+  const cached = getCachedData<SubscriberItem[]>(cacheKey);
+
+  const fetchTask = async () => {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await apiFetch(`${baseUrl}/subscribers?_t=${Date.now()}`, {
+        headers,
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, subscribers: cached || [], error: data.error || 'Failed to fetch subscribers' };
+      const subscribers = Array.isArray(data.subscribers) ? data.subscribers : [];
+      setCachedData(cacheKey, subscribers);
+      return { success: true, subscribers };
+    } catch (err: any) {
+      return { success: false, subscribers: cached || [], error: err.message };
+    }
+  };
+
+  if (cached && cached.length > 0) {
+    fetchTask();
+    return { success: true, subscribers: cached };
   }
+  return await fetchTask();
 }
 
 export async function adminDeleteSubscriber(
@@ -1024,22 +1085,35 @@ export async function submitAdInquiry(data: {
 export async function adminGetAdInquiries(
   token?: string
 ): Promise<{ success: boolean; inquiries: AdInquiryItem[]; error?: string }> {
-  try {
-    const baseUrl = getApiBaseUrl();
-    const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await apiFetch(`${baseUrl}/ads/inquiries?_t=${Date.now()}`, {
-      headers,
-      cache: 'no-store',
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      return { success: false, inquiries: [], error: data.error || 'Failed to fetch ad inquiries' };
+  const cacheKey = 'admin_ads_all';
+  const cached = getCachedData<AdInquiryItem[]>(cacheKey);
+
+  const fetchTask = async () => {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const res = await apiFetch(`${baseUrl}/ads/inquiries?_t=${Date.now()}`, {
+        headers,
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, inquiries: cached || [], error: data.error || 'Failed to fetch ad inquiries' };
+      }
+      const inquiries = Array.isArray(data.inquiries) ? data.inquiries : [];
+      setCachedData(cacheKey, inquiries);
+      return { success: true, inquiries };
+    } catch (err: any) {
+      return { success: false, inquiries: cached || [], error: err.message };
     }
-    return { success: true, inquiries: Array.isArray(data.inquiries) ? data.inquiries : [] };
-  } catch (err: any) {
-    return { success: false, inquiries: [], error: err.message };
+  };
+
+  if (cached && cached.length > 0) {
+    fetchTask();
+    return { success: true, inquiries: cached };
   }
+  return await fetchTask();
 }
 
 export async function adminUpdateAdInquiryStatus(
@@ -1148,36 +1222,49 @@ export async function getRealPhotoStory(bypassCache?: boolean): Promise<PhotoSto
     } catch {}
   }
 
-  try {
-    const baseUrl = getApiBaseUrl();
-    const res = await apiFetch(`${baseUrl}/photo-story?_t=${Date.now()}`, {
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.photoStory && Array.isArray(data.photoStory.images) && data.photoStory.images.length > 0) {
-        const normalizedStory: PhotoStoryItem = {
-          ...data.photoStory,
-          images: data.photoStory.images.map((img: any) => ({
-            url: resolveMediaUrl(img.url),
-            caption: img.caption || '',
-          })),
-        };
-        setCachedData(cacheKey, normalizedStory);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('kd_photo_story', JSON.stringify(normalizedStory));
+  const existingStory =
+    (localCustomStory && Array.isArray(localCustomStory.images) && localCustomStory.images.length > 0)
+      ? localCustomStory
+      : (cached && Array.isArray(cached.images) && cached.images.length > 0)
+      ? cached
+      : null;
+
+  const fetchTask = async () => {
+    try {
+      const baseUrl = getApiBaseUrl();
+      const res = await apiFetch(`${baseUrl}/photo-story?_t=${Date.now()}`, {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.photoStory && Array.isArray(data.photoStory.images) && data.photoStory.images.length > 0) {
+          const normalizedStory: PhotoStoryItem = {
+            ...data.photoStory,
+            images: data.photoStory.images.map((img: any) => ({
+              url: resolveMediaUrl(img.url),
+              caption: img.caption || '',
+            })),
+          };
+          setCachedData(cacheKey, normalizedStory);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('kd_photo_story', JSON.stringify(normalizedStory));
+          }
+          return normalizedStory;
         }
-        return normalizedStory;
       }
+    } catch (err) {
+      console.warn('Failed to fetch photo story from API, checking local fallback:', err);
     }
-  } catch (err) {
-    console.warn('Failed to fetch photo story from API, checking local fallback:', err);
+    return existingStory || DEFAULT_PHOTO_STORY;
+  };
+
+  if (!bypassCache && existingStory) {
+    fetchTask();
+    return existingStory;
   }
 
-  if (localCustomStory && Array.isArray(localCustomStory.images) && localCustomStory.images.length > 0) return localCustomStory;
-  if (!bypassCache && cached && Array.isArray(cached.images) && cached.images.length > 0) return cached;
-  return DEFAULT_PHOTO_STORY;
+  return await fetchTask();
 }
 
 export async function adminUpdatePhotoStory(

@@ -112,8 +112,30 @@ export default function Header() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Article[]>([]);
-  const [breakingNews, setBreakingNews] = useState<string[]>([]);
-  const [notificationArticles, setNotificationArticles] = useState<Article[]>([]);
+  const [breakingNews, setBreakingNews] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('kd_breaking_news');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
+  const [notificationArticles, setNotificationArticles] = useState<Article[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('kd_notification_articles');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [notificationTab, setNotificationTab] = useState<'all' | 'breaking' | 'articles'>('all');
   const [browserPushAllowed, setBrowserPushAllowed] = useState(false);
@@ -177,12 +199,15 @@ export default function Header() {
       try {
         const [headlines, latest] = await Promise.all([
           getRealBreakingNews(),
-          getRealArticles({ limit: 50 }),
+          getRealArticles({ limit: 12 }),
         ]);
 
         if (isMounted) {
-          if (Array.isArray(headlines)) {
+          if (Array.isArray(headlines) && headlines.length > 0) {
             setBreakingNews(headlines);
+            if (typeof window !== 'undefined') {
+              try { localStorage.setItem('kd_breaking_news', JSON.stringify(headlines)); } catch {}
+            }
             if (
               typeof window !== 'undefined' &&
               'Notification' in window &&
@@ -200,7 +225,12 @@ export default function Header() {
               } catch { }
             }
           }
-          if (Array.isArray(latest)) setNotificationArticles(latest);
+          if (Array.isArray(latest) && latest.length > 0) {
+            setNotificationArticles(latest);
+            if (typeof window !== 'undefined') {
+              try { localStorage.setItem('kd_notification_articles', JSON.stringify(latest)); } catch {}
+            }
+          }
         }
       } catch (err) {
         console.error('Error fetching notifications data:', err);
@@ -208,12 +238,17 @@ export default function Header() {
     }
 
     fetchData();
-    const intervalTimer = setInterval(fetchData, 20000);
+    const intervalTimer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchData();
+      }
+    }, 30000);
     const handleFocus = () => fetchData();
     const handleBreakingUpdate = () => fetchData();
 
     window.addEventListener('focus', handleFocus);
     window.addEventListener('keraladesyam_breaking_updated', handleBreakingUpdate);
+    window.addEventListener('keraladesyam_articles_updated', handleBreakingUpdate);
     window.addEventListener('storage', handleBreakingUpdate);
 
     return () => {
@@ -221,6 +256,7 @@ export default function Header() {
       clearInterval(intervalTimer);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('keraladesyam_breaking_updated', handleBreakingUpdate);
+      window.removeEventListener('keraladesyam_articles_updated', handleBreakingUpdate);
       window.removeEventListener('storage', handleBreakingUpdate);
     };
   }, [pathname]);

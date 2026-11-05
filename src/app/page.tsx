@@ -32,11 +32,55 @@ export default function HomePage() {
   const { toggleBookmark, isBookmarked } = useFont();
 
   const [mounted, setMounted] = useState(false);
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [photoStory, setPhotoStory] = useState<PhotoStoryItem | null>(null);
-  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [articles, setArticles] = useState<Article[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('kd_home_articles');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
+  const [photoStory, setPhotoStory] = useState<PhotoStoryItem | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const local = localStorage.getItem('kd_photo_story');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (parsed && Array.isArray(parsed.images) && parsed.images.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return DEFAULT_PHOTO_STORY;
+  });
+  const [videos, setVideos] = useState<VideoItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('kd_home_videos');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('kd_home_articles');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) return false;
+        }
+      } catch {}
+    }
+    return true;
+  });
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -109,16 +153,23 @@ export default function HomePage() {
       }
       try {
         const [articlesResult, videosResult, photoStoryResult] = await Promise.allSettled([
-          getRealArticles({ bypassCache: forceRefresh, limit: 100 }),
-          getRealVideos({ bypassCache: forceRefresh, limit: 20 }),
+          getRealArticles({ bypassCache: forceRefresh, limit: 25 }),
+          getRealVideos({ bypassCache: forceRefresh, limit: 12 }),
           getRealPhotoStory(forceRefresh),
         ]);
         if (isMounted) {
-          if (articlesResult.status === 'fulfilled' && Array.isArray(articlesResult.value)) {
-            setArticles(deduplicateArticles(articlesResult.value));
+          if (articlesResult.status === 'fulfilled' && Array.isArray(articlesResult.value) && articlesResult.value.length > 0) {
+            const deduped = deduplicateArticles(articlesResult.value);
+            setArticles(deduped);
+            if (typeof window !== 'undefined') {
+              try { localStorage.setItem('kd_home_articles', JSON.stringify(deduped)); } catch {}
+            }
           }
-          if (videosResult.status === 'fulfilled' && Array.isArray(videosResult.value)) {
+          if (videosResult.status === 'fulfilled' && Array.isArray(videosResult.value) && videosResult.value.length > 0) {
             setVideos(videosResult.value);
+            if (typeof window !== 'undefined') {
+              try { localStorage.setItem('kd_home_videos', JSON.stringify(videosResult.value)); } catch {}
+            }
           }
           if (photoStoryResult.status === 'fulfilled' && photoStoryResult.value) {
             setPhotoStory(photoStoryResult.value);
@@ -133,10 +184,12 @@ export default function HomePage() {
 
     loadData();
 
-    // Fast polling (every 6 seconds) for immediate live updates without manual refresh
+    // Background polling (every 25 seconds) only when tab is active to eliminate server CPU throttling
     const pollInterval = setInterval(() => {
-      loadData(true);
-    }, 6000);
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        loadData(false);
+      }
+    }, 25000);
 
     // Refresh when user returns to this browser tab
     const handleFocus = () => loadData(true);

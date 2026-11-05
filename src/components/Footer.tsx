@@ -188,27 +188,7 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* Social Media Links for Client */}
-            <div className="mt-5 pt-4 border-t border-surface-pure/10">
-              <span className="block text-[11px] font-bold uppercase tracking-wider text-opinion-ochre mb-2.5">
-                സോഷ്യൽ മീഡിയയിൽ പിന്തുടരുക (Follow Us)
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                {SOCIAL_ACCOUNTS.map((acc) => (
-                  <a
-                    key={acc.name}
-                    href={acc.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={acc.title}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-pure/10 border border-surface-pure/15 text-surface-pure text-xs font-semibold transition-all duration-200 shadow-2xs hover:scale-105 ${acc.hoverBg}`}
-                  >
-                    {acc.icon}
-                    <span className="text-[11px]">{acc.name}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
+            
           </div>
 
           {/* Newsletter Box */}
