@@ -563,6 +563,14 @@ export default function Header() {
                 <span>E-PAPER</span>
               </button>
 
+              <Link
+                href="/admin"
+                className="flex items-center gap-1 text-secondary-fixed-dim hover:text-white font-bold uppercase tracking-wider text-[10px] sm:text-[11px] px-2 py-0.5 rounded hover:bg-white/10 transition-colors"
+                title="കേരളദേശം എഡിറ്റോറിയൽ അഡ്മിൻ ലോഗിൻ"
+              >
+                <span>ADMIN</span>
+              </Link>
+
               <div className="flex items-center gap-1 bg-ink-midnight/80 px-2 py-0.5 rounded border border-surface-pure/10">
                 <span className="text-secondary-fixed-dim text-[10px] mr-0.5 hidden sm:inline uppercase tracking-wider font-semibold">
                   FONT:
@@ -1033,6 +1041,15 @@ export default function Header() {
                   24x7 HD
                 </span>
               </button>
+
+              {/* Admin Portal Button */}
+              <Link
+                href="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-bold rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface transition-colors border border-slate-border uppercase tracking-wider text-[11px]"
+              >
+                <span>എഡിറ്റോറിയൽ ലോഗിൻ (Admin)</span>
+              </Link>
 
               {/* Bookmarks Button */}
               <button

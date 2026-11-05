@@ -269,6 +269,14 @@ export default function Footer() {
                   പരസ്യ നിരക്കുകൾ (Ad Rates)
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/admin"
+                  className="hover:text-surface-pure cursor-pointer transition-colors block text-opinion-ochre font-medium"
+                >
+                  എഡിറ്റോറിയൽ ലോഗിൻ (Admin)
+                </Link>
+              </li>
             </ul>
           </div>
 

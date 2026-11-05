@@ -1,34 +1,50 @@
 import { Article, VideoItem } from '@/data/newsData';
 
-export const LIVE_API_BASE_URL = 'https://kerala-dhesam-admin.vercel.app/api';
+export const VERCEL_API_BASE_URL = 'https://kerala-dhesam-admin.vercel.app/api';
+export const RENDER_API_BASE_URL = 'https://kerala-dhesam-admin.onrender.com/api';
+export const LIVE_API_BASE_URL = VERCEL_API_BASE_URL;
 let isLocalBackendOffline = false;
 
 export function getApiBaseUrl(): string {
-  // During server-side build/prerender (Node.js), avoid external network hangs
+  // During server-side build / prerender (Node.js)
   if (typeof window === 'undefined') {
+    if (process.env.API_URL) return process.env.API_URL.replace(/\/$/, '');
+    if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
+    if (process.env.RENDER) return RENDER_API_BASE_URL;
     return 'http://127.0.0.1:5000/api';
   }
-  if (isLocalBackendOffline) {
-    return LIVE_API_BASE_URL;
-  }
+
+  // Priority 1: User-configured environment variable
   if (process.env.NEXT_PUBLIC_API_URL) {
     if (
       isLocalBackendOffline &&
       (process.env.NEXT_PUBLIC_API_URL.includes('localhost') ||
         process.env.NEXT_PUBLIC_API_URL.includes('127.0.0.1'))
     ) {
-      return LIVE_API_BASE_URL;
+      return window.location.hostname.includes('onrender.com')
+        ? RENDER_API_BASE_URL
+        : VERCEL_API_BASE_URL;
     }
-    return process.env.NEXT_PUBLIC_API_URL;
+    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
   }
+
+  // Priority 2: When browsing on Render (kerala-dhesam.onrender.com), point to Render backend
+  if (window.location.hostname.includes('onrender.com')) {
+    return RENDER_API_BASE_URL;
+  }
+
+  // Priority 3: Localhost development
   if (
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1' ||
-    window.location.hostname.startsWith('192.168.')
+    !isLocalBackendOffline &&
+    (window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname.startsWith('192.168.'))
   ) {
     return 'http://localhost:5000/api';
   }
-  return LIVE_API_BASE_URL;
+
+  // Priority 4: Default Vercel production API
+  return VERCEL_API_BASE_URL;
 }
 
 export async function apiFetch(input: string | URL, init?: RequestInit): Promise<Response> {
@@ -40,7 +56,10 @@ export async function apiFetch(input: string | URL, init?: RequestInit): Promise
     isLocalBackendOffline &&
     (urlStr.includes('localhost:5000') || urlStr.includes('127.0.0.1:5000'))
   ) {
-    const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):5000\/api/i, LIVE_API_BASE_URL);
+    const liveTarget = window.location.hostname.includes('onrender.com')
+      ? RENDER_API_BASE_URL
+      : VERCEL_API_BASE_URL;
+    const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):5000\/api/i, liveTarget);
     return await fetch(fallbackUrl, init);
   }
 
@@ -50,7 +69,10 @@ export async function apiFetch(input: string | URL, init?: RequestInit): Promise
     // If request to localhost/127.0.0.1 failed (ERR_CONNECTION_REFUSED when local backend isn't running)
     if (urlStr.includes('localhost:5000') || urlStr.includes('127.0.0.1:5000')) {
       isLocalBackendOffline = true;
-      const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):5000\/api/i, LIVE_API_BASE_URL);
+      const liveTarget = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')
+        ? RENDER_API_BASE_URL
+        : VERCEL_API_BASE_URL;
+      const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):5000\/api/i, liveTarget);
       if (typeof window !== 'undefined') {
         console.warn(`[Kerala Desam] Local backend server at :5000 is offline. Automatically routed request to Live API: ${fallbackUrl}`);
         try {
