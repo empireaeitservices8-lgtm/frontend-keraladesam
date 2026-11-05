@@ -484,8 +484,10 @@ export default function AdminPortalPage() {
   useEffect(() => {
     if (isAuthenticated) {
       loadPortalData();
+    } else if (!authLoading) {
+      router.replace('/admin/login');
     }
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, authLoading, token, router]);
 
   // Auto reload subscribers when opening subscribers tab
   useEffect(() => {
@@ -1317,13 +1319,26 @@ export default function AdminPortalPage() {
 
   if (authLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white gap-3 p-4">
-        <div className="p-4 rounded-2xl bg-editorial-crimson/15 border border-editorial-crimson/30 mb-2">
+      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white gap-4 p-4 text-center">
+        <div className="p-4 rounded-2xl bg-editorial-crimson/15 border border-editorial-crimson/30 mb-1">
           <ShieldAlert className="w-10 h-10 text-editorial-crimson animate-pulse" />
         </div>
-        <h2 className="font-headline text-lg font-bold">അഡ്മിൻ പ്രവേശനം പരിശോധിക്കുന്നു...</h2>
-        <p className="text-xs text-slate-400">ലോഗിൻ ചെയ്യാതെ അഡ്മിൻ കൺസോൾ തുറക്കാൻ സാധിക്കില്ല.</p>
-        <Loader2 className="w-6 h-6 animate-spin text-editorial-crimson mt-2" />
+        <h2 className="font-headline text-lg sm:text-xl font-bold">അഡ്മിൻ പ്രവേശനം ആവശ്യമാണ് (Admin Login Required)</h2>
+        <p className="text-xs sm:text-sm text-slate-400 max-w-sm">എഡിറ്റോറിയൽ കൺസോൾ തുറക്കാൻ ദയവായി ലോഗിൻ ചെയ്യുക.</p>
+        <div className="flex flex-col sm:flex-row items-center gap-3 mt-3">
+          <Link
+            href="/admin/login"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-editorial-crimson hover:bg-editorial-crimson/90 text-white text-xs font-bold transition-all shadow-md"
+          >
+            എഡിറ്റോറിയൽ ലോഗിൻ (Go to Login)
+          </Link>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-medium transition-all"
+          >
+            ഹോംപേജിലേക്ക് (Back to Home)
+          </Link>
+        </div>
       </div>
     );
   }
