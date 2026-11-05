@@ -617,67 +617,78 @@ export default function HomePage() {
           )}
 
           {/* Sliding Effect 3: Visual Journalism / Photo Feature Gallery with swipeable mobile slide */}
-          {photoStory && photoStory.images && photoStory.images.length > 0 && (
-            <div className="bg-ink-midnight text-surface-pure rounded-xl p-4 sm:p-7 relative overflow-hidden shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] bg-opinion-ochre text-white px-2.5 py-1 rounded font-bold uppercase tracking-wider">
-                    {photoStory.tagLabel || 'PHOTO STORY'}
-                  </span>
-                  <span className="text-xs text-secondary-fixed-dim uppercase tracking-wider font-semibold">
-                    {photoStory.subtitle || 'KERALA IN FRAMES'}
-                  </span>
-                </div>
+          {(() => {
+            const activeStory =
+              photoStory && photoStory.images && photoStory.images.length > 0
+                ? photoStory
+                : DEFAULT_PHOTO_STORY;
 
-                {/* Slider Controls */}
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => slideLeft(photoSliderRef)}
-                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
-                    title="മുമ്പത്തെ ഫോട്ടോ"
-                    aria-label="Previous Photo"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => slideRight(photoSliderRef)}
-                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
-                    title="അടുത്ത ഫോട്ടോ"
-                    aria-label="Next Photo"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-              <h3 className="font-headline text-xl sm:text-2xl font-bold mb-2 text-surface-pure">
-                {photoStory.title}
-              </h3>
-              <p className="text-xs sm:text-sm text-secondary-fixed-dim mb-4 leading-relaxed max-w-2xl">
-                {photoStory.description}
-              </p>
-
-              {/* Mobile swipeable slider, desktop 3-col grid */}
-              <div
-                ref={photoSliderRef}
-                className={`flex sm:grid ${(photoStory.images?.length || 3) <= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'} gap-3 overflow-x-auto sm:overflow-visible no-scrollbar scroll-smooth snap-x snap-mandatory pb-2 sm:pb-0`}
-              >
-                {photoStory.images.map((img, idx) => (
-                  <div key={idx} className="w-[260px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-lg group relative">
-                    <img
-                      src={img.url}
-                      alt={img.caption || `Photo ${idx + 1}`}
-                      className="rounded-lg object-cover h-40 sm:h-44 w-full group-hover:scale-105 transition-transform duration-300"
-                    />
-                    {img.caption && (
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-2 text-[11px] text-white/90 truncate font-medium">
-                        {img.caption}
-                      </div>
-                    )}
+            return (
+              <section className="bg-[#0b192c] text-white rounded-2xl p-5 sm:p-7 md:p-8 relative overflow-hidden shadow-lg select-none">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <span className="text-[11px] sm:text-xs bg-[#c05621] text-white px-2.5 py-1 rounded font-black uppercase tracking-wider">
+                      {activeStory.tagLabel || 'PHOTO STORY'}
+                    </span>
+                    <span className="text-xs sm:text-sm text-slate-400 uppercase tracking-wider font-bold">
+                      {activeStory.subtitle || 'KERALA IN FRAMES'}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
+
+                  {/* Slider Controls */}
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <button
+                      onClick={() => slideLeft(photoSliderRef)}
+                      className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
+                      title="മുമ്പത്തെ ഫോട്ടോ"
+                      aria-label="Previous Photo"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => slideRight(photoSliderRef)}
+                      className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
+                      title="അടുത്ത ഫോട്ടോ"
+                      aria-label="Next Photo"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <h3 className="font-headline text-xl sm:text-2xl md:text-3xl font-extrabold mb-1.5 text-white tracking-tight leading-snug">
+                  {activeStory.title}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300 mb-5 leading-relaxed max-w-3xl">
+                  {activeStory.description}
+                </p>
+
+                {/* 3-column photo grid matching Image 1 */}
+                <div
+                  ref={photoSliderRef}
+                  className="flex sm:grid sm:grid-cols-3 gap-3.5 sm:gap-4 md:gap-5 overflow-x-auto sm:overflow-visible no-scrollbar scroll-smooth snap-x snap-mandatory pb-2 sm:pb-0"
+                >
+                  {activeStory.images.map((img, idx) => (
+                    <div
+                      key={idx}
+                      className="w-[280px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-xl group relative bg-black/40 shadow-sm aspect-[16/10]"
+                    >
+                      <img
+                        src={img.url}
+                        alt={img.caption || `Photo ${idx + 1}`}
+                        className="rounded-xl object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 ease-out"
+                      />
+                      {img.caption && (
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-3 text-xs text-white/95 truncate font-medium">
+                          {img.caption}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
 
           {/* Sliding Effect 4: Video Shorts & Reels Horizontal Sliding Carousel */}
           {videos.length > 0 && (

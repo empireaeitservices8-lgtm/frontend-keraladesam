@@ -600,6 +600,21 @@ export async function adminDeleteArticle(
   }
 }
 
+export async function adminGetArticles(): Promise<Article[]> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await apiFetch(`${baseUrl}/articles?limit=200&_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function adminGetRawBreaking(): Promise<Array<{ _id: string; headline: string; active: boolean; createdAt: string }>> {
   try {
     const baseUrl = getApiBaseUrl();
@@ -823,6 +838,21 @@ export async function adminDeleteVideo(
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Network error' };
+  }
+}
+
+export async function adminGetVideos(): Promise<VideoItem[]> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await apiFetch(`${baseUrl}/videos?limit=200&_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.videos) ? data.videos.map(normalizeVideo) : [];
+  } catch {
+    return [];
   }
 }
 
@@ -1064,7 +1094,7 @@ export const DEFAULT_PHOTO_STORY: PhotoStoryItem = {
       caption: 'കുട്ടനാട് 1',
     },
     {
-      url: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80',
+      url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
       caption: 'കുട്ടനാട് 2',
     },
     {
@@ -1096,7 +1126,7 @@ export async function getRealPhotoStory(): Promise<PhotoStoryItem | null> {
     });
     if (res.ok) {
       const data = await res.json();
-      if (data.photoStory) {
+      if (data.photoStory && Array.isArray(data.photoStory.images) && data.photoStory.images.length > 0) {
         setCachedData(cacheKey, data.photoStory);
         if (typeof window !== 'undefined') {
           localStorage.setItem('kd_photo_story', JSON.stringify(data.photoStory));
@@ -1108,9 +1138,9 @@ export async function getRealPhotoStory(): Promise<PhotoStoryItem | null> {
     console.warn('Failed to fetch photo story from API, checking local fallback:', err);
   }
 
-  if (localCustomStory) return localCustomStory;
-  if (cached) return cached;
-  return null;
+  if (localCustomStory && Array.isArray(localCustomStory.images) && localCustomStory.images.length > 0) return localCustomStory;
+  if (cached && Array.isArray(cached.images) && cached.images.length > 0) return cached;
+  return DEFAULT_PHOTO_STORY;
 }
 
 export async function adminUpdatePhotoStory(

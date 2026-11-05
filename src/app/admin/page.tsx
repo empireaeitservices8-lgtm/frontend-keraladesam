@@ -56,6 +56,7 @@ import { useAdminAuth } from '@/context/AdminAuthContext';
 import { Article, VideoItem, KERALA_DISTRICTS } from '@/data/newsData';
 import {
   getRealArticles,
+  adminGetArticles,
   adminCreateArticle,
   adminUpdateArticle,
   adminDeleteArticle,
@@ -65,6 +66,7 @@ import {
   adminUpdateBreaking,
   adminDeleteBreaking,
   getRealVideos,
+  adminGetVideos,
   adminCreateVideo,
   adminDeleteVideo,
   adminGetSubscribers,
@@ -309,9 +311,9 @@ export default function AdminPortalPage() {
     try {
       setLoadingData(true);
       const [artList, brkList, vidList, subRes, adRes, psData] = await Promise.all([
-        getRealArticles({ limit: 100 }),
+        adminGetArticles(),
         adminGetRawBreaking(),
-        getRealVideos({ limit: 100 }),
+        adminGetVideos(),
         adminGetSubscribers(token || undefined),
         adminGetAdInquiries(token || undefined),
         getRealPhotoStory(),
@@ -666,6 +668,8 @@ export default function AdminPortalPage() {
             images: [],
           })
         );
+        clearApiCache();
+        window.dispatchEvent(new Event('kd_photo_story_updated'));
         showToast('ഫോട്ടോ സ്റ്റോറി പൂർണ്ണമായും നീക്കം ചെയ്തു.', 'success');
       } catch (err: any) {
         showToast(err.message || 'ഡിലീറ്റ് ചെയ്യുന്നതിൽ പിഴവ് സംഭവിച്ചു.', 'error');
@@ -687,6 +691,8 @@ export default function AdminPortalPage() {
       const res = await adminUpdatePhotoStory(photoStoryData, activeToken || undefined);
       if (res.success) {
         if (res.photoStory) setPhotoStoryData(sanitizePhotoStory(res.photoStory));
+        clearApiCache();
+        window.dispatchEvent(new Event('kd_photo_story_updated'));
         showToast('ഫോട്ടോ സ്റ്റോറി വിജയകരമായി സേവ് ചെയ്തു!', 'success');
       } else {
         showToast(res.error || 'ഫോട്ടോ സ്റ്റോറി സേവ് ചെയ്യാൻ സാധിച്ചില്ല.', 'error');
@@ -1608,7 +1614,7 @@ export default function AdminPortalPage() {
                 </div>
                 <div>
                   <div className="text-2xl font-black text-slate-900 font-mono tracking-tight">
-                    {articles.filter((a) => a.isHeadline).length || 1}
+                    {articles.filter((a) => a.isHeadline).length}
                   </div>
                   <div className="text-xs font-bold text-slate-700 mt-0.5">ഹെഡ്‌ലൈൻ</div>
                   <div className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">ഹോം ഹീറോ വാർത്ത</div>
