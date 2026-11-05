@@ -211,88 +211,56 @@ export default function AdminPortalPage() {
     .trim() || 'Editor';
   const editorInitials = (editorDisplayName === 'Editor' ? 'ED' : editorDisplayName.slice(0, 2)).toUpperCase();
 
-  const [articles, setArticles] = useState<Article[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const s = localStorage.getItem('kd_admin_articles');
-        if (s) {
-          const parsed = JSON.parse(s);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-    }
-    return [];
-  });
-  const [breakingList, setBreakingList] = useState<Array<{ _id: string; headline: string; active: boolean }>>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const s = localStorage.getItem('kd_admin_breaking');
-        if (s) {
-          const parsed = JSON.parse(s);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-    }
-    return [];
-  });
-  const [videosList, setVideosList] = useState<VideoItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const s = localStorage.getItem('kd_admin_videos');
-        if (s) {
-          const parsed = JSON.parse(s);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-    }
-    return [];
-  });
-  const [subscribersList, setSubscribersList] = useState<SubscriberItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const s = localStorage.getItem('kd_admin_subscribers');
-        if (s) {
-          const parsed = JSON.parse(s);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-    }
-    return [];
-  });
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [breakingList, setBreakingList] = useState<Array<{ _id: string; headline: string; active: boolean }>>([]);
+  const [videosList, setVideosList] = useState<VideoItem[]>([]);
+  const [subscribersList, setSubscribersList] = useState<SubscriberItem[]>([]);
   const [subscribersSearch, setSubscribersSearch] = useState('');
   const [copiedSubscribers, setCopiedSubscribers] = useState(false);
   const [deletingSubscriberId, setDeletingSubscriberId] = useState<string | null>(null);
   const [refreshingSubscribers, setRefreshingSubscribers] = useState(false);
-  const [adInquiriesList, setAdInquiriesList] = useState<AdInquiryItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const s = localStorage.getItem('kd_admin_ads');
-        if (s) {
-          const parsed = JSON.parse(s);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-    }
-    return [];
-  });
+  const [adInquiriesList, setAdInquiriesList] = useState<AdInquiryItem[]>([]);
   const [adInquiriesSearch, setAdInquiriesSearch] = useState('');
   const [adInquiriesStatusFilter, setAdInquiriesStatusFilter] = useState('all');
   const [refreshingAds, setRefreshingAds] = useState(false);
   const [deletingAdId, setDeletingAdId] = useState<string | null>(null);
   const [updatingAdId, setUpdatingAdId] = useState<string | null>(null);
-  const [loadingData, setLoadingData] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const s = localStorage.getItem('kd_admin_articles');
-        if (s) {
-          const parsed = JSON.parse(s);
-          if (Array.isArray(parsed) && parsed.length > 0) return false;
-        }
-      } catch {}
-    }
-    return true;
-  });
+  const [loadingData, setLoadingData] = useState<boolean>(true);
   const [refreshingPortalData, setRefreshingPortalData] = useState<boolean>(false);
+
+  // Immediately hydrate from client-side persistent storage on mount (guarantees 0ms initial load without SSR mismatch)
+  useEffect(() => {
+    try {
+      const art = localStorage.getItem('kd_admin_articles');
+      if (art) {
+        const p = JSON.parse(art);
+        if (Array.isArray(p) && p.length > 0) {
+          setArticles(p);
+          setLoadingData(false);
+        }
+      }
+      const brk = localStorage.getItem('kd_admin_breaking');
+      if (brk) {
+        const p = JSON.parse(brk);
+        if (Array.isArray(p) && p.length > 0) setBreakingList(p);
+      }
+      const vid = localStorage.getItem('kd_admin_videos');
+      if (vid) {
+        const p = JSON.parse(vid);
+        if (Array.isArray(p) && p.length > 0) setVideosList(p);
+      }
+      const sub = localStorage.getItem('kd_admin_subscribers');
+      if (sub) {
+        const p = JSON.parse(sub);
+        if (Array.isArray(p) && p.length > 0) setSubscribersList(p);
+      }
+      const ads = localStorage.getItem('kd_admin_ads');
+      if (ads) {
+        const p = JSON.parse(ads);
+        if (Array.isArray(p) && p.length > 0) setAdInquiriesList(p);
+      }
+    } catch {}
+  }, []);
 
   // Photo Story Editor State - safely initialized with fully defined properties
   const [photoStoryData, setPhotoStoryData] = useState<PhotoStoryItem>(() => sanitizePhotoStory(DEFAULT_PHOTO_STORY));
@@ -386,7 +354,7 @@ export default function AdminPortalPage() {
         adminGetVideos(),
         adminGetSubscribers(token || undefined),
         adminGetAdInquiries(token || undefined),
-        getRealPhotoStory(),
+        getRealPhotoStory(true),
       ]);
       setArticles(artList);
       setBreakingList(brkList);
@@ -421,19 +389,19 @@ export default function AdminPortalPage() {
 
   // Keep localStorage continuously synchronized on state updates
   useEffect(() => {
-    if (articles.length > 0 && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       try { localStorage.setItem('kd_admin_articles', JSON.stringify(articles)); } catch {}
     }
   }, [articles]);
 
   useEffect(() => {
-    if (breakingList.length > 0 && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       try { localStorage.setItem('kd_admin_breaking', JSON.stringify(breakingList)); } catch {}
     }
   }, [breakingList]);
 
   useEffect(() => {
-    if (videosList.length > 0 && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       try { localStorage.setItem('kd_admin_videos', JSON.stringify(videosList)); } catch {}
     }
   }, [videosList]);

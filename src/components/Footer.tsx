@@ -192,8 +192,6 @@ export default function Footer() {
           </div>
 
           {/* Newsletter Box */}
-
-          {/* Newsletter Box */}
           <div className="lg:col-span-7 w-full min-w-0 h-fit min-h-[280px] self-start rounded-md border border-white/10 bg-[#17283e] p-5 sm:p-7 md:p-8 flex flex-col justify-center">
 
             <h3 className="text-lg sm:text-xl md:text-2xl font-bold leading-relaxed mb-5">
@@ -251,7 +249,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/admin"
+                  href="/admin/login"
                   className="hover:text-surface-pure cursor-pointer transition-colors block text-opinion-ochre font-medium"
                 >
                   എഡിറ്റോറിയൽ ലോഗിൻ (Admin)

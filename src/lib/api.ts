@@ -2,53 +2,64 @@ import { Article, VideoItem } from '@/data/newsData';
 
 export const VERCEL_API_BASE_URL = 'https://kerala-dhesam-admin.vercel.app/api';
 export const RENDER_API_BASE_URL = 'https://kerala-dhesam-admin.onrender.com/api';
-export const LIVE_API_BASE_URL = VERCEL_API_BASE_URL;
+export const LIVE_API_BASE_URL = RENDER_API_BASE_URL;
 let isLocalBackendOffline = false;
 
 export function getApiBaseUrl(): string {
   // During server-side build / prerender (Node.js)
   if (typeof window === 'undefined') {
     if (process.env.API_URL) return process.env.API_URL.replace(/\/$/, '');
-    if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
     if (process.env.RENDER) return RENDER_API_BASE_URL;
-    return 'http://127.0.0.1:5000/api';
+    if (process.env.NODE_ENV === 'production') return RENDER_API_BASE_URL;
+    return RENDER_API_BASE_URL;
   }
 
-  // Priority 1: User-configured environment variable
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    if (
-      isLocalBackendOffline &&
-      (process.env.NEXT_PUBLIC_API_URL.includes('localhost') ||
-        process.env.NEXT_PUBLIC_API_URL.includes('127.0.0.1'))
-    ) {
-      return window.location.hostname.includes('onrender.com')
-        ? RENDER_API_BASE_URL
-        : VERCEL_API_BASE_URL;
-    }
-    return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
-  }
-
-  // Priority 2: When browsing on Render (kerala-dhesam.onrender.com), point to Render backend
+  // Priority 1: When browsing on Render (kerala-dhesam.onrender.com), point to Render backend
   if (window.location.hostname.includes('onrender.com')) {
     return RENDER_API_BASE_URL;
   }
 
-  // Priority 3: Localhost development
+  // Priority 2: When browsing on HTTPS anywhere in production, never use insecure http://localhost
+  if (window.location.protocol === 'https:') {
+    if (
+      process.env.NEXT_PUBLIC_API_URL &&
+      !process.env.NEXT_PUBLIC_API_URL.includes('localhost') &&
+      !process.env.NEXT_PUBLIC_API_URL.includes('127.0.0.1')
+    ) {
+      return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
+    }
+    return RENDER_API_BASE_URL;
+  }
+
+  // Priority 3: Localhost development (http://localhost:3000)
   if (
     !isLocalBackendOffline &&
     (window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1' ||
       window.location.hostname.startsWith('192.168.'))
   ) {
+    if (process.env.NEXT_PUBLIC_API_URL) {
+      return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
+    }
     return 'http://localhost:5000/api';
   }
 
-  // Priority 4: Default Vercel production API
-  return VERCEL_API_BASE_URL;
+  // Priority 4: Default live production API (Render)
+  return RENDER_API_BASE_URL;
 }
 
 export async function apiFetch(input: string | URL, init?: RequestInit): Promise<Response> {
   const urlStr = input.toString();
+
+  // Create an abort controller with safety timeout so build/prerender never hangs
+  const controller = new AbortController();
+  const timeoutMs = typeof window === 'undefined' ? 3500 : 8000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  const mergedInit: RequestInit = {
+    ...init,
+    signal: init?.signal || controller.signal,
+  };
 
   // If in browser and local backend is already known to be offline, route directly to live API
   if (
@@ -56,23 +67,27 @@ export async function apiFetch(input: string | URL, init?: RequestInit): Promise
     isLocalBackendOffline &&
     (urlStr.includes('localhost:5000') || urlStr.includes('127.0.0.1:5000'))
   ) {
-    const liveTarget = window.location.hostname.includes('onrender.com')
-      ? RENDER_API_BASE_URL
-      : VERCEL_API_BASE_URL;
-    const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):5000\/api/i, liveTarget);
-    return await fetch(fallbackUrl, init);
+    const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):5000\/api/i, RENDER_API_BASE_URL);
+    try {
+      const res = await fetch(fallbackUrl, mergedInit);
+      clearTimeout(timeoutId);
+      return res;
+    } catch (e) {
+      clearTimeout(timeoutId);
+      throw e;
+    }
   }
 
   try {
-    return await fetch(input, init);
+    const res = await fetch(input, mergedInit);
+    clearTimeout(timeoutId);
+    return res;
   } catch (err: any) {
+    clearTimeout(timeoutId);
     // If request to localhost/127.0.0.1 failed (ERR_CONNECTION_REFUSED when local backend isn't running)
     if (urlStr.includes('localhost:5000') || urlStr.includes('127.0.0.1:5000')) {
       isLocalBackendOffline = true;
-      const liveTarget = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')
-        ? RENDER_API_BASE_URL
-        : VERCEL_API_BASE_URL;
-      const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):5000\/api/i, liveTarget);
+      const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):5000\/api/i, RENDER_API_BASE_URL);
       if (typeof window !== 'undefined') {
         console.warn(`[Kerala Desam] Local backend server at :5000 is offline. Automatically routed request to Live API: ${fallbackUrl}`);
         try {
@@ -251,9 +266,29 @@ export function clearApiCache() {
   memoryCache.clear();
   if (typeof window !== 'undefined') {
     try {
-      // Clear session network cache without destroying user persistent settings or auth tokens in localStorage
+      // Clear session network cache
       Object.keys(sessionStorage).forEach((k) => {
         if (k.startsWith('kd_')) sessionStorage.removeItem(k);
+      });
+      // Clear persistent content cache without destroying user persistent settings or auth tokens in localStorage
+      const preservedKeys = new Set([
+        'keraladesam_admin_jwt',
+        'token',
+        'user',
+        'kd_font_size',
+        'kd_saved_bookmarks',
+        'kd_bookmarks',
+      ]);
+      Object.keys(localStorage).forEach((k) => {
+        if (preservedKeys.has(k) || k.startsWith('kd_followed_')) return;
+        if (
+          k.startsWith('kd_') ||
+          k.startsWith('articles_') ||
+          k.startsWith('breaking_') ||
+          k.startsWith('videos_')
+        ) {
+          localStorage.removeItem(k);
+        }
       });
     } catch {}
   }
@@ -638,55 +673,36 @@ export async function adminDeleteArticle(
 }
 
 export async function adminGetArticles(): Promise<Article[]> {
-  const cacheKey = 'admin_articles_all';
-  const cached = getCachedData<Article[]>(cacheKey);
-
-  const fetchTask = async () => {
-    try {
-      const baseUrl = getApiBaseUrl();
-      const res = await apiFetch(`${baseUrl}/articles?limit=100&_t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: { Accept: 'application/json' },
-      });
-      if (!res.ok) return cached || [];
-      const data = await res.json();
-      const list = Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
-      setCachedData(cacheKey, list);
-      return list;
-    } catch {
-      return cached || [];
-    }
-  };
-
-  if (cached && cached.length > 0) {
-    fetchTask();
-    return cached;
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await apiFetch(`${baseUrl}/articles?limit=100&_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const list = Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
+    return list;
+  } catch (err) {
+    console.error('adminGetArticles error:', err);
+    return [];
   }
-  return await fetchTask();
 }
 
 export async function adminGetRawBreaking(): Promise<Array<{ _id: string; headline: string; active: boolean; createdAt: string }>> {
-  const cacheKey = 'admin_breaking_all';
-  const cached = getCachedData<Array<{ _id: string; headline: string; active: boolean; createdAt: string }>>(cacheKey);
-
-  const fetchTask = async () => {
-    try {
-      const baseUrl = getApiBaseUrl();
-      const res = await apiFetch(`${baseUrl}/breaking?all=true&_t=${Date.now()}`, { cache: 'no-store' });
-      const data = await res.json();
-      const list = Array.isArray(data.headlines) ? data.headlines : [];
-      setCachedData(cacheKey, list);
-      return list;
-    } catch {
-      return cached || [];
-    }
-  };
-
-  if (cached && cached.length > 0) {
-    fetchTask();
-    return cached;
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await apiFetch(`${baseUrl}/breaking?all=true&_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.headlines) ? data.headlines : [];
+  } catch (err) {
+    console.error('adminGetRawBreaking error:', err);
+    return [];
   }
-  return await fetchTask();
 }
 
 export async function adminCreateBreaking(
@@ -907,31 +923,19 @@ export async function adminDeleteVideo(
 }
 
 export async function adminGetVideos(): Promise<VideoItem[]> {
-  const cacheKey = 'admin_videos_all';
-  const cached = getCachedData<VideoItem[]>(cacheKey);
-
-  const fetchTask = async () => {
-    try {
-      const baseUrl = getApiBaseUrl();
-      const res = await apiFetch(`${baseUrl}/videos?limit=100&_t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: { Accept: 'application/json' },
-      });
-      if (!res.ok) return cached || [];
-      const data = await res.json();
-      const list = Array.isArray(data.videos) ? data.videos.map(normalizeVideo) : [];
-      setCachedData(cacheKey, list);
-      return list;
-    } catch {
-      return cached || [];
-    }
-  };
-
-  if (cached && cached.length > 0) {
-    fetchTask();
-    return cached;
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await apiFetch(`${baseUrl}/videos?limit=100&_t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.videos) ? data.videos.map(normalizeVideo) : [];
+  } catch (err) {
+    console.error('adminGetVideos error:', err);
+    return [];
   }
-  return await fetchTask();
 }
 
 export const getRealVideos = getVideos;

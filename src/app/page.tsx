@@ -31,56 +31,11 @@ import VideoPlayerModal from '@/components/VideoPlayerModal';
 export default function HomePage() {
   const { toggleBookmark, isBookmarked } = useFont();
 
-  const [mounted, setMounted] = useState(false);
-  const [articles, setArticles] = useState<Article[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('kd_home_articles');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-    }
-    return [];
-  });
-  const [photoStory, setPhotoStory] = useState<PhotoStoryItem | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const local = localStorage.getItem('kd_photo_story');
-        if (local) {
-          const parsed = JSON.parse(local);
-          if (parsed && Array.isArray(parsed.images) && parsed.images.length > 0) return parsed;
-        }
-      } catch {}
-    }
-    return DEFAULT_PHOTO_STORY;
-  });
-  const [videos, setVideos] = useState<VideoItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('kd_home_videos');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-    }
-    return [];
-  });
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [photoStory, setPhotoStory] = useState<PhotoStoryItem>(DEFAULT_PHOTO_STORY);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<VideoItem | null>(null);
-  const [loading, setLoading] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('kd_home_articles');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return false;
-        }
-      } catch {}
-    }
-    return true;
-  });
+  const [loading, setLoading] = useState<boolean>(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('ALL');
@@ -115,57 +70,53 @@ export default function HomePage() {
 
   useEffect(() => {
     let isMounted = true;
-    setMounted(true);
 
-    // 1. Immediately hydrate from client-side memory/session cache on mount
-    const cachedArticles =
-      getCachedData<Article[]>('articles_all___def_f') ||
-      getCachedData<Article[]>('articles_all___50_f');
-    if (cachedArticles && cachedArticles.length > 0) {
-      setArticles(deduplicateArticles(cachedArticles));
-      setLoading(false);
-    }
-
-    const cachedVideos = getCachedData<VideoItem[]>('videos_all_20');
-    if (cachedVideos && cachedVideos.length > 0) {
-      setVideos(cachedVideos);
-    }
-
-    const cachedPhotoStory = getCachedData<PhotoStoryItem>('photo_story_active');
-    if (cachedPhotoStory) {
-      setPhotoStory(cachedPhotoStory);
-    } else if (typeof window !== 'undefined') {
-      try {
-        const local = localStorage.getItem('kd_photo_story');
-        if (local) {
-          const parsed = JSON.parse(local);
-          if (parsed && parsed.images && parsed.images.length > 0) {
-            setPhotoStory(parsed);
-          }
+    // 1. Immediately hydrate from client-side persistent storage on mount (guarantees 0ms initial load without SSR mismatch)
+    try {
+      const storedArticles = localStorage.getItem('kd_home_articles');
+      if (storedArticles) {
+        const parsed = JSON.parse(storedArticles);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setArticles(deduplicateArticles(parsed));
+          setLoading(false);
         }
-      } catch {}
-    }
+      }
+      const storedVideos = localStorage.getItem('kd_home_videos');
+      if (storedVideos) {
+        const parsed = JSON.parse(storedVideos);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setVideos(parsed);
+        }
+      }
+      const storedStory = localStorage.getItem('kd_photo_story');
+      if (storedStory) {
+        const parsed = JSON.parse(storedStory);
+        if (parsed && Array.isArray(parsed.images) && parsed.images.length > 0) {
+          setPhotoStory(parsed);
+        }
+      }
+    } catch {}
 
     // 2. Fetch fresh data from backend with instant real-time synchronization
-    async function loadData(forceRefresh = false) {
+    async function loadData(forceRefresh = true) {
       if (forceRefresh) {
         clearApiCache();
       }
       try {
         const [articlesResult, videosResult, photoStoryResult] = await Promise.allSettled([
-          getRealArticles({ bypassCache: forceRefresh, limit: 25 }),
-          getRealVideos({ bypassCache: forceRefresh, limit: 12 }),
-          getRealPhotoStory(forceRefresh),
+          getRealArticles({ bypassCache: true, limit: 25 }),
+          getRealVideos({ bypassCache: true, limit: 12 }),
+          getRealPhotoStory(true),
         ]);
         if (isMounted) {
-          if (articlesResult.status === 'fulfilled' && Array.isArray(articlesResult.value) && articlesResult.value.length > 0) {
+          if (articlesResult.status === 'fulfilled' && Array.isArray(articlesResult.value)) {
             const deduped = deduplicateArticles(articlesResult.value);
             setArticles(deduped);
             if (typeof window !== 'undefined') {
               try { localStorage.setItem('kd_home_articles', JSON.stringify(deduped)); } catch {}
             }
           }
-          if (videosResult.status === 'fulfilled' && Array.isArray(videosResult.value) && videosResult.value.length > 0) {
+          if (videosResult.status === 'fulfilled' && Array.isArray(videosResult.value)) {
             setVideos(videosResult.value);
             if (typeof window !== 'undefined') {
               try { localStorage.setItem('kd_home_videos', JSON.stringify(videosResult.value)); } catch {}
@@ -173,6 +124,9 @@ export default function HomePage() {
           }
           if (photoStoryResult.status === 'fulfilled' && photoStoryResult.value) {
             setPhotoStory(photoStoryResult.value);
+            if (typeof window !== 'undefined') {
+              try { localStorage.setItem('kd_photo_story', JSON.stringify(photoStoryResult.value)); } catch {}
+            }
           }
         }
       } catch (err) {
@@ -182,7 +136,7 @@ export default function HomePage() {
       }
     }
 
-    loadData();
+    loadData(true);
 
     // Background polling (every 25 seconds) only when tab is active to eliminate server CPU throttling
     const pollInterval = setInterval(() => {
@@ -358,19 +312,6 @@ export default function HomePage() {
       setTimeout(() => setCopiedId(null), 2500);
     }
   };
-
-  if (!mounted) {
-    return (
-      <div className="flex flex-col w-full pb-16">
-        <main className="w-full max-w-[1360px] mx-auto px-3 sm:px-5 lg:px-8 py-4 sm:py-6 md:py-8">
-          <div className="bg-surface-pure rounded-lg p-10 border border-slate-border flex flex-col items-center justify-center text-center gap-3">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-sm font-semibold text-slate-700">ഡാറ്റാബേസിൽ നിന്ന് തത്സമയ വാർത്തകൾ ലഭ്യമാക്കുന്നു...</p>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col w-full pb-16">

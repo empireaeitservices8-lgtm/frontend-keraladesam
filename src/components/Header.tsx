@@ -112,30 +112,8 @@ export default function Header() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Article[]>([]);
-  const [breakingNews, setBreakingNews] = useState<string[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('kd_breaking_news');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-    }
-    return [];
-  });
-  const [notificationArticles, setNotificationArticles] = useState<Article[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('kd_notification_articles');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch {}
-    }
-    return [];
-  });
+  const [breakingNews, setBreakingNews] = useState<string[]>([]);
+  const [notificationArticles, setNotificationArticles] = useState<Article[]>([]);
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [notificationTab, setNotificationTab] = useState<'all' | 'breaking' | 'articles'>('all');
   const [browserPushAllowed, setBrowserPushAllowed] = useState(false);
@@ -195,15 +173,30 @@ export default function Header() {
   // Real-time breaking news & notifications sync
   useEffect(() => {
     let isMounted = true;
-    async function fetchData() {
+
+    // Immediately hydrate from client-side persistent storage on mount (avoids SSR mismatch)
+    try {
+      const storedBreaking = localStorage.getItem('kd_breaking_news');
+      if (storedBreaking) {
+        const parsed = JSON.parse(storedBreaking);
+        if (Array.isArray(parsed) && parsed.length > 0) setBreakingNews(parsed);
+      }
+      const storedArticles = localStorage.getItem('kd_notification_articles');
+      if (storedArticles) {
+        const parsed = JSON.parse(storedArticles);
+        if (Array.isArray(parsed) && parsed.length > 0) setNotificationArticles(parsed);
+      }
+    } catch {}
+
+    async function fetchData(force = true) {
       try {
         const [headlines, latest] = await Promise.all([
-          getRealBreakingNews(),
-          getRealArticles({ limit: 12 }),
+          getRealBreakingNews(force),
+          getRealArticles({ limit: 12, bypassCache: force }),
         ]);
 
         if (isMounted) {
-          if (Array.isArray(headlines) && headlines.length > 0) {
+          if (Array.isArray(headlines)) {
             setBreakingNews(headlines);
             if (typeof window !== 'undefined') {
               try { localStorage.setItem('kd_breaking_news', JSON.stringify(headlines)); } catch {}
@@ -225,7 +218,7 @@ export default function Header() {
               } catch { }
             }
           }
-          if (Array.isArray(latest) && latest.length > 0) {
+          if (Array.isArray(latest)) {
             setNotificationArticles(latest);
             if (typeof window !== 'undefined') {
               try { localStorage.setItem('kd_notification_articles', JSON.stringify(latest)); } catch {}
@@ -237,7 +230,7 @@ export default function Header() {
       }
     }
 
-    fetchData();
+    fetchData(true);
     const intervalTimer = setInterval(() => {
       if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         fetchData();

@@ -24,13 +24,23 @@ export default function BookmarksDrawer({ isOpen, onClose }: BookmarksDrawerProp
   const { savedArticles, toggleBookmark } = useFont();
   const [allArticles, setAllArticles] = React.useState<Article[]>([]);
   const [isMounted, setIsMounted] = React.useState(false);
+  const [followedMap, setFollowedMap] = React.useState<Record<string, boolean>>({});
 
   React.useEffect(() => {
     setIsMounted(true);
     if (isOpen) {
       getRealArticles().then((data) => setAllArticles(data)).catch(console.error);
+      const map: Record<string, boolean> = {};
+      savedArticles.forEach((id) => {
+        try {
+          if (typeof window !== 'undefined' && localStorage.getItem(`kd_followed_${id}`)) {
+            map[id] = true;
+          }
+        } catch {}
+      });
+      setFollowedMap(map);
     }
-  }, [isOpen]);
+  }, [isOpen, savedArticles]);
 
   if (!isOpen) return null;
 
@@ -125,7 +135,7 @@ export default function BookmarksDrawer({ isOpen, onClose }: BookmarksDrawerProp
                       <span className="text-[10px] font-bold uppercase text-editorial-crimson block">
                         {item.category}
                       </span>
-                      {isMounted && typeof window !== 'undefined' && localStorage.getItem(`kd_followed_${item.id}`) && (
+                      {isMounted && followedMap[item.id] && (
                         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[9px] font-bold border border-emerald-200">
                           🔔 ഫോളോ ചെയ്യുന്നു
                         </span>
