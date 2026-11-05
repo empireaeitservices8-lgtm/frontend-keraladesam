@@ -58,13 +58,15 @@ export default function HomePage() {
 
   const slideLeft = (ref: React.RefObject<HTMLDivElement | null>) => {
     if (ref.current) {
-      ref.current.scrollBy({ left: -280, behavior: 'smooth' });
+      const scrollStep = Math.max(280, ref.current.clientWidth * 0.75);
+      ref.current.scrollBy({ left: -scrollStep, behavior: 'smooth' });
     }
   };
 
   const slideRight = (ref: React.RefObject<HTMLDivElement | null>) => {
     if (ref.current) {
-      ref.current.scrollBy({ left: 280, behavior: 'smooth' });
+      const scrollStep = Math.max(280, ref.current.clientWidth * 0.75);
+      ref.current.scrollBy({ left: scrollStep, behavior: 'smooth' });
     }
   };
 
@@ -702,6 +704,12 @@ export default function HomePage() {
                         src={img.url}
                         alt={img.caption || `Photo ${idx + 1}`}
                         className="rounded-xl object-cover w-full h-full group-hover:scale-105 transition-transform duration-500 ease-out"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (!target.src.includes('unsplash.com')) {
+                            target.src = 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=80';
+                          }
+                        }}
                       />
                       {img.caption && (
                         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-3 text-xs text-white/95 truncate font-medium">
@@ -714,23 +722,32 @@ export default function HomePage() {
 
                 {/* Multi-photo dot pagination indicators */}
                 {activeStory.images.length > 3 && (
-                  <div className="flex items-center justify-center gap-1.5 mt-3 pt-1">
-                    {activeStory.images.map((_, dotIdx) => (
-                      <button
-                        key={dotIdx}
-                        type="button"
-                        onClick={() => {
-                          if (photoSliderRef.current) {
-                            const container = photoSliderRef.current;
-                            const step = 280;
-                            container.scrollTo({ left: dotIdx * step, behavior: 'smooth' });
-                          }
-                        }}
-                        className="w-2.5 h-2.5 rounded-full bg-white/25 hover:bg-opinion-ochre focus:bg-opinion-ochre transition-all"
-                        title={`ചിത്രം ${dotIdx + 1} കാണുക`}
-                        aria-label={`Go to photo ${dotIdx + 1}`}
-                      />
-                    ))}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-3 pt-1 border-t border-white/10">
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      ആകെ {activeStory.images.length} ചിത്രങ്ങൾ (ബാക്കി കാണാൻ &gt; ക്ലിക്ക് ചെയ്യുക)
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {activeStory.images.map((_, dotIdx) => (
+                        <button
+                          key={dotIdx}
+                          type="button"
+                          onClick={() => {
+                            if (photoSliderRef.current && photoSliderRef.current.children[dotIdx]) {
+                              (photoSliderRef.current.children[dotIdx] as HTMLElement).scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'nearest',
+                                inline: 'start',
+                              });
+                            }
+                          }}
+                          className="w-3 h-3 rounded-full bg-white/20 hover:bg-opinion-ochre focus:bg-opinion-ochre transition-all flex items-center justify-center text-[8px] font-bold text-white/80 hover:scale-110"
+                          title={`ചിത്രം ${dotIdx + 1} കാണുക`}
+                          aria-label={`Go to photo ${dotIdx + 1}`}
+                        >
+                          {dotIdx + 1}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </section>

@@ -356,9 +356,15 @@ export default function AdminPortalPage() {
         adminGetAdInquiries(token || undefined),
         getRealPhotoStory(true),
       ]);
-      setArticles(artList);
-      setBreakingList(brkList);
-      setVideosList(vidList);
+      if (Array.isArray(artList) && artList.length > 0) {
+        setArticles(artList);
+      }
+      if (Array.isArray(brkList) && brkList.length > 0) {
+        setBreakingList(brkList);
+      }
+      if (Array.isArray(vidList) && vidList.length > 0) {
+        setVideosList(vidList);
+      }
       if (subRes && subRes.success) {
         setSubscribersList(subRes.subscribers);
       }
@@ -372,9 +378,9 @@ export default function AdminPortalPage() {
       // Persist to localStorage for 0ms instant reload next time
       if (typeof window !== 'undefined') {
         try {
-          localStorage.setItem('kd_admin_articles', JSON.stringify(artList));
-          localStorage.setItem('kd_admin_breaking', JSON.stringify(brkList));
-          localStorage.setItem('kd_admin_videos', JSON.stringify(vidList));
+          if (Array.isArray(artList) && artList.length > 0) localStorage.setItem('kd_admin_articles', JSON.stringify(artList));
+          if (Array.isArray(brkList) && brkList.length > 0) localStorage.setItem('kd_admin_breaking', JSON.stringify(brkList));
+          if (Array.isArray(vidList) && vidList.length > 0) localStorage.setItem('kd_admin_videos', JSON.stringify(vidList));
           if (subRes && subRes.success) localStorage.setItem('kd_admin_subscribers', JSON.stringify(subRes.subscribers));
           if (adRes && adRes.success) localStorage.setItem('kd_admin_ads', JSON.stringify(adRes.inquiries));
         } catch {}
@@ -387,21 +393,21 @@ export default function AdminPortalPage() {
     }
   };
 
-  // Keep localStorage continuously synchronized on state updates
+  // Keep localStorage continuously synchronized on state updates (never overwrite with empty array)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && articles.length > 0) {
       try { localStorage.setItem('kd_admin_articles', JSON.stringify(articles)); } catch {}
     }
   }, [articles]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && breakingList.length > 0) {
       try { localStorage.setItem('kd_admin_breaking', JSON.stringify(breakingList)); } catch {}
     }
   }, [breakingList]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && videosList.length > 0) {
       try { localStorage.setItem('kd_admin_videos', JSON.stringify(videosList)); } catch {}
     }
   }, [videosList]);
@@ -648,7 +654,7 @@ export default function AdminPortalPage() {
         const img = new Image();
         img.onload = () => {
           let { width, height } = img;
-          const maxDim = 1200;
+          const maxDim = 800;
           if (width > maxDim || height > maxDim) {
             if (width > height) {
               height = Math.round((height * maxDim) / width);
@@ -664,7 +670,7 @@ export default function AdminPortalPage() {
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            resolve(canvas.toDataURL('image/jpeg', 0.85));
+            resolve(canvas.toDataURL('image/jpeg', 0.80));
           } else {
             resolve((e.target?.result as string) || '');
           }
@@ -742,6 +748,20 @@ export default function AdminPortalPage() {
         };
         reader.readAsDataURL(file);
       }
+
+      // Automatically background upload to get a permanent server URL
+      const activeToken =
+        token ||
+        (typeof window !== 'undefined'
+          ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+          : undefined);
+      adminUploadMedia(file, activeToken || undefined)
+        .then((upRes) => {
+          if (upRes && upRes.success && upRes.url) {
+            setNewStoryImageUrl(upRes.url);
+          }
+        })
+        .catch(() => {});
     } catch {
       const file = files[0];
       const reader = new FileReader();

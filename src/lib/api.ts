@@ -41,7 +41,7 @@ export function getApiBaseUrl(): string {
     if (process.env.NEXT_PUBLIC_API_URL) {
       return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
     }
-    return 'http://localhost:5000/api';
+    return 'http://localhost:5001/api';
   }
 
   // Priority 4: Default live production API (Render)
@@ -51,9 +51,9 @@ export function getApiBaseUrl(): string {
 export async function apiFetch(input: string | URL, init?: RequestInit): Promise<Response> {
   const urlStr = input.toString();
 
-  // Create an abort controller with safety timeout so build/prerender never hangs
+  // Create an abort controller with safety timeout (generous in browser to allow Render cold start wakeup)
   const controller = new AbortController();
-  const timeoutMs = typeof window === 'undefined' ? 3500 : 8000;
+  const timeoutMs = typeof window === 'undefined' ? 4500 : 30000;
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   const mergedInit: RequestInit = {
@@ -65,9 +65,9 @@ export async function apiFetch(input: string | URL, init?: RequestInit): Promise
   if (
     typeof window !== 'undefined' &&
     isLocalBackendOffline &&
-    (urlStr.includes('localhost:5000') || urlStr.includes('127.0.0.1:5000'))
+    (urlStr.includes('localhost:') || urlStr.includes('127.0.0.1:'))
   ) {
-    const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):5000\/api/i, RENDER_API_BASE_URL);
+    const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):(5000|5001)\/api/i, RENDER_API_BASE_URL);
     try {
       const res = await fetch(fallbackUrl, mergedInit);
       clearTimeout(timeoutId);
@@ -84,12 +84,12 @@ export async function apiFetch(input: string | URL, init?: RequestInit): Promise
     return res;
   } catch (err: any) {
     clearTimeout(timeoutId);
-    // If request to localhost/127.0.0.1 failed (ERR_CONNECTION_REFUSED when local backend isn't running)
-    if (urlStr.includes('localhost:5000') || urlStr.includes('127.0.0.1:5000')) {
+    // If request to localhost failed (ERR_CONNECTION_REFUSED when local backend isn't running)
+    if (urlStr.includes('localhost:') || urlStr.includes('127.0.0.1:')) {
       isLocalBackendOffline = true;
-      const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):5000\/api/i, RENDER_API_BASE_URL);
+      const fallbackUrl = urlStr.replace(/https?:\/\/(localhost|127\.0\.0\.1):(5000|5001)\/api/i, RENDER_API_BASE_URL);
       if (typeof window !== 'undefined') {
-        console.warn(`[Kerala Desam] Local backend server at :5000 is offline. Automatically routed request to Live API: ${fallbackUrl}`);
+        console.warn(`[Kerala Desam] Local backend server is offline. Automatically routed request to Live API: ${fallbackUrl}`);
         try {
           return await fetch(fallbackUrl, init);
         } catch (fallbackErr) {
@@ -278,6 +278,14 @@ export function clearApiCache() {
         'kd_font_size',
         'kd_saved_bookmarks',
         'kd_bookmarks',
+        'kd_photo_story',
+        'kd_admin_articles',
+        'kd_admin_breaking',
+        'kd_admin_videos',
+        'kd_admin_subscribers',
+        'kd_admin_ads',
+        'kd_home_articles',
+        'kd_home_videos',
       ]);
       Object.keys(localStorage).forEach((k) => {
         if (preservedKeys.has(k) || k.startsWith('kd_followed_')) return;
@@ -679,14 +687,30 @@ export async function adminGetArticles(): Promise<Article[]> {
       cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
-    if (!res.ok) return [];
-    const data = await res.json();
-    const list = Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
-    return list;
+    if (res.ok) {
+      const data = await res.json();
+      const list = Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
+      if (list.length > 0) {
+        if (typeof window !== 'undefined') {
+          try { localStorage.setItem('kd_admin_articles', JSON.stringify(list)); } catch {}
+        }
+        return list;
+      }
+    }
   } catch (err) {
-    console.error('adminGetArticles error:', err);
-    return [];
+    console.warn('adminGetArticles network warning, checking cached fallback:', err);
   }
+  // Resilient fallback to cached admin articles
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem('kd_admin_articles');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+  }
+  return [];
 }
 
 export async function adminGetRawBreaking(): Promise<Array<{ _id: string; headline: string; active: boolean; createdAt: string }>> {
@@ -696,13 +720,30 @@ export async function adminGetRawBreaking(): Promise<Array<{ _id: string; headli
       cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data.headlines) ? data.headlines : [];
+    if (res.ok) {
+      const data = await res.json();
+      const rawList = Array.isArray(data.headlines) ? data.headlines : Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
+      if (rawList.length > 0) {
+        if (typeof window !== 'undefined') {
+          try { localStorage.setItem('kd_admin_breaking', JSON.stringify(rawList)); } catch {}
+        }
+        return rawList;
+      }
+    }
   } catch (err) {
-    console.error('adminGetRawBreaking error:', err);
-    return [];
+    console.warn('adminGetRawBreaking network warning, checking cached fallback:', err);
   }
+  // Resilient fallback to cached breaking items
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem('kd_admin_breaking');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+  }
+  return [];
 }
 
 export async function adminCreateBreaking(
@@ -929,13 +970,30 @@ export async function adminGetVideos(): Promise<VideoItem[]> {
       cache: 'no-store',
       headers: { Accept: 'application/json' },
     });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data.videos) ? data.videos.map(normalizeVideo) : [];
+    if (res.ok) {
+      const data = await res.json();
+      const list = Array.isArray(data.videos) ? data.videos.map(normalizeVideo) : [];
+      if (list.length > 0) {
+        if (typeof window !== 'undefined') {
+          try { localStorage.setItem('kd_admin_videos', JSON.stringify(list)); } catch {}
+        }
+        return list;
+      }
+    }
   } catch (err) {
-    console.error('adminGetVideos error:', err);
-    return [];
+    console.warn('adminGetVideos network warning, checking cached fallback:', err);
   }
+  // Resilient fallback to cached videos
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem('kd_admin_videos');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+  }
+  return [];
 }
 
 export const getRealVideos = getVideos;
