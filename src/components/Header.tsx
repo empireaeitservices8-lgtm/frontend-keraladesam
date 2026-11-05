@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useFont } from './FontContext';
 import { Article } from '@/data/newsData';
-import { getRealArticles, getRealBreakingNews, DEFAULT_BREAKING_HEADLINES } from '@/lib/api';
+import { getRealArticles, getRealBreakingNews } from '@/lib/api';
 import BookmarksDrawer from './BookmarksDrawer';
 import EPaperModal from './EPaperModal';
 import LiveTvModal from './LiveTvModal';
@@ -112,7 +112,7 @@ export default function Header() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Article[]>([]);
-  const [breakingNews, setBreakingNews] = useState<string[]>(DEFAULT_BREAKING_HEADLINES);
+  const [breakingNews, setBreakingNews] = useState<string[]>([]);
   const [notificationArticles, setNotificationArticles] = useState<Article[]>([]);
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [notificationTab, setNotificationTab] = useState<'all' | 'breaking' | 'articles'>('all');

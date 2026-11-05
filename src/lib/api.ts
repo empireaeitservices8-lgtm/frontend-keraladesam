@@ -221,6 +221,9 @@ export function clearApiCache() {
       Object.keys(sessionStorage).forEach((k) => {
         if (k.startsWith('kd_')) sessionStorage.removeItem(k);
       });
+      Object.keys(localStorage).forEach((k) => {
+        if (k.startsWith('kd_')) localStorage.removeItem(k);
+      });
     } catch {}
   }
 }
@@ -265,9 +268,7 @@ export async function getArticles(params?: ArticleQueryParams): Promise<Article[
       const data = await res.json();
       const rawArticles = Array.isArray(data.articles) ? data.articles.map(normalizeArticle) : [];
       const deduplicated = deduplicateArticles(rawArticles);
-      if (deduplicated.length > 0) {
-        setCachedData(cacheKey, deduplicated);
-      }
+      setCachedData(cacheKey, deduplicated);
       return deduplicated;
     } catch (error) {
       console.error('Failed to fetch articles from database API:', error);
@@ -384,25 +385,23 @@ export async function getBreakingNews(): Promise<string[]> {
           uniqueHeadlines.push(text);
         }
 
-        if (uniqueHeadlines.length > 0) {
-          setCachedData(cacheKey, uniqueHeadlines);
-          return uniqueHeadlines;
-        }
+        setCachedData(cacheKey, uniqueHeadlines);
+        return uniqueHeadlines;
       }
-      return cached && cached.length > 0 ? cached : DEFAULT_BREAKING_HEADLINES;
+      return cached || [];
     } catch (error) {
       console.error('Failed to fetch breaking news from database API:', error);
-      return cached && cached.length > 0 ? cached : DEFAULT_BREAKING_HEADLINES;
+      return cached || [];
     }
   };
 
-  if (cached && cached.length > 0) {
+  if (cached) {
     fetchTask();
     return cached;
   }
 
   const result = await fetchTask();
-  return result && result.length > 0 ? result : DEFAULT_BREAKING_HEADLINES;
+  return result || [];
 }
 
 export interface AdminUser {
@@ -646,6 +645,7 @@ export async function adminDeleteBreaking(
     });
     const data = await res.json();
     if (!res.ok) return { success: false, error: data.error || 'Failed to delete headline' };
+    clearApiCache();
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Network error' };
@@ -725,9 +725,7 @@ export async function getVideos(params?: { category?: string; limit?: number; pa
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const list = Array.isArray(data.videos) ? data.videos.map(normalizeVideo) : [];
-      if (list.length > 0) {
-        setCachedData(cacheKey, list);
-      }
+      setCachedData(cacheKey, list);
       return list;
     } catch (error) {
       console.error('Failed to fetch videos from API:', error);
@@ -821,6 +819,7 @@ export async function adminDeleteVideo(
     });
     const data = await res.json();
     if (!res.ok) return { success: false, error: data.error || 'Failed to delete video' };
+    clearApiCache();
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Network error' };
