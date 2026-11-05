@@ -1,112 +1,219 @@
-# കേരളദേശം - Kerala Desam (Frontend)
+# കേരളദേശം - Kerala Desam | Premier Malayalam News Portal
 
-Kerala's premier Malayalam digital daily news portal, built with Next.js 14, React 18, TypeScript, Tailwind CSS, and Lucide React.
-
----
-
-## സവിശേഷതകൾ (Features)
-
-- **Newspaper Masthead & Branding**: Grand centered Kerala Desam masthead banner with responsive scaling and zero element collision across mobile, tablet, and desktop viewports.
-- **Modern Malayalam Typography**: Curated Noto Sans Malayalam & Newsreader font hierarchy with instant font-size adjustment (`A-`, `A`, `A+`).
-- **Real-Time Breaking News Ticker**: Live synchronized ticker pulling active breaking alerts from the backend database.
-- **Editorial Newsroom Admin Studio**: Full-featured admin dashboard (`/admin`) for publishing articles, uploading imagery, managing breaking news, pinning lead headlines, and adding video stories.
-- **Video News & Live Broadcasts**: Interactive multi-stream Live TV player (Kerala Desam HD studio, Asianet News, 24 News) and video carousel with modal playback.
-- **Digital E-Paper**: Kochi edition e-paper modal with zoom controls and page navigation.
-- **Pravasi & World Desk**: Gulf and international news coverage with live 22K gold rate and currency exchange tracker.
-- **Offline Bookmarks**: Client-side saved stories drawer using LocalStorage.
-- **Live Search**: Autocomplete search bar with instant query matching across titles, leads, tags, and districts.
+**Kerala Desam (കേരളദേശം)** is a production-ready, full-stack Malayalam digital journalism portal designed for high reliability, fast page speeds, instant editorial publishing, and comprehensive regional reporting.
 
 ---
 
-## പ്രോജക്റ്റ് ഘടന (Folder Structure)
+## 📑 Technical Documentation Index
+
+For comprehensive technical deep dives, please refer to the dedicated documentation files:
+- 🏛️ [PROJECT_ARCHITECTURE.md](./PROJECT_ARCHITECTURE.md) – System architecture, network flow, and design patterns.
+- 🔄 [WEBSITE_WORKFLOW.md](./WEBSITE_WORKFLOW.md) – Complete frontend and admin portal workflows.
+- 📡 [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) – REST API specification with endpoints and payloads.
+- 🗄️ [DATABASE_DOCUMENTATION.md](./DATABASE_DOCUMENTATION.md) – MySQL 8.0 schema, indexes, ERD, and persistence.
+- 💻 [TECHNOLOGY_STACK.md](./TECHNOLOGY_STACK.md) – Full matrix of actively used libraries and frameworks.
+- 🧹 [CLEANUP_REPORT.md](./CLEANUP_REPORT.md) – Code audit, resolved hydration errors, and performance optimizations.
+
+---
+
+## 🌟 Key Features
+
+### 📰 Public News Portal
+- **Editorial Newspaper Masthead**: Centered Kerala Desam masthead with responsive mobile and desktop viewports.
+- **Dynamic Malayalam Typography**: User-selectable typefaces (**Manjari**, **Gayathri**, **Noto Sans Malayalam**) with instant text size adjustment.
+- **Breaking News Marquee Ticker**: Real-time breaking news flash strip with pause-on-hover and audio alert chimes.
+- **Lead Headline Feature**: Prominent lead hero story with reading time and author byline.
+- **District News Hub**: Dedicated reporting for all 14 districts of Kerala.
+- **Malayalam Text-to-Speech (TTS)**: Built-in audio narration player for hands-free news listening.
+- **Visual Photo Story Gallery**: Multi-photo feature carousel with photo counter (`5 ചിത്രങ്ങൾ`) and interactive pagination dots.
+- **Video Shorts & Reels**: Video carousel with modal player.
+- **Forex & Gold Tracker**: Live exchange rates for Gulf NRIs (AED, SAR, QAR, KWD, OMR, BHD) and world currencies against INR.
+- **Digital E-Paper Reader**: Interactive Malayalam E-Paper replica with zoom and page flipping.
+- **Live TV Streaming**: Embedded live video stream player for special event broadcasts.
+- **Offline Bookmarks**: Client-side reading list persisted in browser storage.
+- **Full-Text Search**: Fast keyword search across headlines, bodies, and author names.
+
+### 🛡️ Editorial Admin Studio (`/admin`)
+- **JWT Authentication**: Secure role-based login (`admin` / `editor`) with session persistence.
+- **Article Publishing Studio**: Rich form supporting story paragraphs, bullet highlights, tags, and district categorization.
+- **Media Upload Manager**: Select photos directly from mobile gallery or desktop with automatic client-side canvas compression.
+- **Breaking News Management**: Instant ticker creation, priority reordering, and toggles.
+- **Photo Story Gallery Editor**: Multi-photo upload, reordering (Up/Down), captions, and instant database auto-save.
+- **Video Shorts Studio**: Ingest video reels with YouTube embeds.
+- **Ad Inquiries Management**: Review and update advertiser requests from `/ad-rates`.
+- **Subscriber Directory**: View newsletter subscribers.
+
+---
+
+## 🏗️ Repository Structure
 
 ```
 keraladesyam/
-├── public/
-│   ├── favicon.ico
-│   ├── favicon.png
-│   └── logo.png              # Primary Kerala Desam SVG/PNG masthead logo
-├── src/
-│   ├── app/
-│   │   ├── about/            # /about - About Us & Editorial mission
-│   │   ├── admin/            # /admin - Editorial Admin Studio Dashboard
-│   │   │   ├── login/        # /admin/login - Secure Admin Login
-│   │   │   └── register/     # /admin/register - Editor registration
-│   │   ├── article/[id]/     # /article/:id - Dynamic full article detail page with TTS audio
-│   │   ├── category/[slug]/  # /category/:slug - Category archive (Politics, Cinema, Business...)
-│   │   ├── kerala/           # /kerala - 14 Districts regional news desk
-│   │   ├── pravasi/          # /pravasi - Diaspora & Middle East desk
-│   │   ├── search/           # /search - Full-text search results page
-│   │   ├── globals.css       # Tailwind CSS base and newspaper styling rules
-│   │   ├── layout.tsx        # RootLayout with FontProvider & AdminAuthProvider
-│   │   └── page.tsx          # Homepage with Lead Editorial, Top Stories, Videos
-│   ├── components/
-│   │   ├── BookmarksDrawer.tsx    # Saved stories slide-out drawer
-│   │   ├── EPaperModal.tsx        # Digital E-paper reader modal
-│   │   ├── FontContext.tsx        # Dynamic font size & bookmarks context
-│   │   ├── Footer.tsx             # Complete news portal footer
-│   │   ├── Header.tsx             # Responsive masthead with dead-centered logo & utilities
-│   │   ├── LiveTvModal.tsx        # Live streaming broadcast player modal
-│   │   └── VideoPlayerModal.tsx   # Video story player modal
-│   ├── context/
-│   │   └── AdminAuthContext.tsx   # Admin session state & JWT management
-│   ├── data/
-│   │   └── newsData.ts            # TypeScript interfaces & static fallback constants
-│   └── lib/
-│       └── api.ts                 # Type-safe API client connecting to backend service
-├── .env.local                     # Local environment settings
-├── next.config.mjs                # Next.js configuration
-├── package.json                   # Dependencies & build scripts
-├── tailwind.config.ts             # Tailwind CSS tokens & curated color palette
-└── tsconfig.json                  # TypeScript compiler settings
+├── keraladesyam/                 # Frontend Next.js 14 Application
+│   ├── src/
+│   │   ├── app/                  # App Router pages and layouts
+│   │   ├── components/           # Reusable UI components
+│   │   ├── context/              # Authentication and font providers
+│   │   ├── data/                 # Sample seed data & TypeScript types
+│   │   └── lib/api.ts            # API client and real-time synchronization
+│   ├── public/                   # Static logos, favicons, and icons
+│   ├── next.config.mjs           # Next.js build configuration
+│   ├── tailwind.config.ts        # Editorial design system theme
+│   └── package.json              # Frontend dependencies
+│
+└── backend/                      # Backend Node.js Express REST API
+    ├── config/mysql.js           # MySQL connection pool and auto-migration
+    ├── controllers/              # REST route controllers
+    ├── middleware/auth.js        # JWT verification and role authorization
+    ├── routes/                   # API routers
+    ├── services/                 # Business logic and storage adapters
+    ├── data/portal_content.json  # Resilient file-backed persistent content snapshot
+    ├── keraladesam_db.sql        # Master database dump
+    ├── server.js                 # Application entry point
+    └── package.json              # Backend dependencies
 ```
 
 ---
 
-## പരിസ്ഥിതി ക്രമീകരണങ്ങൾ (Environment Variables)
+## 🚀 Getting Started (Local Development)
 
-Create a `.env.local` file inside `keraladesyam/`:
-
-```env
-# Local Development API Endpoint:
-NEXT_PUBLIC_API_URL=http://localhost:5000/api
-
-# Production Deployment (Vercel):
-# NEXT_PUBLIC_API_URL=https://kerala-dhesam-admin.vercel.app/api
-```
+### Prerequisites
+- **Node.js**: v18.17+ or v20.x LTS
+- **MySQL**: 8.0+ or MariaDB 10.5+ (optional; file persistence layer will operate automatically if MySQL is offline)
+- **Git**
 
 ---
 
-## എങ്ങനെ പ്രവർത്തിപ്പിക്കാം (How to Run)
-
-### 1. ഡിപൻഡൻസികൾ ഇൻസ്റ്റാൾ ചെയ്യുക:
+### Step 1: Clone the Repositories
 ```bash
-cd keraladesyam
+# Clone Frontend
+git clone https://github.com/Abin-c-s/kerala-dhesam.git
+cd kerala-dhesam
+
+# Clone Backend
+git clone https://github.com/Abin-c-s/kerala-dhesam-admin.git
+cd kerala-dhesam-admin
+```
+
+---
+
+### Step 2: Backend Setup
+```bash
+cd backend
+
+# Install dependencies
 npm install
+
+# Configure environment variables
+cp .env.example .env
 ```
 
-### 2. ടൈപ്പ് ചെക്ക് പരിശോധിക്കുക:
+Edit `backend/.env` with your settings:
+```env
+PORT=5000
+HOST=0.0.0.0
+DB_TYPE=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=keraladesam_db
+JWT_SECRET=your_jwt_secret_key
+```
+
+Import initial schema (optional, backend automatically initializes tables):
 ```bash
-npx tsc --noEmit
+mysql -u root -p keraladesam_db < keraladesam_db.sql
 ```
 
-### 3. ഡെവലപ്‌മെന്റ് സെർവർ റൺ ചെയ്യുക:
+Start the backend:
 ```bash
 npm run dev
+# Server runs on http://localhost:5000
 ```
-Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
-### 4. പ്രൊഡക്ഷൻ ബിൽഡ്:
+---
+
+### Step 3: Frontend Setup
 ```bash
+cd keraladesyam
+
+# Install dependencies
+npm install
+
+# Configure environment variables
+cp .env.example .env.local
+```
+
+Edit `keraladesyam/.env.local`:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+API_URL=http://localhost:5000/api
+```
+
+Start the frontend dev server:
+```bash
+npm run dev
+# Frontend runs on http://localhost:3000
+```
+
+---
+
+## 📦 Production Build & Testing
+
+### Test Backend Endpoints
+```bash
+cd backend
+node scripts/test_http_server.js
+```
+
+### Production Build Frontend
+```bash
+cd keraladesyam
 npm run build
 npm start
 ```
 
 ---
 
-## അഡ്മിൻ പോർട്ടൽ (Editorial Admin Console)
+## 🌐 Render Cloud Deployment Guide
 
-- **URL**: `http://localhost:3000/admin` (or `/admin/login`)
-- **Default Admin Account**:
-  - Email: `admin@keraladesam.com`
-  - Password: `admin12345` (or `password123`)
+The platform is configured for zero-configuration deployments on **Render**:
+
+### Frontend Service
+- **Type**: Web Service
+- **Environment**: Node
+- **Build Command**: `npm install && npm run build`
+- **Start Command**: `npm start`
+- **Environment Variables**:
+  - `NEXT_PUBLIC_API_URL`: `https://kerala-dhesam-admin.onrender.com/api`
+  - `API_URL`: `https://kerala-dhesam-admin.onrender.com/api`
+  - `NODE_ENV`: `production`
+
+### Backend Service
+- **Type**: Web Service
+- **Environment**: Node
+- **Build Command**: `npm install`
+- **Start Command**: `npm start`
+- **Environment Variables**:
+  - `PORT`: `10000` (or leave default assigned by Render)
+  - `HOST`: `0.0.0.0`
+  - `JWT_SECRET`: `your_secure_secret_key`
+  - `FRONTEND_URL`: `https://kerala-dhesam.onrender.com`
+  - `DB_HOST`: (Optional: external MySQL host e.g. TiDB, Aiven, Railway, AWS RDS)
+
+---
+
+## 🔧 Troubleshooting Guide
+
+| Issue | Root Cause | Solution |
+| :--- | :--- | :--- |
+| `listen EADDRINUSE: address already in use :::5000` | Windows reserves IPv6 port 5000 | Backend now binds explicitly to `0.0.0.0` and retries on port 5001 automatically. |
+| React Hydration Error `#418` / `#425` | Client-only APIs (`window`, `localStorage`) invoked during SSR | All browser accesses are safely deferred to `useEffect` post-mount. |
+| Admin changes not reflecting immediately | Browser SWR caching old response | Cache busting (`cache: 'no-store'`) and `BroadcastChannel` live sync active. |
+| Photo Story only displays 3 photos | 3-column desktop carousel viewport | Use the `<` `>` arrows or click the bottom pagination dots; counter displays total. |
+
+---
+
+## 📄 License & Ownership
+Copyright © 2026 Kerala Desam Media Network. All rights reserved.
