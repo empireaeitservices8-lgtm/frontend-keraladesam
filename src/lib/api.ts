@@ -136,6 +136,28 @@ export function deduplicateArticles(list: Article[]): Article[] {
   return result;
 }
 
+export function resolveMediaUrl(url?: string): string {
+  if (!url) return '';
+  const trimmed = String(url).trim();
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('blob:')
+  ) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('/uploads/')) {
+    const base = getApiBaseUrl().replace(/\/api\/?$/, '');
+    return `${base}${trimmed}`;
+  }
+  if (trimmed.startsWith('uploads/')) {
+    const base = getApiBaseUrl().replace(/\/api\/?$/, '');
+    return `${base}/${trimmed}`;
+  }
+  return trimmed;
+}
+
 export function normalizeArticle(raw: any): Article {
   const uploadFormatted = formatUploadDateTime(raw.createdAt || raw.publishedAt);
   const realId = raw._id ? String(raw._id) : (raw.customId || 'article');
@@ -167,7 +189,7 @@ export function normalizeArticle(raw: any): Article {
     viewsCount: Number(raw.viewsCount !== undefined ? raw.viewsCount : (raw.views ? parseInt(raw.views) || 1 : 1)),
     likes: Number(raw.likesCount !== undefined ? raw.likesCount : (raw.likes || 0)),
     likesCount: Number(raw.likesCount !== undefined ? raw.likesCount : (raw.likes || 0)),
-    imageUrl: raw.imageUrl || '',
+    imageUrl: resolveMediaUrl(raw.imageUrl || raw.image_url),
     imageCaption: raw.imageCaption || '',
     readTime: raw.readTime || '3 മിനിറ്റ് വായന',
     audioDuration: raw.audioDuration || '03:00',
@@ -234,6 +256,7 @@ export interface ArticleQueryParams {
   trending?: boolean;
   district?: string;
   limit?: number;
+  bypassCache?: boolean;
 }
 
 export async function getArticles(params?: ArticleQueryParams): Promise<Article[]> {
@@ -260,9 +283,11 @@ export async function getArticles(params?: ArticleQueryParams): Promise<Article[
       if (params?.limit) {
         url.searchParams.set('limit', params.limit.toString());
       }
+      url.searchParams.set('_t', Date.now().toString());
 
       const res = await apiFetch(url.toString(), {
         headers: { Accept: 'application/json' },
+        cache: 'no-store',
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -276,8 +301,8 @@ export async function getArticles(params?: ArticleQueryParams): Promise<Article[
     }
   };
 
-  // If cached data exists, return immediately in 0ms! (Stale-While-Revalidate: re-fetch in background)
-  if (cached && cached.length > 0) {
+  // If bypassCache is requested, skip stale cached data and fetch live!
+  if (!params?.bypassCache && cached && cached.length > 0) {
     fetchTask();
     return cached;
   }
@@ -356,7 +381,7 @@ export const DEFAULT_BREAKING_HEADLINES: string[] = [
   'ഐഎസ്ആർഒയുടെ അടുത്ത ചാന്ദ്ര ദൗത്യം 70% ചെലവ് കുറഞ്ഞത്: ശാസ്ത്രജ്ഞർക്ക് അഭിനന്ദനം',
 ];
 
-export async function getBreakingNews(): Promise<string[]> {
+export async function getBreakingNews(bypassCache?: boolean): Promise<string[]> {
   const cacheKey = 'breaking_headlines';
   const cached = getCachedData<string[]>(cacheKey);
 
@@ -365,6 +390,7 @@ export async function getBreakingNews(): Promise<string[]> {
       const baseUrl = getApiBaseUrl();
       const res = await apiFetch(`${baseUrl}/breaking?_t=${Date.now()}`, {
         headers: { Accept: 'application/json' },
+        cache: 'no-store',
       });
       if (res.ok) {
         const data = await res.json();
@@ -395,7 +421,7 @@ export async function getBreakingNews(): Promise<string[]> {
     }
   };
 
-  if (cached) {
+  if (!bypassCache && cached) {
     fetchTask();
     return cached;
   }
@@ -484,6 +510,7 @@ export async function adminCreateArticle(
       const formData = new FormData();
       Object.entries(articleData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
+          if (key === 'imageUrl' && imageFile) return;
           formData.append(
             key,
             typeof value === 'object' ? JSON.stringify(value) : String(value)
@@ -546,6 +573,7 @@ export async function adminUpdateArticle(
       const formData = new FormData();
       Object.entries(articleData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
+          if (key === 'imageUrl' && imageFile) return;
           formData.append(
             key,
             typeof value === 'object' ? JSON.stringify(value) : String(value)
@@ -706,7 +734,7 @@ export function normalizeVideo(raw: any): VideoItem {
     views: raw.views || (raw.viewsCount ? `${Math.round(raw.viewsCount / 1000)}K` : '1.2K'),
     viewsCount: raw.viewsCount || 1,
     thumbnail:
-      raw.thumbnail ||
+      resolveMediaUrl(raw.thumbnail) ||
       (raw.youtubeId ? `https://img.youtube.com/vi/${raw.youtubeId}/hqdefault.jpg` : '') ||
       'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=400&q=80',
     videoUrl: raw.videoUrl || '',
@@ -716,7 +744,7 @@ export function normalizeVideo(raw: any): VideoItem {
   };
 }
 
-export async function getVideos(params?: { category?: string; limit?: number; page?: number }): Promise<VideoItem[]> {
+export async function getVideos(params?: { category?: string; limit?: number; page?: number; bypassCache?: boolean }): Promise<VideoItem[]> {
   const cacheKey = `videos_${params?.category || 'all'}_${params?.limit || 20}`;
   const cached = getCachedData<VideoItem[]>(cacheKey);
 
@@ -733,9 +761,11 @@ export async function getVideos(params?: { category?: string; limit?: number; pa
       if (params?.page) {
         url.searchParams.set('page', params.page.toString());
       }
+      url.searchParams.set('_t', Date.now().toString());
 
       const res = await apiFetch(url.toString(), {
         headers: { Accept: 'application/json' },
+        cache: 'no-store',
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -748,7 +778,7 @@ export async function getVideos(params?: { category?: string; limit?: number; pa
     }
   };
 
-  if (cached && cached.length > 0) {
+  if (!params?.bypassCache && cached && cached.length > 0) {
     fetchTask();
     return cached;
   }
@@ -1104,7 +1134,7 @@ export const DEFAULT_PHOTO_STORY: PhotoStoryItem = {
   ],
 };
 
-export async function getRealPhotoStory(): Promise<PhotoStoryItem | null> {
+export async function getRealPhotoStory(bypassCache?: boolean): Promise<PhotoStoryItem | null> {
   const cacheKey = 'photo_story_active';
   const cached = getCachedData<PhotoStoryItem>(cacheKey);
 
@@ -1127,11 +1157,18 @@ export async function getRealPhotoStory(): Promise<PhotoStoryItem | null> {
     if (res.ok) {
       const data = await res.json();
       if (data.photoStory && Array.isArray(data.photoStory.images) && data.photoStory.images.length > 0) {
-        setCachedData(cacheKey, data.photoStory);
+        const normalizedStory: PhotoStoryItem = {
+          ...data.photoStory,
+          images: data.photoStory.images.map((img: any) => ({
+            url: resolveMediaUrl(img.url),
+            caption: img.caption || '',
+          })),
+        };
+        setCachedData(cacheKey, normalizedStory);
         if (typeof window !== 'undefined') {
-          localStorage.setItem('kd_photo_story', JSON.stringify(data.photoStory));
+          localStorage.setItem('kd_photo_story', JSON.stringify(normalizedStory));
         }
-        return data.photoStory;
+        return normalizedStory;
       }
     }
   } catch (err) {
@@ -1139,7 +1176,7 @@ export async function getRealPhotoStory(): Promise<PhotoStoryItem | null> {
   }
 
   if (localCustomStory && Array.isArray(localCustomStory.images) && localCustomStory.images.length > 0) return localCustomStory;
-  if (cached && Array.isArray(cached.images) && cached.images.length > 0) return cached;
+  if (!bypassCache && cached && Array.isArray(cached.images) && cached.images.length > 0) return cached;
   return DEFAULT_PHOTO_STORY;
 }
 

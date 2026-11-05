@@ -23,6 +23,7 @@ import {
   getRealPhotoStory,
   PhotoStoryItem,
   DEFAULT_PHOTO_STORY,
+  clearApiCache,
 } from '@/lib/api';
 import { useFont } from '@/components/FontContext';
 import VideoPlayerModal from '@/components/VideoPlayerModal';
@@ -101,13 +102,16 @@ export default function HomePage() {
       } catch {}
     }
 
-    // 2. Fetch fresh data from backend
-    async function loadData() {
+    // 2. Fetch fresh data from backend with instant real-time synchronization
+    async function loadData(forceRefresh = false) {
+      if (forceRefresh) {
+        clearApiCache();
+      }
       try {
         const [articlesResult, videosResult, photoStoryResult] = await Promise.allSettled([
-          getRealArticles(),
-          getRealVideos(),
-          getRealPhotoStory(),
+          getRealArticles({ bypassCache: forceRefresh, limit: 100 }),
+          getRealVideos({ bypassCache: forceRefresh, limit: 20 }),
+          getRealPhotoStory(forceRefresh),
         ]);
         if (isMounted) {
           if (articlesResult.status === 'fulfilled' && Array.isArray(articlesResult.value)) {
@@ -126,36 +130,58 @@ export default function HomePage() {
         if (isMounted) setLoading(false);
       }
     }
+
     loadData();
 
-    const handlePhotoStoryUpdate = () => {
-      if (typeof window !== 'undefined') {
-        try {
-          const local = localStorage.getItem('kd_photo_story');
-          if (local) {
-            const parsed = JSON.parse(local);
-            if (parsed && isMounted) setPhotoStory(parsed);
-          }
-        } catch {}
+    // Fast polling (every 6 seconds) for immediate live updates without manual refresh
+    const pollInterval = setInterval(() => {
+      loadData(true);
+    }, 6000);
+
+    // Refresh when user returns to this browser tab
+    const handleFocus = () => loadData(true);
+    window.addEventListener('focus', handleFocus);
+
+    // Custom live sync events dispatched by Admin Panel
+    const handleLiveSync = () => loadData(true);
+    window.addEventListener('keraladesyam_articles_updated', handleLiveSync);
+    window.addEventListener('keraladesyam_videos_updated', handleLiveSync);
+    window.addEventListener('keraladesyam_breaking_updated', handleLiveSync);
+    window.addEventListener('kd_photo_story_updated', handleLiveSync);
+
+    // Real-time cross-tab synchronization via BroadcastChannel
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        bc = new BroadcastChannel('keraladesyam_live_sync');
+        bc.onmessage = () => {
+          loadData(true);
+        };
       }
-      getRealPhotoStory().then((data) => {
-        if (data && isMounted) setPhotoStory(data);
-      }).catch(console.error);
-    };
+    } catch {}
+
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'kd_photo_story' && e.newValue && isMounted) {
-        try {
-          setPhotoStory(JSON.parse(e.newValue));
-        } catch {}
+      if (!e.key) return;
+      if (e.key.startsWith('keraladesyam_') || e.key.startsWith('kd_')) {
+        loadData(true);
       }
     };
-    window.addEventListener('kd_photo_story_updated', handlePhotoStoryUpdate);
     window.addEventListener('storage', handleStorageChange);
 
     return () => {
       isMounted = false;
-      window.removeEventListener('kd_photo_story_updated', handlePhotoStoryUpdate);
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('keraladesyam_articles_updated', handleLiveSync);
+      window.removeEventListener('keraladesyam_videos_updated', handleLiveSync);
+      window.removeEventListener('keraladesyam_breaking_updated', handleLiveSync);
+      window.removeEventListener('kd_photo_story_updated', handleLiveSync);
       window.removeEventListener('storage', handleStorageChange);
+      if (bc) {
+        try {
+          bc.close();
+        } catch {}
+      }
     };
   }, []);
 

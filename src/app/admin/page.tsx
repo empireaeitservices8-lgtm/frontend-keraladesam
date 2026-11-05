@@ -506,16 +506,53 @@ export default function AdminPortalPage() {
     setIsModalOpen(true);
   };
 
-  // Handle local image file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Instant real-time live synchronization across all open browser tabs & visitors
+  const notifyLiveUpdate = (type: 'articles' | 'videos' | 'breaking' | 'photo_story') => {
+    clearApiCache();
+    if (typeof window === 'undefined') return;
+    try {
+      window.dispatchEvent(new CustomEvent(`keraladesyam_${type}_updated`));
+      if (type === 'photo_story') {
+        window.dispatchEvent(new Event('kd_photo_story_updated'));
+      }
+      localStorage.setItem(`keraladesyam_${type}_last_updated`, Date.now().toString());
+      localStorage.setItem('keraladesyam_last_updated', Date.now().toString());
+
+      if ('BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('keraladesyam_live_sync');
+        bc.postMessage({ type, timestamp: Date.now() });
+        bc.close();
+      }
+    } catch (e) {
+      console.warn('Live sync broadcast warning:', e);
+    }
+  };
+
+  // State for photo processing
+  const [isProcessingStoryImage, setIsProcessingStoryImage] = useState(false);
+
+  // Handle local image file selection from desktop or mobile storage
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setFormImageFile(file);
+
+    try {
+      const compressed = await compressStoryImage(file);
+      if (compressed) {
+        setFormImagePreview(compressed);
+        setFormImageUrl(compressed);
+        showToast('ഫോട്ടോ വിജയകരമായി തിരഞ്ഞെടുത്തു.');
+        return;
+      }
+    } catch {}
+
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
       setFormImagePreview(dataUrl);
       setFormImageUrl(dataUrl);
+      showToast('ഫോട്ടോ വിജയകരമായി തിരഞ്ഞെടുത്തു.');
     };
     reader.readAsDataURL(file);
   };
@@ -524,7 +561,7 @@ export default function AdminPortalPage() {
   const loadPhotoStoryData = async () => {
     try {
       setLoadingPhotoStory(true);
-      const data = await getRealPhotoStory();
+      const data = await getRealPhotoStory(true);
       if (data) setPhotoStoryData(sanitizePhotoStory(data));
     } catch (err) {
       console.error('Failed to load photo story:', err);
@@ -570,27 +607,64 @@ export default function AdminPortalPage() {
   };
 
   const handleStoryImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setNewStoryImageFile(file);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsProcessingStoryImage(true);
     try {
-      const uploadRes = await adminUploadMedia(file, token || undefined);
-      if (uploadRes.success && uploadRes.url) {
-        setNewStoryImageUrl(uploadRes.url);
-        showToast('ചിത്രം ക്ലൗഡിലേക്ക് അപ്‌ലോഡ് ചെയ്തു!');
+      // If multiple files selected from device/mobile gallery
+      if (files.length > 1) {
+        showToast(`${files.length} ഫോട്ടോകൾ പ്രോസസ്സ് ചെയ്യുന്നു...`);
+        const newImages: { url: string; caption: string }[] = [];
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          try {
+            const compressed = await compressStoryImage(file);
+            if (compressed) {
+              newImages.push({
+                url: compressed,
+                caption: `ചിത്രം ${(photoStoryData.images?.length || 0) + newImages.length + 1}`,
+              });
+            }
+          } catch {}
+        }
+        if (newImages.length > 0) {
+          setPhotoStoryData((prev) => ({
+            ...prev,
+            images: [...(prev.images || []), ...newImages],
+          }));
+          showToast(`${newImages.length} ഫോട്ടോകൾ ഗാലറിയിൽ ചേർത്തു! 'മാറ്റങ്ങൾ സേവ് ചെയ്യുക' ക്ലിക്ക് ചെയ്യുക.`);
+        }
+        e.target.value = '';
         return;
       }
-    } catch {}
 
-    try {
+      // Single file selected from mobile or desktop
+      const file = files[0];
+      setNewStoryImageFile(file);
+
       const compressed = await compressStoryImage(file);
-      setNewStoryImageUrl(compressed || '');
+      if (compressed) {
+        setNewStoryImageUrl(compressed);
+        showToast('ഫോട്ടോ തിരഞ്ഞെടുത്തു! അടിക്കുറിപ്പ് നൽകി "ചേർക്കുക" ക്ലിക്ക് ചെയ്യുക.');
+      } else {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setNewStoryImageUrl((reader.result as string) || '');
+          showToast('ഫോട്ടോ തിരഞ്ഞെടുത്തു! "ചേർക്കുക" ക്ലിക്ക് ചെയ്യുക.');
+        };
+        reader.readAsDataURL(file);
+      }
     } catch {
+      const file = files[0];
       const reader = new FileReader();
       reader.onload = () => {
         setNewStoryImageUrl((reader.result as string) || '');
+        showToast('ഫോട്ടോ തിരഞ്ഞെടുത്തു! "ചേർക്കുക" ക്ലിക്ക് ചെയ്യുക.');
       };
       reader.readAsDataURL(file);
+    } finally {
+      setIsProcessingStoryImage(false);
     }
   };
 
@@ -668,8 +742,7 @@ export default function AdminPortalPage() {
             images: [],
           })
         );
-        clearApiCache();
-        window.dispatchEvent(new Event('kd_photo_story_updated'));
+        notifyLiveUpdate('photo_story');
         showToast('ഫോട്ടോ സ്റ്റോറി പൂർണ്ണമായും നീക്കം ചെയ്തു.', 'success');
       } catch (err: any) {
         showToast(err.message || 'ഡിലീറ്റ് ചെയ്യുന്നതിൽ പിഴവ് സംഭവിച്ചു.', 'error');
@@ -691,8 +764,7 @@ export default function AdminPortalPage() {
       const res = await adminUpdatePhotoStory(photoStoryData, activeToken || undefined);
       if (res.success) {
         if (res.photoStory) setPhotoStoryData(sanitizePhotoStory(res.photoStory));
-        clearApiCache();
-        window.dispatchEvent(new Event('kd_photo_story_updated'));
+        notifyLiveUpdate('photo_story');
         showToast('ഫോട്ടോ സ്റ്റോറി വിജയകരമായി സേവ് ചെയ്തു!', 'success');
       } else {
         showToast(res.error || 'ഫോട്ടോ സ്റ്റോറി സേവ് ചെയ്യാൻ സാധിച്ചില്ല.', 'error');
@@ -807,17 +879,12 @@ export default function AdminPortalPage() {
         if (formBreaking) {
           try {
             await adminCreateBreaking(formTitle.trim(), token);
-            clearApiCache();
-            window.dispatchEvent(new CustomEvent('keraladesyam_breaking_updated'));
-            try {
-              localStorage.setItem('keraladesyam_breaking_last_updated', Date.now().toString());
-            } catch {}
+            notifyLiveUpdate('breaking');
           } catch (e) {
             console.error('Breaking ticker auto-add error:', e);
           }
         }
 
-        clearApiCache();
         if (editingArticleId) {
           setArticles((prev) =>
             prev.map((a) => (a.id === editingArticleId || a._id === editingArticleId ? result.article! : a))
@@ -826,11 +893,8 @@ export default function AdminPortalPage() {
           setArticles((prev) => [result.article!, ...prev]);
         }
 
-        // Real-time broadcast for notification & breaking updates across all open tabs
-        window.dispatchEvent(new CustomEvent('keraladesyam_articles_updated'));
-        try {
-          localStorage.setItem('keraladesyam_articles_last_updated', Date.now().toString());
-        } catch {}
+        // Instant broadcast for live reflection on frontend without manual refresh
+        notifyLiveUpdate('articles');
 
         setLastPublished(result.article);
         setIsModalOpen(false);
@@ -856,13 +920,9 @@ export default function AdminPortalPage() {
     try {
       const res = await adminDeleteArticle(id, token);
       if (res.success) {
-        clearApiCache();
         showToast('വാർത്ത ഡാറ്റാബേസിൽ നിന്ന് നീക്കം ചെയ്തു.');
         setArticles((prev) => prev.filter((a) => a.id !== id && a._id !== id));
-        window.dispatchEvent(new CustomEvent('keraladesyam_articles_updated'));
-        try {
-          localStorage.setItem('keraladesyam_articles_last_updated', Date.now().toString());
-        } catch {}
+        notifyLiveUpdate('articles');
       } else {
         showToast(res.error || 'വാർത്ത നീക്കം ചെയ്യാൻ കഴിഞ്ഞില്ല.', 'error');
       }
@@ -877,7 +937,6 @@ export default function AdminPortalPage() {
     const targetStatus = !art.isHeadline;
     const res = await adminToggleHeadline(art.id, token);
     if (res.success) {
-      clearApiCache();
       showToast(
         targetStatus
           ? 'പ്രധാന വാർത്തയായി (Main Headline) പിൻ ചെയ്തു!'
@@ -889,10 +948,7 @@ export default function AdminPortalPage() {
           isHeadline: a.id === art.id ? targetStatus : false,
         }))
       );
-      window.dispatchEvent(new CustomEvent('keraladesyam_articles_updated'));
-      try {
-        localStorage.setItem('keraladesyam_articles_last_updated', Date.now().toString());
-      } catch {}
+      notifyLiveUpdate('articles');
       await loadPortalData();
     } else {
       showToast(res.error || 'പ്രധാന വാർത്ത മാറ്റാൻ കഴിഞ്ഞില്ല.', 'error');
@@ -909,15 +965,11 @@ export default function AdminPortalPage() {
     setSubmittingBreaking(false);
 
     if (res.success) {
-      clearApiCache();
       showToast('ബ്രേക്കിംഗ് ന്യൂസ് ടിക്കറിൽ ചേർത്തു!');
       setNewBreakingText('');
       const updated = await adminGetRawBreaking();
       setBreakingList(updated);
-      window.dispatchEvent(new CustomEvent('keraladesyam_breaking_updated'));
-      try {
-        localStorage.setItem('keraladesyam_breaking_last_updated', Date.now().toString());
-      } catch {}
+      notifyLiveUpdate('breaking');
     } else {
       alert(res.error || 'Failed to add breaking headline');
     }
@@ -929,13 +981,9 @@ export default function AdminPortalPage() {
     try {
       const res = await adminDeleteBreaking(id, token);
       if (res.success) {
-        clearApiCache();
         showToast('ബ്രേക്കിംഗ് ന്യൂസ് നീക്കം ചെയ്തു.');
         setBreakingList((prev) => prev.filter((b) => b._id !== id));
-        window.dispatchEvent(new CustomEvent('keraladesyam_breaking_updated'));
-        try {
-          localStorage.setItem('keraladesyam_breaking_last_updated', Date.now().toString());
-        } catch {}
+        notifyLiveUpdate('breaking');
       }
     } catch (err) {
       console.error('Delete breaking error:', err);
@@ -953,10 +1001,7 @@ export default function AdminPortalPage() {
         setEditingBreakingText('');
         const updated = await adminGetRawBreaking();
         setBreakingList(updated);
-        window.dispatchEvent(new CustomEvent('keraladesyam_breaking_updated'));
-        try {
-          localStorage.setItem('keraladesyam_breaking_last_updated', Date.now().toString());
-        } catch {}
+        notifyLiveUpdate('breaking');
       } else {
         alert(res.error || 'Failed to update breaking headline');
       }
@@ -1031,6 +1076,7 @@ export default function AdminPortalPage() {
         setFormVideoThumbnail('');
         setFormVideoThumbnailFile(null);
         setFormVideoThumbnailPreview('');
+        notifyLiveUpdate('videos');
       } else {
         showToast(res.error || 'വീഡിയോ അപ്‌ലോഡ് പരാജയപ്പെട്ടു', 'error');
       }
@@ -1050,6 +1096,7 @@ export default function AdminPortalPage() {
       if (res.success) {
         showToast('വീഡിയോ നീക്കം ചെയ്തു.');
         setVideosList((prev) => prev.filter((v) => v.id !== id && v._id !== id));
+        notifyLiveUpdate('videos');
       } else {
         showToast(res.error || 'വീഡിയോ നീക്കം ചെയ്യൽ പരാജയപ്പെട്ടു', 'error');
       }
@@ -3616,12 +3663,27 @@ export default function AdminPortalPage() {
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-center">
                   <div className="md:col-span-5">
                     {storyImageMode === 'upload' ? (
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleStoryImageFileChange}
-                        className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-editorial-crimson file:text-white hover:file:bg-red-700 cursor-pointer"
-                      />
+                      <div>
+                        <label className="flex items-center justify-center gap-2 p-2.5 bg-white border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-editorial-crimson hover:bg-red-50/20 transition-all text-center">
+                          {isProcessingStoryImage ? (
+                            <Loader2 className="w-4 h-4 text-editorial-crimson animate-spin" />
+                          ) : (
+                            <Upload className="w-4 h-4 text-editorial-crimson shrink-0" />
+                          )}
+                          <span className="text-xs font-bold text-slate-700">
+                            {isProcessingStoryImage
+                              ? 'ഫോട്ടോകൾ പ്രോസസ്സ് ചെയ്യുന്നു...'
+                              : 'ഡിവൈസിൽ നിന്ന് ഫോട്ടോ തിരഞ്ഞെടുക്കുക'}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleStoryImageFileChange}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
                     ) : (
                       <input
                         type="url"
@@ -3647,10 +3709,14 @@ export default function AdminPortalPage() {
                     <button
                       type="button"
                       onClick={handleAddStoryImage}
-                      disabled={!newStoryImageUrl.trim()}
+                      disabled={!newStoryImageUrl.trim() || isProcessingStoryImage}
                       className="w-full h-9 px-4 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold flex items-center justify-center gap-1.5 transition disabled:opacity-40 shadow-xs"
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      {isProcessingStoryImage ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Plus className="w-3.5 h-3.5" />
+                      )}
                       <span>ചേർക്കുക</span>
                     </button>
                   </div>
@@ -3664,7 +3730,7 @@ export default function AdminPortalPage() {
                       className="w-14 h-10 object-cover rounded-lg border border-slate-200 shrink-0"
                     />
                     <span className="text-xs text-slate-600 truncate font-medium">
-                      ഫോട്ടോ തിരഞ്ഞെടുത്തിരിക്കുന്നു. 'ചേർക്കുക' ക്ലിക്ക് ചെയ്താൽ ഗാലറിയിൽ ഉൾപ്പെടും.
+                      ഫോട്ടോ തിരഞ്ഞെടുത്തു. അടിക്കുറിപ്പ് നൽകി 'ചേർക്കുക' ക്ലിക്ക് ചെയ്താൽ ഗാലറിയിൽ ഉൾപ്പെടും.
                     </span>
                   </div>
                 )}
@@ -3786,43 +3852,78 @@ export default function AdminPortalPage() {
                 </div>
               </div>
 
-              {/* Image URL & Caption */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-bold text-slate-800">
-                      ചിത്രത്തിന്റെ URL (ഓപ്ഷണൽ)
-                    </label>
-                    {formImageUrl && (
-                      <button
-                        type="button"
-                        onClick={handleRemoveImage}
-                        className="text-[11px] text-red-600 hover:underline font-bold"
-                      >
-                        ചിത്രം നീക്കം ചെയ്യുക
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type="url"
-                    value={formImageUrl ?? ''}
-                    onChange={(e) => setFormImageUrl(e.target.value)}
-                    placeholder="https://... (ചിത്രമില്ലെങ്കിൽ ശൂന്യമായി വിടാം)"
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    ചിത്രത്തിന്റെ അടിക്കുറിപ്പ്
+              {/* Image Upload from Device or URL & Caption */}
+              <div className="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-800">
+                    വാർത്താ ചിത്രം (Article Image - ഓപ്ഷണൽ)
                   </label>
-                  <input
-                    type="text"
-                    value={formImageCaption ?? ''}
-                    onChange={(e) => setFormImageCaption(e.target.value)}
-                    placeholder="അടിക്കുറിപ്പ്..."
-                    className="w-full bg-slate-50 border border-slate-300 rounded-lg py-2 px-3 text-xs text-slate-800"
-                  />
+                  {(formImagePreview || formImageUrl) && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="text-[11px] text-red-600 hover:text-red-800 font-bold flex items-center gap-1 transition"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>ചിത്രം നീക്കം ചെയ്യുക</span>
+                    </button>
+                  )}
                 </div>
+
+                {formImagePreview || formImageUrl ? (
+                  <div className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-2xs">
+                    <img
+                      src={formImagePreview || formImageUrl}
+                      alt="Selected Article Photo"
+                      className="w-20 h-16 object-cover rounded-lg border border-slate-200 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs text-emerald-700 font-bold block mb-1">
+                        ✓ ചിത്രം തിരഞ്ഞെടുത്തു
+                      </span>
+                      <input
+                        type="text"
+                        value={formImageCaption ?? ''}
+                        onChange={(e) => setFormImageCaption(e.target.value)}
+                        placeholder="ചിത്രത്തിന്റെ അടിക്കുറിപ്പ് (Photo Caption - ഓപ്ഷണൽ)..."
+                        className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:bg-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Option 1: Choose from device storage / camera / gallery */}
+                    <label className="flex items-center justify-center gap-2 p-3 bg-white border-2 border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-editorial-crimson hover:bg-red-50/20 transition-all text-center">
+                      <Upload className="w-4 h-4 text-editorial-crimson shrink-0" />
+                      <span className="text-xs font-bold text-slate-700">
+                        ഡിവൈസിൽ നിന്ന് ഫോട്ടോ അപ്‌ലോഡ് ചെയ്യുക
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {/* Option 2: Image URL */}
+                    <div className="flex items-center">
+                      <input
+                        type="url"
+                        value={formImageUrl ?? ''}
+                        onChange={(e) => {
+                          setFormImageUrl(e.target.value);
+                          setFormImagePreview(e.target.value);
+                        }}
+                        placeholder="അല്ലെങ്കിൽ ഇമേജ് URL നൽകാം (https://...)"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-editorial-crimson"
+                      />
+                    </div>
+                  </div>
+                )}
+                <p className="text-[11px] text-slate-500">
+                  ℹ️ മൊബൈൽ ഗാലറിയിൽ നിന്നോ കമ്പ്യൂട്ടറിൽ നിന്നോ നേരിട്ട് ഫോട്ടോ തിരഞ്ഞെടുക്കാം. ചിത്രം നൽകിയില്ലെങ്കിലും വാർത്ത പ്രസിദ്ധീകരിക്കപ്പെടും.
+                </p>
               </div>
 
               {/* Full Article Content */}
