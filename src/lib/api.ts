@@ -503,6 +503,7 @@ export async function adminCreateArticle(
       };
     }
 
+    clearApiCache();
     return {
       success: true,
       article: normalizeArticle(data.article),
@@ -557,6 +558,7 @@ export async function adminUpdateArticle(
 
     const data = await res.json();
     if (!res.ok) return { success: false, error: data.error || 'Failed to update article' };
+    clearApiCache();
     return { success: true, article: normalizeArticle(data.article) };
   } catch (err: any) {
     return { success: false, error: err.message || 'Network error' };
@@ -575,6 +577,7 @@ export async function adminDeleteArticle(
     });
     const data = await res.json();
     if (!res.ok) return { success: false, error: data.error || 'Failed to delete article' };
+    clearApiCache();
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Network error' };
