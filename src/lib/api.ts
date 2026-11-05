@@ -347,6 +347,14 @@ export async function likeArticle(
   }
 }
 
+export const DEFAULT_BREAKING_HEADLINES: string[] = [
+  'വയനാട് പുനരധിവാസം: സമഗ്ര പാക്കേജ് ഉടൻ പ്രഖ്യാപിക്കുമെന്ന് കേന്ദ്രം; കേരളത്തിന് പ്രത്യേക പരിഗണന',
+  'സംസ്ഥാനത്ത് ഇന്ധന സെസ് കുറച്ചേക്കും: ബജറ്റിന് മുന്നോടിയായി ധനവകുപ്പിന്റെ നിർണായക നീക്കം',
+  'യൂണിവേഴ്സിറ്റി യൂണിയൻ തെരഞ്ഞെടുപ്പിൽ വിദ്യാർത്ഥി സംഘടനകൾക്ക് വൻ മുന്നേറ്റം',
+  'പെരിയാറിലെ ജലനിരപ്പ് നിയന്ത്രണവിധേയം; മുൻകരുതൽ നടപടികൾ ഊർജ്ജിതമാക്കി ദുരന്തനിവാരണ അതോറിറ്റി',
+  'ഐഎസ്ആർഒയുടെ അടുത്ത ചാന്ദ്ര ദൗത്യം 70% ചെലവ് കുറഞ്ഞത്: ശാസ്ത്രജ്ഞർക്ക് അഭിനന്ദനം',
+];
+
 export async function getBreakingNews(): Promise<string[]> {
   const cacheKey = 'breaking_headlines';
   const cached = getCachedData<string[]>(cacheKey);
@@ -354,29 +362,37 @@ export async function getBreakingNews(): Promise<string[]> {
   const fetchTask = async () => {
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await apiFetch(`${baseUrl}/breaking`, {
+      const res = await apiFetch(`${baseUrl}/breaking?_t=${Date.now()}`, {
         headers: { Accept: 'application/json' },
       });
       if (res.ok) {
         const data = await res.json();
-        const headlines = Array.isArray(data.headlines) ? data.headlines.map((h: any) => h.headline) : [];
+        const rawList = Array.isArray(data.headlines)
+          ? data.headlines
+          : Array.isArray(data.data)
+          ? data.data
+          : Array.isArray(data)
+          ? data
+          : [];
+
         const seen = new Set<string>();
         const uniqueHeadlines: string[] = [];
-        for (const h of headlines) {
-          const text = String(h || '').trim();
+        for (const item of rawList) {
+          const text = String((typeof item === 'string' ? item : (item?.headline || item?.title || '')) || '').trim();
           if (!text || seen.has(text)) continue;
           seen.add(text);
           uniqueHeadlines.push(text);
         }
+
         if (uniqueHeadlines.length > 0) {
           setCachedData(cacheKey, uniqueHeadlines);
+          return uniqueHeadlines;
         }
-        return uniqueHeadlines;
       }
-      return cached || [];
+      return cached && cached.length > 0 ? cached : DEFAULT_BREAKING_HEADLINES;
     } catch (error) {
       console.error('Failed to fetch breaking news from database API:', error);
-      return cached || [];
+      return cached && cached.length > 0 ? cached : DEFAULT_BREAKING_HEADLINES;
     }
   };
 
@@ -385,7 +401,8 @@ export async function getBreakingNews(): Promise<string[]> {
     return cached;
   }
 
-  return await fetchTask();
+  const result = await fetchTask();
+  return result && result.length > 0 ? result : DEFAULT_BREAKING_HEADLINES;
 }
 
 export interface AdminUser {

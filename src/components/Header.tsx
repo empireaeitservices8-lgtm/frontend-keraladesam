@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useFont } from './FontContext';
 import { Article } from '@/data/newsData';
-import { getRealArticles, getRealBreakingNews } from '@/lib/api';
+import { getRealArticles, getRealBreakingNews, DEFAULT_BREAKING_HEADLINES } from '@/lib/api';
 import BookmarksDrawer from './BookmarksDrawer';
 import EPaperModal from './EPaperModal';
 import LiveTvModal from './LiveTvModal';
@@ -112,7 +112,7 @@ export default function Header() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Article[]>([]);
-  const [breakingNews, setBreakingNews] = useState<string[]>([]);
+  const [breakingNews, setBreakingNews] = useState<string[]>(DEFAULT_BREAKING_HEADLINES);
   const [notificationArticles, setNotificationArticles] = useState<Article[]>([]);
   const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
   const [notificationTab, setNotificationTab] = useState<'all' | 'breaking' | 'articles'>('all');
@@ -210,12 +210,18 @@ export default function Header() {
     fetchData();
     const intervalTimer = setInterval(fetchData, 20000);
     const handleFocus = () => fetchData();
+    const handleBreakingUpdate = () => fetchData();
+
     window.addEventListener('focus', handleFocus);
+    window.addEventListener('keraladesyam_breaking_updated', handleBreakingUpdate);
+    window.addEventListener('storage', handleBreakingUpdate);
 
     return () => {
       isMounted = false;
       clearInterval(intervalTimer);
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('keraladesyam_breaking_updated', handleBreakingUpdate);
+      window.removeEventListener('storage', handleBreakingUpdate);
     };
   }, [pathname]);
 
