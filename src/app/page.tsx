@@ -689,15 +689,15 @@ export default function HomePage() {
                   {activeStory.description}
                 </p>
 
-                {/* 3-column photo grid matching Image 1 */}
+                {/* 3-column photo slider matching Image 1 with smooth multi-photo horizontal carousel */}
                 <div
                   ref={photoSliderRef}
-                  className="flex sm:grid sm:grid-cols-3 gap-3.5 sm:gap-4 md:gap-5 overflow-x-auto sm:overflow-visible no-scrollbar scroll-smooth snap-x snap-mandatory pb-2 sm:pb-0"
+                  className="flex gap-3.5 sm:gap-4 md:gap-5 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory pb-2"
                 >
                   {activeStory.images.map((img, idx) => (
                     <div
                       key={idx}
-                      className="w-[280px] sm:w-auto shrink-0 snap-start overflow-hidden rounded-xl group relative bg-black/40 shadow-sm aspect-[16/10]"
+                      className="w-[280px] sm:w-[calc(33.333%-14px)] min-w-[260px] shrink-0 snap-start overflow-hidden rounded-xl group relative bg-black/40 shadow-sm aspect-[16/10]"
                     >
                       <img
                         src={img.url}

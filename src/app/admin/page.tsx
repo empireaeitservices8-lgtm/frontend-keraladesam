@@ -668,30 +668,63 @@ export default function AdminPortalPage() {
     }
   };
 
-  const handleAddStoryImage = () => {
+  const handleAddStoryImage = async () => {
     if (!newStoryImageUrl.trim()) {
       showToast('ചിത്രത്തിന്റെ URL നൽകുകയോ ഫയൽ തിരഞ്ഞെടുക്കുകയോ ചെയ്യുക.', 'warning');
       return;
     }
-    setPhotoStoryData((prev) => ({
-      ...prev,
-      images: [
-        ...(prev.images || []),
-        { url: newStoryImageUrl.trim(), caption: newStoryImageCaption.trim() },
-      ],
-    }));
+    const updatedImages = [
+      ...(photoStoryData.images || []),
+      { url: newStoryImageUrl.trim(), caption: newStoryImageCaption.trim() },
+    ];
+    const updatedStory: PhotoStoryItem = {
+      ...photoStoryData,
+      title: photoStoryData.title?.trim() || 'കുട്ടനാടൻ കായൽ ജീവിതം: വേനൽമഴയുടെ വരവറിയിച്ച് ഓളങ്ങൾ',
+      images: updatedImages,
+    };
+    setPhotoStoryData(updatedStory);
     setNewStoryImageUrl('');
     setNewStoryImageCaption('');
     setNewStoryImageFile(null);
-    showToast('ചിത്രം ഗാലറിയിലേക്ക് ചേർത്തു.');
+    showToast('ചിത്രം ചേർത്തു, വെബ്‌സൈറ്റിലേക്ക് സേവ് ചെയ്യുന്നു...');
+
+    // Auto-save immediately to database & live sync
+    try {
+      const activeToken =
+        token ||
+        (typeof window !== 'undefined'
+          ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+          : undefined);
+      await adminUpdatePhotoStory(updatedStory, activeToken || undefined);
+      notifyLiveUpdate('photo_story');
+      showToast('ഫോട്ടോ വിജയകരമായി വെബ്‌സൈറ്റിൽ അപ്‌ഡേറ്റ് ചെയ്തു!', 'success');
+    } catch (e) {
+      console.warn('Auto-save warning:', e);
+    }
   };
 
-  const handleRemoveStoryImage = (index: number) => {
-    setPhotoStoryData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, idx) => idx !== index),
-    }));
-    showToast('ചിത്രം നീക്കം ചെയ്തു.');
+  const handleRemoveStoryImage = async (index: number) => {
+    const updatedImages = (photoStoryData.images || []).filter((_, idx) => idx !== index);
+    const updatedStory: PhotoStoryItem = {
+      ...photoStoryData,
+      title: photoStoryData.title?.trim() || 'കുട്ടനാടൻ കായൽ ജീവിതം: വേനൽമഴയുടെ വരവറിയിച്ച് ഓളങ്ങൾ',
+      images: updatedImages,
+    };
+    setPhotoStoryData(updatedStory);
+    showToast('ചിത്രം ഒഴിവാക്കുന്നു, മാറ്റങ്ങൾ സേവ് ചെയ്യുന്നു...');
+
+    try {
+      const activeToken =
+        token ||
+        (typeof window !== 'undefined'
+          ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+          : undefined);
+      await adminUpdatePhotoStory(updatedStory, activeToken || undefined);
+      notifyLiveUpdate('photo_story');
+      showToast('ചിത്രം നീക്കം ചെയ്തു, വെബ്‌സൈറ്റ് അപ്‌ഡേറ്റ് ചെയ്തു.', 'success');
+    } catch (e) {
+      console.warn('Auto-save warning:', e);
+    }
   };
 
   const handleMoveStoryImage = (index: number, direction: 'up' | 'down') => {
@@ -3555,9 +3588,24 @@ export default function AdminPortalPage() {
                     </p>
                   </div>
                 </div>
-                <span className="text-[11px] font-bold text-opinion-ochre bg-amber-50 px-3 py-1 rounded-full border border-opinion-ochre/20 whitespace-nowrap self-start sm:self-auto">
-                  ശുപാർശ: 3 അല്ലെങ്കിൽ കൂടുതൽ ചിത്രങ്ങൾ
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-opinion-ochre bg-amber-50 px-3 py-1 rounded-full border border-opinion-ochre/20 whitespace-nowrap hidden sm:inline-block">
+                    ശുപാർശ: 3 അല്ലെങ്കിൽ കൂടുതൽ ചിത്രങ്ങൾ
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleSavePhotoStory}
+                    disabled={savingPhotoStory}
+                    className="h-9 px-4 rounded-xl bg-gradient-to-r from-editorial-crimson to-red-600 hover:from-red-700 hover:to-red-800 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 transition shadow-sm disabled:opacity-50"
+                  >
+                    {savingPhotoStory ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5" />
+                    )}
+                    <span>മാറ്റങ്ങൾ സേവ് ചെയ്യുക</span>
+                  </button>
+                </div>
               </div>
 
               {/* Existing Images Grid */}
