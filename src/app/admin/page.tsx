@@ -700,11 +700,27 @@ export default function AdminPortalPage() {
           } catch {}
         }
         if (newImages.length > 0) {
-          setPhotoStoryData((prev) => ({
-            ...prev,
-            images: [...(prev.images || []), ...newImages],
-          }));
-          showToast(`${newImages.length} ഫോട്ടോകൾ ഗാലറിയിൽ ചേർത്തു! 'മാറ്റങ്ങൾ സേവ് ചെയ്യുക' ക്ലിക്ക് ചെയ്യുക.`);
+          const updatedImages = [...(photoStoryData.images || []), ...newImages];
+          const updatedStory: PhotoStoryItem = {
+            ...photoStoryData,
+            images: updatedImages,
+          };
+          setPhotoStoryData(updatedStory);
+          showToast(`${newImages.length} ഫോട്ടോകൾ ഡാറ്റാബേസിലേക്ക് സേവ് ചെയ്യുന്നു...`);
+
+          // Auto-save immediately to database & live sync
+          try {
+            const activeToken =
+              token ||
+              (typeof window !== 'undefined'
+                ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+                : undefined);
+            await adminUpdatePhotoStory(updatedStory, activeToken || undefined);
+            notifyLiveUpdate('photo_story');
+            showToast(`${newImages.length} ഫോട്ടോകൾ തത്സമയം ഡാറ്റാബേസിൽ സേവ് ചെയ്തു!`, 'success');
+          } catch (e) {
+            console.warn('Auto-save warning:', e);
+          }
         }
         e.target.value = '';
         return;
@@ -798,16 +814,31 @@ export default function AdminPortalPage() {
     }
   };
 
-  const handleMoveStoryImage = (index: number, direction: 'up' | 'down') => {
-    setPhotoStoryData((prev) => {
-      const targetIdx = direction === 'up' ? index - 1 : index + 1;
-      if (targetIdx < 0 || targetIdx >= prev.images.length) return prev;
-      const images = [...prev.images];
-      const temp = images[index];
-      images[index] = images[targetIdx];
-      images[targetIdx] = temp;
-      return { ...prev, images };
-    });
+  const handleMoveStoryImage = async (index: number, direction: 'up' | 'down') => {
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= (photoStoryData.images || []).length) return;
+    const images = [...(photoStoryData.images || [])];
+    const temp = images[index];
+    images[index] = images[targetIdx];
+    images[targetIdx] = temp;
+
+    const updatedStory: PhotoStoryItem = {
+      ...photoStoryData,
+      images,
+    };
+    setPhotoStoryData(updatedStory);
+
+    try {
+      const activeToken =
+        token ||
+        (typeof window !== 'undefined'
+          ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+          : undefined);
+      await adminUpdatePhotoStory(updatedStory, activeToken || undefined);
+      notifyLiveUpdate('photo_story');
+    } catch (e) {
+      console.warn('Auto-save order warning:', e);
+    }
   };
 
   const handleStoryImageCaptionChange = (index: number, caption: string) => {

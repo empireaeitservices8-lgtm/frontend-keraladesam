@@ -1198,16 +1198,24 @@ export const DEFAULT_PHOTO_STORY: PhotoStoryItem = {
   description: "Visual captures of life, landscapes, and backwaters across God's Own Country.",
   images: [
     {
-      url: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=600&q=80',
+      url: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=80',
       caption: 'കുട്ടനാട് 1',
     },
     {
-      url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=600&q=80',
-      caption: 'കുട്ടനാട് 2',
+      url: 'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&w=1200&q=80',
+      caption: 'കുട്ടനാട് 3',
     },
     {
-      url: 'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&w=600&q=80',
-      caption: 'കുട്ടനാട് 3',
+      url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
+      caption: 'ചിത്രം 3 അടിക്കുറിപ്പ്',
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
+      caption: 'ചിത്രം 4 അടിക്കുറിപ്പ്',
+    },
+    {
+      url: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_xN8096Q8wWzE4E6tQ3b4i_Gz_r_S3tQ9gw&s',
+      caption: 'ചിത്രം 5 അടിക്കുറിപ്പ്',
     },
   ],
 };

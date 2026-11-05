@@ -655,8 +655,13 @@ export default function HomePage() {
                     </span>
                   </div>
 
-                  {/* Slider Controls */}
+                  {/* Slider Controls & Photo Count */}
                   <div className="flex items-center gap-1.5 sm:gap-2">
+                    {activeStory.images.length > 0 && (
+                      <span className="text-[11px] font-bold text-slate-300 bg-white/10 px-2.5 py-1 rounded-full border border-white/10 hidden sm:inline-block">
+                        {activeStory.images.length} ചിത്രങ്ങൾ
+                      </span>
+                    )}
                     <button
                       onClick={() => slideLeft(photoSliderRef)}
                       className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
@@ -706,6 +711,28 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
+
+                {/* Multi-photo dot pagination indicators */}
+                {activeStory.images.length > 3 && (
+                  <div className="flex items-center justify-center gap-1.5 mt-3 pt-1">
+                    {activeStory.images.map((_, dotIdx) => (
+                      <button
+                        key={dotIdx}
+                        type="button"
+                        onClick={() => {
+                          if (photoSliderRef.current) {
+                            const container = photoSliderRef.current;
+                            const step = 280;
+                            container.scrollTo({ left: dotIdx * step, behavior: 'smooth' });
+                          }
+                        }}
+                        className="w-2.5 h-2.5 rounded-full bg-white/25 hover:bg-opinion-ochre focus:bg-opinion-ochre transition-all"
+                        title={`ചിത്രം ${dotIdx + 1} കാണുക`}
+                        aria-label={`Go to photo ${dotIdx + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </section>
             );
           })()}
