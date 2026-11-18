@@ -24,6 +24,9 @@ import {
   PhotoStoryItem,
   DEFAULT_PHOTO_STORY,
   clearApiCache,
+  isItemDeleted,
+  getDeletedArticleIds,
+  getDeletedVideoIds,
 } from '@/lib/api';
 import { useFont } from '@/components/FontContext';
 import VideoPlayerModal from '@/components/VideoPlayerModal';
@@ -75,19 +78,28 @@ export default function HomePage() {
 
     // 1. Immediately hydrate from client-side persistent storage on mount (guarantees 0ms initial load without SSR mismatch)
     try {
+      const deletedArticleIds = getDeletedArticleIds();
+      const deletedVideoIds = getDeletedVideoIds();
+
       const storedArticles = localStorage.getItem('kd_home_articles');
       if (storedArticles) {
         const parsed = JSON.parse(storedArticles);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setArticles(deduplicateArticles(parsed));
-          setLoading(false);
+          const filtered = parsed.filter((a: Article) => !isItemDeleted(a, deletedArticleIds));
+          if (filtered.length > 0) {
+            setArticles(deduplicateArticles(filtered));
+            setLoading(false);
+          }
         }
       }
       const storedVideos = localStorage.getItem('kd_home_videos');
       if (storedVideos) {
         const parsed = JSON.parse(storedVideos);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setVideos(parsed);
+          const filtered = parsed.filter((v: VideoItem) => !isItemDeleted(v, deletedVideoIds));
+          if (filtered.length > 0) {
+            setVideos(filtered);
+          }
         }
       }
       const storedStory = localStorage.getItem('kd_photo_story');
@@ -101,27 +113,37 @@ export default function HomePage() {
 
     // 2. Fetch fresh data from backend with instant real-time synchronization
     async function loadData(forceRefresh = true) {
-      if (forceRefresh) {
-        clearApiCache();
-      }
       try {
+        const deletedArticleIds = getDeletedArticleIds();
+        const deletedVideoIds = getDeletedVideoIds();
+
         const [articlesResult, videosResult, photoStoryResult] = await Promise.allSettled([
-          getRealArticles({ bypassCache: true, limit: 25 }),
-          getRealVideos({ bypassCache: true, limit: 12 }),
-          getRealPhotoStory(true),
+          getRealArticles({ bypassCache: forceRefresh, limit: 25 }),
+          getRealVideos({ bypassCache: forceRefresh, limit: 12 }),
+          getRealPhotoStory(forceRefresh),
         ]);
         if (isMounted) {
           if (articlesResult.status === 'fulfilled' && Array.isArray(articlesResult.value)) {
-            const deduped = deduplicateArticles(articlesResult.value);
-            setArticles(deduped);
-            if (typeof window !== 'undefined') {
-              try { localStorage.setItem('kd_home_articles', JSON.stringify(deduped)); } catch {}
+            const filteredArticles = articlesResult.value.filter(
+              (a: Article) => !isItemDeleted(a, deletedArticleIds)
+            );
+            const deduped = deduplicateArticles(filteredArticles);
+            if (deduped.length > 0) {
+              setArticles(deduped);
+              if (typeof window !== 'undefined') {
+                try { localStorage.setItem('kd_home_articles', JSON.stringify(deduped)); } catch {}
+              }
             }
           }
           if (videosResult.status === 'fulfilled' && Array.isArray(videosResult.value)) {
-            setVideos(videosResult.value);
-            if (typeof window !== 'undefined') {
-              try { localStorage.setItem('kd_home_videos', JSON.stringify(videosResult.value)); } catch {}
+            const filteredVideos = videosResult.value.filter(
+              (v: VideoItem) => !isItemDeleted(v, deletedVideoIds)
+            );
+            if (filteredVideos.length > 0) {
+              setVideos(filteredVideos);
+              if (typeof window !== 'undefined') {
+                try { localStorage.setItem('kd_home_videos', JSON.stringify(filteredVideos)); } catch {}
+              }
             }
           }
           if (photoStoryResult.status === 'fulfilled' && photoStoryResult.value) {

@@ -45,6 +45,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ml" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preload" href="/logo-mobile.png" as="image" />
+        <link rel="preload" href="/logo.png" as="image" />
+      </head>
       <body suppressHydrationWarning className="bg-parchment-base font-body-md text-on-surface antialiased min-h-screen flex flex-col">
         <AdminAuthProvider>
           <FontProvider>

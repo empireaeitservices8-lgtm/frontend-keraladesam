@@ -231,23 +231,49 @@ export default function AdminPortalPage() {
   // Immediately hydrate from client-side persistent storage on mount (guarantees 0ms initial load without SSR mismatch)
   useEffect(() => {
     try {
+      const deletedArticleIds = JSON.parse(localStorage.getItem('kd_deleted_article_ids') || '[]');
+      const deletedBreakingIds = JSON.parse(localStorage.getItem('kd_deleted_breaking_ids') || '[]');
+      const deletedVideoIds = JSON.parse(localStorage.getItem('kd_deleted_video_ids') || '[]');
+
       const art = localStorage.getItem('kd_admin_articles');
       if (art) {
         const p = JSON.parse(art);
-        if (Array.isArray(p) && p.length > 0) {
-          setArticles(p);
-          setLoadingData(false);
+        if (Array.isArray(p)) {
+          const filtered = p.filter(
+            (a: any) =>
+              !deletedArticleIds.includes(String(a.id)) &&
+              !deletedArticleIds.includes(String(a._id)) &&
+              !deletedArticleIds.includes(String(a.customId))
+          );
+          setArticles(filtered);
+          if (filtered.length > 0) setLoadingData(false);
         }
       }
       const brk = localStorage.getItem('kd_admin_breaking');
       if (brk) {
         const p = JSON.parse(brk);
-        if (Array.isArray(p) && p.length > 0) setBreakingList(p);
+        if (Array.isArray(p)) {
+          const filtered = p.filter(
+            (b: any) =>
+              !deletedBreakingIds.includes(String(b.id)) &&
+              !deletedBreakingIds.includes(String(b._id)) &&
+              !deletedBreakingIds.includes(String(b.headline))
+          );
+          setBreakingList(filtered);
+        }
       }
       const vid = localStorage.getItem('kd_admin_videos');
       if (vid) {
         const p = JSON.parse(vid);
-        if (Array.isArray(p) && p.length > 0) setVideosList(p);
+        if (Array.isArray(p)) {
+          const filtered = p.filter(
+            (v: any) =>
+              !deletedVideoIds.includes(String(v.id)) &&
+              !deletedVideoIds.includes(String(v._id)) &&
+              !deletedVideoIds.includes(String(v.youtubeId))
+          );
+          setVideosList(filtered);
+        }
       }
       const sub = localStorage.getItem('kd_admin_subscribers');
       if (sub) {
@@ -356,13 +382,13 @@ export default function AdminPortalPage() {
         adminGetAdInquiries(token || undefined),
         getRealPhotoStory(true),
       ]);
-      if (Array.isArray(artList) && artList.length > 0) {
+      if (Array.isArray(artList)) {
         setArticles(artList);
       }
-      if (Array.isArray(brkList) && brkList.length > 0) {
+      if (Array.isArray(brkList)) {
         setBreakingList(brkList);
       }
-      if (Array.isArray(vidList) && vidList.length > 0) {
+      if (Array.isArray(vidList)) {
         setVideosList(vidList);
       }
       if (subRes && subRes.success) {
@@ -476,7 +502,14 @@ export default function AdminPortalPage() {
           : undefined);
       const res = await adminDeleteAdInquiry(id, activeToken || undefined);
       if (res.success) {
-        setAdInquiriesList((prev) => prev.filter((item) => item._id !== id && String(item.id) !== id));
+        setAdInquiriesList((prev) => {
+          const remaining = prev.filter((item) => item._id !== id && String(item.id) !== id);
+          if (typeof window !== 'undefined') {
+            try { localStorage.setItem('kd_admin_ads', JSON.stringify(remaining)); } catch {}
+          }
+          return remaining;
+        });
+        showToast('അപേക്ഷ വിജയകരമായി നീക്കം ചെയ്തു.', 'success');
       } else {
         alert(res.error || 'അപേക്ഷ നീക്കം ചെയ്യാൻ കഴിഞ്ഞില്ല');
       }
@@ -1068,15 +1101,40 @@ export default function AdminPortalPage() {
 
   // Delete Article
   const handleDeleteArticle = async (id: string, title: string) => {
-    if (!token) return;
+    const activeToken =
+      token ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+        : undefined);
+    if (!activeToken) {
+      showToast('ലോഗിൻ ടോക്കൺ ലഭ്യമല്ല. ദയവായി വീണ്ടും ലോഗിൻ ചെയ്യുക.', 'error');
+      return;
+    }
     const confirmDelete = window.confirm(`ഈ വാർത്ത ഡാറ്റാബേസിൽ നിന്ന് നീക്കം ചെയ്യണമെന്ന് ഉറപ്പാണോ?\n\n"${title}"`);
     if (!confirmDelete) return;
 
     try {
-      const res = await adminDeleteArticle(id, token);
+      const res = await adminDeleteArticle(id, activeToken);
       if (res.success) {
-        showToast('വാർത്ത ഡാറ്റാബേസിൽ നിന്ന് നീക്കം ചെയ്തു.');
-        setArticles((prev) => prev.filter((a) => a.id !== id && a._id !== id));
+        showToast('വാർത്ത ഡാറ്റാബേസിൽ നിന്ന് പൂർണ്ണമായി നീക്കം ചെയ്തു.');
+        setArticles((prev) => {
+          const remaining = prev.filter(
+            (a) => String(a.id) !== String(id) && String(a._id) !== String(id) && String(a.customId) !== String(id)
+          );
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('kd_admin_articles', JSON.stringify(remaining));
+              localStorage.setItem('kd_home_articles', JSON.stringify(remaining));
+              sessionStorage.removeItem(`kd_article_${id}`);
+              const deletedIds = JSON.parse(localStorage.getItem('kd_deleted_article_ids') || '[]');
+              if (!deletedIds.includes(String(id))) {
+                deletedIds.push(String(id));
+                localStorage.setItem('kd_deleted_article_ids', JSON.stringify(deletedIds));
+              }
+            } catch {}
+          }
+          return remaining;
+        });
         notifyLiveUpdate('articles');
       } else {
         showToast(res.error || 'വാർത്ത നീക്കം ചെയ്യാൻ കഴിഞ്ഞില്ല.', 'error');
@@ -1132,16 +1190,38 @@ export default function AdminPortalPage() {
 
   // Delete Breaking News
   const handleDeleteBreaking = async (id: string) => {
-    if (!token) return;
+    const activeToken =
+      token ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+        : undefined);
+    if (!activeToken) return;
     try {
-      const res = await adminDeleteBreaking(id, token);
+      const res = await adminDeleteBreaking(id, activeToken);
       if (res.success) {
         showToast('ബ്രേക്കിംഗ് ന്യൂസ് നീക്കം ചെയ്തു.');
-        setBreakingList((prev) => prev.filter((b) => b._id !== id));
+        setBreakingList((prev) => {
+          const remaining = prev.filter((b) => String((b as any).id) !== String(id) && String(b._id) !== String(id) && b.headline !== id);
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('kd_admin_breaking', JSON.stringify(remaining));
+              localStorage.setItem('kd_breaking_news', JSON.stringify(remaining.map((b) => b.headline)));
+              const deletedIds = JSON.parse(localStorage.getItem('kd_deleted_breaking_ids') || '[]');
+              if (!deletedIds.includes(String(id))) {
+                deletedIds.push(String(id));
+                localStorage.setItem('kd_deleted_breaking_ids', JSON.stringify(deletedIds));
+              }
+            } catch {}
+          }
+          return remaining;
+        });
         notifyLiveUpdate('breaking');
+      } else {
+        showToast(res.error || 'ബ്രേക്കിംഗ് ന്യൂസ് നീക്കം ചെയ്യാൻ കഴിഞ്ഞില്ല.', 'error');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Delete breaking error:', err);
+      showToast(err.message || 'Delete breaking error', 'error');
     }
   };
 
@@ -1244,13 +1324,32 @@ export default function AdminPortalPage() {
 
   // Delete Video
   const handleDeleteVideo = async (id: string) => {
-    if (!token) return;
+    const activeToken =
+      token ||
+      (typeof window !== 'undefined'
+        ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+        : undefined);
+    if (!activeToken) return;
     if (!confirm('ഈ വീഡിയോ നീക്കം ചെയ്യണമെന്ന് ഉറപ്പാണോ?')) return;
     try {
-      const res = await adminDeleteVideo(id, token);
+      const res = await adminDeleteVideo(id, activeToken);
       if (res.success) {
         showToast('വീഡിയോ നീക്കം ചെയ്തു.');
-        setVideosList((prev) => prev.filter((v) => v.id !== id && v._id !== id));
+        setVideosList((prev) => {
+          const remaining = prev.filter((v) => String(v.id) !== String(id) && String(v._id) !== String(id));
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('kd_admin_videos', JSON.stringify(remaining));
+              localStorage.setItem('kd_home_videos', JSON.stringify(remaining));
+              const deletedIds = JSON.parse(localStorage.getItem('kd_deleted_video_ids') || '[]');
+              if (!deletedIds.includes(String(id))) {
+                deletedIds.push(String(id));
+                localStorage.setItem('kd_deleted_video_ids', JSON.stringify(deletedIds));
+              }
+            } catch {}
+          }
+          return remaining;
+        });
         notifyLiveUpdate('videos');
       } else {
         showToast(res.error || 'വീഡിയോ നീക്കം ചെയ്യൽ പരാജയപ്പെട്ടു', 'error');
@@ -1265,9 +1364,20 @@ export default function AdminPortalPage() {
     if (!confirm(`'${email}' എന്ന ഇമെയിൽ വരിക്കാരെ ലിസ്റ്റിൽ നിന്നും നീക്കം ചെയ്യണമെന്ന് ഉറപ്പാണോ?`)) return;
     try {
       setDeletingSubscriberId(id);
-      const res = await adminDeleteSubscriber(id, token || undefined);
+      const activeToken =
+        token ||
+        (typeof window !== 'undefined'
+          ? localStorage.getItem('keraladesam_admin_jwt') || localStorage.getItem('token')
+          : undefined);
+      const res = await adminDeleteSubscriber(id, activeToken || undefined);
       if (res.success) {
-        setSubscribersList((prev) => prev.filter((s) => s._id !== id));
+        setSubscribersList((prev) => {
+          const remaining = prev.filter((s) => String(s._id) !== String(id) && String((s as any).id) !== String(id));
+          if (typeof window !== 'undefined') {
+            try { localStorage.setItem('kd_admin_subscribers', JSON.stringify(remaining)); } catch {}
+          }
+          return remaining;
+        });
         showToast('ഇമെയിൽ വിലാസം നീക്കം ചെയ്തു', 'success');
       } else {
         showToast(res.error || 'വരിക്കാരെ നീക്കം ചെയ്യാനായില്ല', 'error');
@@ -2883,7 +2993,7 @@ export default function AdminPortalPage() {
                               <Edit3 className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => handleDeleteBreaking(item._id)}
+                              onClick={() => handleDeleteBreaking(String((item as any).id || item._id || ''))}
                               className="p-1.5 rounded hover:bg-red-100 text-editorial-crimson transition"
                               title="നീക്കം ചെയ്യുക"
                             >
@@ -3087,7 +3197,7 @@ export default function AdminPortalPage() {
 
                         <button
                           type="button"
-                          onClick={() => handleDeleteVideo(vid.id || vid._id || '')}
+                          onClick={() => handleDeleteVideo(String(vid.id || vid._id || ''))}
                           className="p-1 rounded text-red-600 hover:bg-red-50 hover:text-red-700 transition"
                           title="വീഡിയോ നീക്കം ചെയ്യുക"
                         >

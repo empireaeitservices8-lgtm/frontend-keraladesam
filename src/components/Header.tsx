@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useFont } from './FontContext';
 import { Article } from '@/data/newsData';
-import { getRealArticles, getRealBreakingNews } from '@/lib/api';
+import { getRealArticles, getRealBreakingNews, getDeletedArticleIds, getDeletedBreakingIds, isItemDeleted } from '@/lib/api';
 import BookmarksDrawer from './BookmarksDrawer';
 import EPaperModal from './EPaperModal';
 import LiveTvModal from './LiveTvModal';
@@ -176,15 +176,28 @@ export default function Header() {
 
     // Immediately hydrate from client-side persistent storage on mount (avoids SSR mismatch)
     try {
+      const deletedBreakingIds = getDeletedBreakingIds();
+      const deletedArticleIds = getDeletedArticleIds();
+
       const storedBreaking = localStorage.getItem('kd_breaking_news');
       if (storedBreaking) {
         const parsed = JSON.parse(storedBreaking);
-        if (Array.isArray(parsed) && parsed.length > 0) setBreakingNews(parsed);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const filtered = parsed.filter((h: string) => !deletedBreakingIds.has(h));
+          if (filtered.length > 0) {
+            setBreakingNews(filtered);
+          }
+        }
       }
       const storedArticles = localStorage.getItem('kd_notification_articles');
       if (storedArticles) {
         const parsed = JSON.parse(storedArticles);
-        if (Array.isArray(parsed) && parsed.length > 0) setNotificationArticles(parsed);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const filtered = parsed.filter((a: Article) => !isItemDeleted(a, deletedArticleIds));
+          if (filtered.length > 0) {
+            setNotificationArticles(filtered);
+          }
+        }
       }
     } catch {}
 
@@ -196,7 +209,7 @@ export default function Header() {
         ]);
 
         if (isMounted) {
-          if (Array.isArray(headlines)) {
+          if (Array.isArray(headlines) && headlines.length > 0) {
             setBreakingNews(headlines);
             if (typeof window !== 'undefined') {
               try { localStorage.setItem('kd_breaking_news', JSON.stringify(headlines)); } catch {}
@@ -218,7 +231,7 @@ export default function Header() {
               } catch { }
             }
           }
-          if (Array.isArray(latest)) {
+          if (Array.isArray(latest) && latest.length > 0) {
             setNotificationArticles(latest);
             if (typeof window !== 'undefined') {
               try { localStorage.setItem('kd_notification_articles', JSON.stringify(latest)); } catch {}
@@ -692,7 +705,7 @@ export default function Header() {
           <Link href="/" className="flex items-center justify-center py-2 mt-0.5 group w-full" aria-label="കേരളദേശം">
             <div className="relative w-[300px] xs:w-[350px] sm:w-[420px] h-[75px] xs:h-[90px] sm:h-[105px]">
               <Image
-                src="/logo.png"
+                src="/logo-mobile.png"
                 alt="കേരളദേശം"
                 fill
                 sizes="(max-width: 640px) 350px, 420px"
@@ -709,8 +722,8 @@ export default function Header() {
             <Image
               src="/logo.png"
               alt="കേരളദേശം"
-              width={2172}
-              height={724}
+              width={1400}
+              height={467}
               priority
               className="w-[380px] sm:w-[420px] md:w-[460px] lg:w-[540px] xl:w-[680px] 2xl:w-[780px] h-auto object-contain transition-transform duration-200 group-hover:scale-[1.01]"
             />
