@@ -474,9 +474,7 @@ export async function getArticles(params?: ArticleQueryParams): Promise<Article[
       const deletedIds = getDeletedArticleIds();
       const filtered = rawArticles.filter((a: Article) => !isItemDeleted(a, deletedIds));
       const deduplicated = deduplicateArticles(filtered);
-      if (deduplicated.length > 0) {
-        setCachedData(cacheKey, deduplicated);
-      }
+      setCachedData(cacheKey, deduplicated);
       return deduplicated;
     } catch (error) {
       console.error('Failed to fetch articles from database API:', error);
@@ -1088,9 +1086,7 @@ export async function getVideos(params?: { category?: string; limit?: number; pa
       const list = (Array.isArray(data.videos) ? data.videos.map(normalizeVideo) : []).filter(
         (v: VideoItem) => !isItemDeleted(v, deletedIds)
       );
-      if (list.length > 0) {
-        setCachedData(cacheKey, list);
-      }
+      setCachedData(cacheKey, list);
       return list;
     } catch (error) {
       console.error('Failed to fetch videos from API:', error);

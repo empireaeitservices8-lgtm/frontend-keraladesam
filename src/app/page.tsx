@@ -128,28 +128,42 @@ export default function HomePage() {
               (a: Article) => !isItemDeleted(a, deletedArticleIds)
             );
             const deduped = deduplicateArticles(filteredArticles);
-            if (deduped.length > 0) {
-              setArticles(deduped);
-              if (typeof window !== 'undefined') {
-                try { localStorage.setItem('kd_home_articles', JSON.stringify(deduped)); } catch {}
-              }
+            setArticles(deduped);
+            if (typeof window !== 'undefined') {
+              try {
+                if (deduped.length > 0) {
+                  localStorage.setItem('kd_home_articles', JSON.stringify(deduped));
+                } else {
+                  localStorage.removeItem('kd_home_articles');
+                }
+              } catch {}
             }
           }
           if (videosResult.status === 'fulfilled' && Array.isArray(videosResult.value)) {
             const filteredVideos = videosResult.value.filter(
               (v: VideoItem) => !isItemDeleted(v, deletedVideoIds)
             );
-            if (filteredVideos.length > 0) {
-              setVideos(filteredVideos);
-              if (typeof window !== 'undefined') {
-                try { localStorage.setItem('kd_home_videos', JSON.stringify(filteredVideos)); } catch {}
-              }
+            setVideos(filteredVideos);
+            if (typeof window !== 'undefined') {
+              try {
+                if (filteredVideos.length > 0) {
+                  localStorage.setItem('kd_home_videos', JSON.stringify(filteredVideos));
+                } else {
+                  localStorage.removeItem('kd_home_videos');
+                }
+              } catch {}
             }
           }
           if (photoStoryResult.status === 'fulfilled' && photoStoryResult.value) {
             setPhotoStory(photoStoryResult.value);
             if (typeof window !== 'undefined') {
-              try { localStorage.setItem('kd_photo_story', JSON.stringify(photoStoryResult.value)); } catch {}
+              try {
+                if (photoStoryResult.value?.images?.length > 0) {
+                  localStorage.setItem('kd_photo_story', JSON.stringify(photoStoryResult.value));
+                } else {
+                  localStorage.removeItem('kd_photo_story');
+                }
+              } catch {}
             }
           }
         }

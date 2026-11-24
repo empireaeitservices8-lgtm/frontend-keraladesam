@@ -209,10 +209,16 @@ export default function Header() {
         ]);
 
         if (isMounted) {
-          if (Array.isArray(headlines) && headlines.length > 0) {
+          if (Array.isArray(headlines)) {
             setBreakingNews(headlines);
             if (typeof window !== 'undefined') {
-              try { localStorage.setItem('kd_breaking_news', JSON.stringify(headlines)); } catch {}
+              try {
+                if (headlines.length > 0) {
+                  localStorage.setItem('kd_breaking_news', JSON.stringify(headlines));
+                } else {
+                  localStorage.removeItem('kd_breaking_news');
+                }
+              } catch {}
             }
             if (
               typeof window !== 'undefined' &&
@@ -231,10 +237,16 @@ export default function Header() {
               } catch { }
             }
           }
-          if (Array.isArray(latest) && latest.length > 0) {
+          if (Array.isArray(latest)) {
             setNotificationArticles(latest);
             if (typeof window !== 'undefined') {
-              try { localStorage.setItem('kd_notification_articles', JSON.stringify(latest)); } catch {}
+              try {
+                if (latest.length > 0) {
+                  localStorage.setItem('kd_notification_articles', JSON.stringify(latest));
+                } else {
+                  localStorage.removeItem('kd_notification_articles');
+                }
+              } catch {}
             }
           }
         }
