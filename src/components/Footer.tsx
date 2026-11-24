@@ -13,7 +13,7 @@ const SOCIAL_ACCOUNTS = [
   {
     name: 'Facebook',
     title: 'കേരളദേശം ഫെയ്‌സ്ബുക്ക് പേജ് സന്ദർശിക്കുക',
-    href: 'https://www.facebook.com/keraladesam',
+    href: 'https://www.facebook.com/profile.php?id=61596664206205',
     hoverBg: 'hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2]',
     icon: (
       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -24,7 +24,7 @@ const SOCIAL_ACCOUNTS = [
   {
     name: 'YouTube',
     title: 'കേരളദേശം യൂട്യൂബ് ചാനൽ സബ്സ്ക്രൈബ് ചെയ്യുക',
-    href: 'https://www.youtube.com/@keraladesam',
+    href: 'https://www.youtube.com/@KERALADESAMPARTY-p7y',
     hoverBg: 'hover:bg-[#FF0000] hover:text-white hover:border-[#FF0000]',
     icon: (
       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -35,7 +35,7 @@ const SOCIAL_ACCOUNTS = [
   {
     name: 'Instagram',
     title: 'കേരളദേശം ഇൻസ്റ്റാഗ്രാം പേജ് ഫോളോ ചെയ്യുക',
-    href: 'https://www.instagram.com/keraladesam',
+    href: 'https://www.instagram.com/keraladesamoffice/',
     hoverBg: 'hover:bg-gradient-to-tr hover:from-[#F58529] hover:via-[#DD2A7B] hover:to-[#8134AF] hover:text-white hover:border-transparent',
     icon: (
       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -46,7 +46,7 @@ const SOCIAL_ACCOUNTS = [
   {
     name: 'X (Twitter)',
     title: 'കേരളദേശം എക്സ് (Twitter) പേജ് സന്ദർശിക്കുക',
-    href: 'https://twitter.com/keraladesam',
+    href: 'https://x.com/KeralaDesam_',
     hoverBg: 'hover:bg-white hover:text-black hover:border-white',
     icon: (
       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -57,7 +57,7 @@ const SOCIAL_ACCOUNTS = [
   {
     name: 'WhatsApp Channel',
     title: 'കേരളദേശം ഔദ്യോഗിക വാട്സാപ്പ് ചാനലിൽ ചേരുക',
-    href: 'https://whatsapp.com/channel/keraladesam',
+    href: 'https://wa.me/message/PZQ2R5XXXYLCL1',
     hoverBg: 'hover:bg-[#25D366] hover:text-white hover:border-[#25D366]',
     icon: (
       <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">

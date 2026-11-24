@@ -29,7 +29,7 @@ import LiveTvModal from './LiveTvModal';
 const SOCIAL_LINKS = [
   {
     name: 'Facebook',
-    href: 'https://www.facebook.com/keraladesam',
+    href: 'https://www.facebook.com/profile.php?id=61596664206205',
     bg: 'bg-[#1877F2]',
     icon: (
       <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -39,7 +39,7 @@ const SOCIAL_LINKS = [
   },
   {
     name: 'YouTube',
-    href: 'https://www.youtube.com/@keraladesam',
+    href: 'https://www.youtube.com/@KERALADESAMPARTY-p7y',
     bg: 'bg-[#FF0000]',
     icon: (
       <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -49,7 +49,7 @@ const SOCIAL_LINKS = [
   },
   {
     name: 'Instagram',
-    href: 'https://www.instagram.com/keraladesam',
+    href: 'https://www.instagram.com/keraladesamoffice/',
     bg: 'bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF]',
     icon: (
       <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -59,7 +59,7 @@ const SOCIAL_LINKS = [
   },
   {
     name: 'X (Twitter)',
-    href: 'https://twitter.com/keraladesam',
+    href: 'https://x.com/KeralaDesam_',
     bg: 'bg-black',
     icon: (
       <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -69,7 +69,7 @@ const SOCIAL_LINKS = [
   },
   {
     name: 'WhatsApp',
-    href: 'https://whatsapp.com/channel/keraladesam',
+    href: 'https://wa.me/message/PZQ2R5XXXYLCL1',
     bg: 'bg-[#25D366]',
     icon: (
       <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
@@ -77,16 +77,7 @@ const SOCIAL_LINKS = [
       </svg>
     ),
   },
-  {
-    name: 'Telegram',
-    href: 'https://t.me/keraladesam',
-    bg: 'bg-[#229ED9]',
-    icon: (
-      <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-        <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.562 8.161c-.18.786-.889 3.75-1.25 5.334-.153.67-.398.895-.634.917-.514.047-.905-.34-1.402-.666-.78-.51-1.222-.827-1.977-1.325-.873-.574-.307-.89.19-.408.13.126 2.388 2.188 2.433 2.238.057.062.109.117.005.176-.104.059-.444-.067-.624-.132-.38-.138-2.433-1.611-3.435-2.29-.462-.313-.88-.47-1.253-.462-.411.008-1.203.232-1.792.423-.722.235-.806.353-.78.752.015.228.329.463.942.705 3.693 1.609 6.16 2.67 7.4 3.183 3.52 1.464 4.252 1.718 4.73 1.727.105.002.339-.023.492-.147.129-.105.165-.246.182-.345.017-.099.039-.323.022-.498z" />
-      </svg>
-    ),
-  },
+  
 ];
 
 interface NotificationItem {

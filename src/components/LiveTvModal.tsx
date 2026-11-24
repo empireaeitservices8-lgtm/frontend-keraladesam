@@ -1,5 +1,5 @@
 'use client';
-
+import { getRealLiveTv } from '@/lib/api';
 import React, { useState, useEffect } from 'react';
 import {
   X,
@@ -43,7 +43,7 @@ function extractYouTubeId(url: string): string {
 
 export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
   const defaultKeralaDesamId =
-    process.env.NEXT_PUBLIC_LIVETV_YOUTUBE_ID || 'dXpuzlD21g0';
+    process.env.NEXT_PUBLIC_LIVETV_YOUTUBE_ID || '';
 
   const [customVideoId, setCustomVideoId] = useState<string>('');
   const [inputUrl, setInputUrl] = useState('');
@@ -52,6 +52,7 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
   const [viewerCount, setViewerCount] = useState(48219);
 
   // Default channels list
+  // Default channels list (കേരളദേശം മാത്രം)
   const CHANNELS: ChannelOption[] = [
     {
       id: 'keraladesam',
@@ -59,43 +60,19 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
       tagline: 'പ്രധാന ലൈവ് സ്റ്റുഡിയോ',
       videoId: customVideoId || defaultKeralaDesamId,
     },
-    {
-      id: 'twentyfour',
-      name: '24 ന്യൂസ്',
-      tagline: 'തത്സമയം വാർത്തകൾ',
-      videoId: '0U17y9a2q3w',
-    },
-    {
-      id: 'asianet',
-      name: 'ഏഷ്യാനെറ്റ് ന്യൂസ്',
-      tagline: 'ലൈവ് സംപ്രേഷണം',
-      videoId: 'Ko18SgHA43I',
-    },
-    {
-      id: 'manorama',
-      name: 'മനോരമ ന്യൂസ്',
-      tagline: 'തത്സമയം ബുള്ളറ്റിൻ',
-      videoId: 'g5c22K7hFkQ',
-    },
-    {
-      id: 'mediaone',
-      name: 'മീഡിയാവൺ',
-      tagline: 'ലൈവ് വാർത്തകൾ',
-      videoId: '0mQ7gHqPq2I',
-    },
   ];
 
   const [selectedChannel, setSelectedChannel] = useState<ChannelOption>(CHANNELS[0]);
 
-  // Load custom saved video ID from localStorage on mount
+  // Fetch real-time active Live TV stream from Backend/Admin
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('kd_custom_livetv_id');
-      if (saved) {
-        setCustomVideoId(saved);
+    getRealLiveTv().then((cfg) => {
+      if (cfg && cfg.videoId) {
+        setCustomVideoId(cfg.videoId);
       }
-    }
-  }, []);
+    });
+  }, [isOpen]);
+
 
   // Sync selectedChannel when customVideoId changes
   useEffect(() => {
@@ -158,11 +135,10 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
             {/* Custom URL Toggle Settings */}
             <button
               onClick={() => setShowConfig(!showConfig)}
-              className={`p-1.5 rounded-md transition-colors ${
-                showConfig
+              className={`p-1.5 rounded-md transition-colors ${showConfig
                   ? 'bg-red-600 text-white'
                   : 'hover:bg-neutral-800 text-neutral-300 hover:text-white'
-              }`}
+                }`}
               title="ലൈവ് സ്ട്രീം ലിങ്ക് മാറ്റുക (Settings)"
             >
               <Settings className="w-4 h-4" />
@@ -184,7 +160,7 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
             {/* Open on YouTube */}
             {currentVideoId && (
               <a
-                href={`https://www.youtube.com/watch?v=${currentVideoId}`}
+                href={`https://www.youtube.com/@KERALADESAMPARTY-p7y`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-1.5 rounded-md hover:bg-neutral-800 text-neutral-300 hover:text-white transition-colors hidden sm:block"
@@ -219,7 +195,7 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
                 type="text"
                 value={inputUrl}
                 onChange={(e) => setInputUrl(e.target.value)}
-                placeholder="ഉദാ: https://www.youtube.com/watch?v=... അല്ലെങ്കിൽ ലൈവ് ലിങ്ക്"
+                placeholder="ഉദാ: https://www.youtube.com/@KERALADESAMPARTY-p7y അല്ലെങ്കിൽ ലൈവ് ലിങ്ക്"
                 className="w-full bg-black/60 border border-neutral-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-red-500"
               />
             </div>
@@ -253,9 +229,8 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
         <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
           {currentVideoId ? (
             <iframe
-              src={`https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1&mute=${
-                isMuted ? 1 : 0
-              }&playsinline=1&rel=0`}
+              src={`https://www.youtube-nocookie.com/embed/${currentVideoId}?autoplay=1&mute=${isMuted ? 1 : 0
+                }&playsinline=1&rel=0`}
               title={selectedChannel.name}
               className="w-full h-full border-0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -283,18 +258,25 @@ export default function LiveTvModal({ isOpen, onClose }: LiveTvModalProps) {
 
             {CHANNELS.map((ch) => {
               const isCurrent = selectedChannel.id === ch.id;
+              const targetUrl = currentVideoId
+                ? `https://www.youtube.com/watch?v=${currentVideoId}`
+                : 'https://www.youtube.com/@KERALADESAMPARTY-p7y';
+
               return (
-                <button
+                <a
                   key={ch.id}
-                  onClick={() => setSelectedChannel(ch)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 ${
-                    isCurrent
+                  href={targetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 flex items-center gap-1.5 ${isCurrent
                       ? 'bg-red-600 text-white font-bold shadow-sm scale-105'
                       : 'bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-white border border-neutral-800'
-                  }`}
+                    }`}
+                  title="ഔദ്യോഗിക YouTube ചാനൽ തുറക്കുക"
                 >
-                  {ch.name}
-                </button>
+                  <span>{ch.name}</span>
+                  <ExternalLink className="w-3 h-3 opacity-80" />
+                </a>
               );
             })}
           </div>

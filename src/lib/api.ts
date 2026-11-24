@@ -1749,6 +1749,72 @@ export async function adminUploadMedia(
     return { success: false, error: err.message || 'Upload network error' };
   }
 }
+// ----------------- LIVE TV API -----------------
+export interface LiveTvConfig {
+  videoId: string;
+  title?: string;
+  updatedAt?: string;
+}
+
+export async function getRealLiveTv(): Promise<LiveTvConfig> {
+  const fallback: LiveTvConfig = {
+    videoId: process.env.NEXT_PUBLIC_LIVETV_YOUTUBE_ID || '',
+    title: 'കേരളദേശം 24x7 HD',
+  };
+  try {
+    const baseUrl = getApiBaseUrl();
+    const res = await apiFetch(`${baseUrl}/livetv?_t=${Date.now()}`, {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.videoId) {
+        if (typeof window !== 'undefined') {
+          try { localStorage.setItem('kd_live_tv_config', JSON.stringify(data)); } catch {}
+        }
+        return data;
+      }
+    }
+  } catch {}
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('kd_live_tv_config');
+      if (stored) return JSON.parse(stored);
+    } catch {}
+  }
+  return fallback;
+}
+
+export async function adminUpdateLiveTv(
+  payload: { videoId: string; title?: string },
+  token?: string
+): Promise<{ success: boolean; data?: LiveTvConfig; error?: string }> {
+  try {
+    const baseUrl = getApiBaseUrl();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await apiFetch(`${baseUrl}/livetv`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem('kd_live_tv_config', JSON.stringify(data)); } catch {}
+      }
+      return { success: true, data };
+    }
+    return { success: false, error: data.error || 'Failed to update Live TV' };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
 
 
 
